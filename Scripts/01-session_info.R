@@ -6,7 +6,7 @@ library(here)
 library(tidyverse)
 
 # parse XML
-hansard_xml <- xmlParse(here("hansard-proj/XML_files", "2021_11_30.xml"))
+hansard_xml <- xmlParse(here("XML_files", "2021_11_30.xml"))
 
 # store session information in tibble, correct class of variables
 session_info <- xmlToDataFrame(node=getNodeSet(hansard_xml, "//session.header")) %>% 
