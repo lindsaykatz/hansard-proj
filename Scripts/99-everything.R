@@ -2,16 +2,27 @@
 library(XML)
 library(here)
 library(tidyverse)
+library(AustralianPoliticians)
 
+# walk fxn to generalize
 # parse XML
+# rename scripts folder to lower case
+
 hansard_xml <- xmlParse(here("XML_files", "2021_11_30.xml"))
 
 # define interjection words
 interject_words <- c("Order!", "Order.", "interjecting", "Interjecting", "interjected", "Interjected", "interjections", "interjection", "Interjections", 
-                     "Interjection", "The time for the discussion has concluded", "I thank the honourable member for", "I thank the honourable member for", "should withdraw that remark", 
-                     "In accordance with standing order 193 the time for constituency statements has concluded", "There being no further grievances, the debate is adjourned",
+                     "Interjection", "interject", "Interject", "The time for the discussion has concluded", "I thank the honourable member for", "I thank the member for", 
+                     "should withdraw that remark", "In accordance with standing order 193 the time for constituency statements has concluded", 
+                     "There being no further grievances, the debate is adjourned",
                      "the time for members' statements has concluded", "The original question was that this bill be now read a second time", "Is the amendment seconded?",
-                     "Do you want to seek the call again?", "The question is that the amendment be disagreed to", "The question now is that the bill be agreed to") 
+                     "Do you want to seek the call again?", "The question is that the amendment be disagreed to", "The question now is that the bill be agreed to", 
+                     "The question is that the amendments be agreed to.", "will resume his seat", "will resume her seat", "will resume their seat", 
+                     "The question is that the bill be now read a second time", "Is leave granted to continue the debate?", 
+                     "The question is that the bill now be read a second time", "The question is that the amendment moved by the member for ",
+                     "—The SPEAKER", "Mr Speaker, a point of order on relevance", "An opposition member:", "—The DEPUTY SPEAKER", "— (Time expired)The SPEAKER", 
+                     "— (Time expired)The DEPUTY SPEAKER", "A government member:", "There being no further speakers, the debate has concluded.",
+                     ".The DEPUTY SPEAKER") 
 
 ######### SESSION INFORMATION #########
 # store session info in tibble, correct variable class
@@ -135,17 +146,17 @@ sub2_speech_chamb <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chambe
 sub2_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/subdebateinfo")),
                        xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/subdebate.text"))) %>% 
   as_tibble() %>% 
-  mutate(page.no = as.numeric(page.no),
-         fedchamb_flag = 1)
+  mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
+         fedchamb_flag = {if("page.no" %in% names(.)) 1 else NULL})
 
 # store sub-debate 2 talker info & speech in tibble, correct variable class, add flag for federation chamber, extract time
 sub2_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/speech/talk.start/talker")),
                          xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/speech/talk.text"))) %>% 
   as_tibble() %>% 
-  mutate(page.no = as.numeric(page.no),
-         time.stamp = str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d"),
-         party = as.factor(party),
-         fedchamb_flag = 1)
+  mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
+         time.stamp = {if ("body" %in% names(.)) str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d") else NULL},
+         party = {if("party" %in% names(.)) as.factor(party) else NULL},
+         fedchamb_flag = {if("page.no" %in% names(.)) 1 else NULL})
 
 # merge chamber and federation tibbles together, flag for which sub-debate, arrange by page
 sub2_info <- rbind(sub2_info_chamb, sub2_info_fed) %>% 
@@ -190,8 +201,8 @@ interject_fed_sub1 <- c(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.
 interject_fed_sub2 <- c(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/speech/interjection/talk.start/talker")),
                         xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/speech/interjection/talk.text"))) %>% 
   as_tibble() %>% 
-  mutate(page.no = as.numeric(page.no),
-         fedchamb_flag = 1)
+  mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
+         fedchamb_flag = {if("page.no" %in% names(.)) 1 else NULL})
 
 # merge chamber and federation chamber tibbles, add flags for question, answer, and each sub-debate, arrange by page number
 interject_sub1 <- rbind(interject_chamb_sub1, interject_fed_sub1) %>% arrange(page.no) %>% mutate(question = 0, answer = 0, sub1_flag = 1, sub2_flag = 0)
@@ -254,10 +265,50 @@ sub1_q_a_interject <- rbind(sub1_q_interject, sub1_a_interject) %>%
 
 ######### PUTTING EVERYTHING TOGETHER #########
 # all info from contents section of PDF
-sub_info <- debate_info %>% select(-type) %>% rbind(., sub1_info, sub2_info) %>% arrange(page.no)
+toc <- debate_info %>% 
+  select(-type) %>% 
+  rbind(., sub1_info, sub2_info) %>% 
+  arrange(page.no)
 
 # all debate text
-sub_speech <- rbind(sub1_speech, sub2_speech, sub1_q_a) %>% arrange(page.no, time.stamp)
+main <- rbind(sub1_speech, sub2_speech, sub1_q_a) %>% 
+  arrange(page.no, time.stamp)
 
 # all interjection information
-sub_interject <- rbind(interject_sub1, interject_sub2, sub1_q_a_interject) %>% arrange(page.no)
+interjections <- rbind(interject_sub1, interject_sub2, sub1_q_a_interject) %>% 
+  arrange(page.no)
+
+######### CONSISTENCY CHECKS #########
+# check that all parties belong to list of parties recognized by parliament
+parties <- AustralianPoliticians::get_auspol("all")
+
+party_names <- c("Australian Greens", "Australian Labor Party", "Centre Alliance", 
+                 "Independent", "Katter's Australia Party", "Liberal National Party", 
+                 "Liberal Party of Australia", "The Nationals")
+
+party_abbr <- c("AG", "ALP", "CA", "IND", "KAP", "LNP", "LP", "NATS", "UAP")
+
+main %>% filter(!(party %in% party_abbr)) # noticed Craig Kelly is labelled to be in UAP party in XML, but IND in PDF
+# also inconsistency in the period number and parliament number in session_info compared to PDF (46th parliament, 8th period)
+
+interjections %>% filter(!(party %in% c(party_abbr, "")))
+
+# check that nothing has been coded as both sub-debate 1 and sub-debate 2
+main %>% filter(sub1_flag == 1 & sub2_flag == 1) %>% nrow() == 0
+interjections %>% filter(sub1_flag == 1 & sub2_flag == 1) %>% nrow() == 0
+
+# check that nothing has been coded as both a question and an answer
+main %>% filter(question == 1 & answer == 1) %>% nrow() == 0
+interjections %>% filter(question == 1 & answer == 1) %>% nrow() == 0
+
+# check that there are equal number of questions and answers (speeches)
+main %>% filter(question==0 & answer==1) %>% summarise(n()) %>% pull == 
+  main %>% filter(question==1 & answer==0) %>% summarise(n()) %>% pull
+
+# check that all federation chamber rows come after chamber rows (based on page no.)
+# last pg of chamber should less than or equal to first page of fed. chamber
+main %>% filter(fedchamb_flag==0) %>% summarise(max(page.no)) %>% pull <= 
+  main %>% filter(fedchamb_flag==1) %>% summarise(min(page.no)) %>% pull
+
+interjections %>% filter(fedchamb_flag==0) %>% summarise(max(page.no)) %>% pull <= 
+  interjections %>% filter(fedchamb_flag==1) %>% summarise(min(page.no)) %>% pull
