@@ -43,10 +43,11 @@ sub1_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb
 
 # define interjection words
 interject_words <- c("Order!", "Order.", "interjecting", "Interjecting", "interjected", "Interjected", "interjections", "interjection", "Interjections", 
-                     "Interjection", "The time for the discussion has concluded", "I thank the honourable member for", "I thank the honourable member for", "should withdraw that remark", 
+                     "Interjection", "interject", "Interject", "The time for the discussion has concluded", "I thank the honourable member for", "I thank the member for", "should withdraw that remark", 
                      "In accordance with standing order 193 the time for constituency statements has concluded", "There being no further grievances, the debate is adjourned",
                      "the time for members' statements has concluded", "The original question was that this bill be now read a second time", "Is the amendment seconded?",
-                     "Do you want to seek the call again?", "The question is that the amendment be disagreed to", "The question now is that the bill be agreed to") 
+                     "Do you want to seek the call again?", "The question is that the amendment be disagreed to", "The question now is that the bill be agreed to", "will resume his seat", "will resume her seat",
+                     "will resume their seat") 
 
 # merge chamber and federation tibbles together, arrange by page number
 sub1_info <- rbind(sub1_info_chamb, sub1_info_fed) %>% 
