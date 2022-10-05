@@ -1,5 +1,5 @@
 ---
-title: "paper"
+title: "Digitization of the Australian Parliamentary Debates (1901-2022)"
 format: pdf
 editor: visual
 author:
