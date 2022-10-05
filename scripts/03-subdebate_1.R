@@ -5,11 +5,13 @@ library(XML)
 library(here)
 library(tidyverse)
 
+######## TUESDAY 6:00 NEED TO ADD IF-ELSE TO SUBDEBATE 1 CHAMBER.
+
 # define function
 parse_sub1 <- function(filename){
   
   # parse XML
-  hansard_xml <- xmlParse(here("input", filename))
+  hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/", filename))
 
   # # define interjection words - commenting this out b/c found better way to do so after everything is split (see 99-everything script)
   # interject_words <- c("Order!", "Order.", "interjecting", "Interjecting", "interjected", "Interjected", "interjections", "interjection", "Interjections", 
@@ -25,17 +27,17 @@ parse_sub1 <- function(filename){
   sub1_info_chamb <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.1/subdebateinfo")),
                            xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.1/subdebate.text"))) %>%
     as_tibble() %>% 
-    mutate(page.no = as.numeric(page.no),
-           fedchamb_flag = 0)
+    mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
+           fedchamb_flag = {if("page.no" %in% names(.)) 0 else NULL})
   
   # store sub-debate 1 talker info & speech in tibble, correct variable class, add flag for federation chamber, extract time
   sub1_speech_chamb <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.1/speech/talk.start/talker")),
                              xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.1/speech/talk.text"))) %>% 
     as_tibble() %>% 
-    mutate(page.no = as.numeric(page.no),
-           time.stamp = str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d"),
-           party = as.factor(party),
-           fedchamb_flag = 0)
+    mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
+           time.stamp = {if ("body" %in% names(.)) str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d") else NULL},
+           party = {if("party" %in% names(.)) as.factor(party) else NULL},
+           fedchamb_flag = {if("page.no" %in% names(.)) 0 else NULL})
   
   #### FEDERATION CHAMBER ####
   # use if-else statement in case Hansard doesn't have federation chamber
@@ -98,8 +100,8 @@ parse_sub1 <- function(filename){
 }
 
 # ex: call function, get sub-debate 1 info tibble
-parse_sub1("2022_08_02.xml")[[1]]
+parse_sub1("2018-08-23.xml")[[1]]
 
 # ex: call function, get sub-debate 1 speech tibble
-parse_sub1("2022_08_02.xml")[[2]]
+parse_sub1("2018-08-23.xml")[[2]]
 

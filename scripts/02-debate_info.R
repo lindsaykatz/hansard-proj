@@ -10,7 +10,7 @@ library(tidyverse)
 parse_debate_info <- function(filename){
   
   # parse XML file
-  hansard_xml <- xmlParse(here("input", filename))
+  hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/", filename))
   
   #################### CHAMBER ####################
   ######### BUSINESS START #########
@@ -31,6 +31,15 @@ parse_debate_info <- function(filename){
            fedchamb_flag = 0,
            sub1_flag = 0,
            sub2_flag = 0)
+  
+  ######### DEBATE SPEECH #########
+  debate_speech_chamb <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/speech/talk.start/talker")),
+                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/speech/talk.text"))) %>% 
+    as_tibble() %>% 
+    mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
+           time.stamp = {if ("body" %in% names(.)) str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d") else NULL},
+           party = {if("party" %in% names(.)) as.factor(party) else NULL},
+           fedchamb_flag = {if("page.no" %in% names(.)) 0 else NULL})
   
   #################### FEDERATION CHAMBER ####################
   # use if-else statement to ensure code works for Hansard with and without federation chamber
@@ -63,6 +72,19 @@ parse_debate_info <- function(filename){
     # merge chamber & federation chamber tibbles into single debate information tibble
     debate_info <- rbind(debate_info_chamb, debate_info_fed)
     
+    ######### DEBATE SPEECH #########
+    # store debate speech that aren't part of sub-debates
+    debate_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/speech/talk.start/talker")),
+                                 xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/speech/talk.text"))) %>% 
+      as_tibble() %>% 
+      mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
+             time.stamp = {if ("body" %in% names(.)) str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d") else NULL},
+             party = {if("party" %in% names(.)) as.factor(party) else NULL},
+             fedchamb_flag = {if("page.no" %in% names(.)) 0 else NULL})
+    
+    # merge chamber & federation chamber tibbles into single debate speech tibble
+    debate_speech <- rbind(debate_speech_chamb, debate_speech_fed)
+    
   } else {
     
     # re-name chamber business start
@@ -70,16 +92,22 @@ parse_debate_info <- function(filename){
     
     # re-name chamber debate info
     debate_info <- debate_info_chamb
+    
+    # re-name chamber debate speech
+    debate_speech <- debate_speech_chamb
 
   }
   
   # return a list of two tibbles
-  return(list(bus_start, debate_info))
+  return(list(bus_start, debate_info, debate_speech))
   
 }
 
 # ex: call function, get business start tibble
-parse_debate_info("2021_11_25.xml")[[1]]
+parse_debate_info("2018-08-23.xml")[[1]]
 
 # ex: call function, get debate info tibble
-parse_debate_info("2021_11_25.xml")[[2]]
+parse_debate_info("2018-08-23.xml")[[2]]
+
+# ex: call function, get debate speech tibble
+parse_debate_info("2021-11-25.xml")[[3]]

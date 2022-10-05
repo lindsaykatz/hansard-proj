@@ -8,7 +8,7 @@ library(tidyverse)
 parse_interject <- function(filename){
   
   # parse XML
-  hansard_xml <- xmlParse(here("input", filename))
+  hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/", filename))
   
   #### CHAMBER ####
   # sub-debate 1 speech interjections in tibble, correct variable class, add flag for federation chamber

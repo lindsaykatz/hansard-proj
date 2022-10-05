@@ -1,5 +1,6 @@
 # script to parse everything from Hansard
-# WORKS FOR 2011-05-10 TO PRESENT - BUT LOTS OF FORMATTING ISSUES TO DEAL WITH
+# TRYING TO FIX PARSING ISSUE WHICH STOPS AFTER 2011-03-24
+# issue is with debate info parsing
 
 # read in necessary packages
 library(XML)
@@ -100,7 +101,7 @@ split_interjections <- function(main, interject, bus_start){
   } else {
     all_names <- c()
   }
-
+  
   
   # now, add to all_names list using names of speakers from main data frame
   all_names <-  main_orig %>% 
@@ -457,7 +458,7 @@ split_interjections <- function(main, interject, bus_start){
   } else {
     name_info <- c()
   }
-
+  
   if ("SPEAKER" %in% name_info$last_name) {
     name_info <- main %>% filter(str_detect(name, "The SPEAKER") & !is.na(party)) %>% 
       select(c(name.id, electorate, party, name)) %>% unique() %>% 
@@ -507,7 +508,7 @@ split_interjections <- function(main, interject, bus_start){
       select(-name) %>% 
       rbind(., name_info)
   }
-
+  
   # get names of all speakers from main data frame (MPs)
   name_info <- main_orig %>% 
     select(c(name, name.id, electorate, party)) %>% 
@@ -637,7 +638,7 @@ split_interjections <- function(main, interject, bus_start){
 
 # define script as function with filename argument
 parse_hansard <- function(filename){
-
+  
   # parse XML
   hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/", filename))
   
@@ -655,37 +656,32 @@ parse_hansard <- function(filename){
   #################### CHAMBER ####################
   ######### BUSINESS START #########
   # store business start in tibble, add flag for federation chamber, extract date, body, and start time
-  # in rare cases (ex. 2016-08-30, there is no business start, so add if-else in case of this)
   if (nrow(tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/business.start"))))>0) {
-    bus_start_chamb <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/business.start")), 
-                              fedchamb_flag = 0)
-    
-    # need if-else if here because before 2011-05-10, the business start was different
-    if ("body" %in% names(bus_start_chamb)) {
-      bus_start_chamb <- bus_start_chamb %>% 
-        mutate(day_of_week = str_extract(body, "^[:alpha:]{0,6}day"),
-               date = as.Date(str_extract(body, "^[:alpha:]{0,6}day,[:space:][:digit:]{0,2}[:space:][:alpha:]{0,9}[:space:][:digit:]{0,4}"), "%A, %d %B %Y"),
-               body = str_remove(body, "^[:alpha:]{0,6}day,[:space:][:digit:]{0,2}[:space:][:alpha:]{0,9}[:space:][:digit:]{0,4}"),
-               start_time = str_extract(body, "[:digit:]{0,2}[:punct:][:digit:][:digit:]"))
-    } else if ("para" %in% names(bus_start_chamb)) {
-      bus_start_chamb <- bus_start_chamb %>% 
-        rename(date = day.start,
-               body = para) %>% 
-        mutate(date = as.Date(date),
-               day_of_week = strftime(date, "%A"),
-               start_time = str_extract(body, "[:digit:]{1,2}[:space:][:lower:][:lower:]")) %>% 
-        select(-separator)
-    }
-    
+    bus_start_chamb <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/business.start/day.start")), 
+                              fedchamb_flag = 0) %>% 
+      rename(date = text) %>% 
+      cbind(., tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/business.start/para")))) %>% 
+      rename(body = text) %>% 
+      drop_na() %>% 
+      mutate(body = paste0(inline, body),
+             date = as.Date(date),
+             day_of_week = strftime(date, "%A"),
+             start_time = str_extract(body, "[:digit:]{1,2}\\.[:digit:]{2}[:space:][:lower:]\\.[:lower:]\\.")) %>% 
+      select(date, fedchamb_flag, body, day_of_week, start_time)
   } else {
     bus_start_chamb <- tibble()
   }
   
+############### ADDED - NEED TO FIX BC NOT SURE IF NEED CHAMB XSCRIPT BEFORE AND ALSO SUB1/SUB2??? SHOULD I GRAB ALL AT ONCE OR IDK IF WILL WORK
+##### TRY ON ONE THAT HAS SUB2 AS WELL - BUT THEN FLAG WILL BE ISSUE. MAYBE DO SEPARATELY.
   ######### DEBATE INFORMATION #########
   # store debate information in tibble, correct variable class, add flags for sub-debate 1 and 2, and federation chamber
-  debate_info_chamb <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/debateinfo")),
-                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/debate.text"))) %>% 
-    as_tibble() %>% 
+  debate_info_chamb <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//debate/debateinfo/title"))) %>% 
+    rename(title=text) %>% 
+    cbind(., tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//debate/debateinfo/page.no")))) %>% 
+    rename(page.no = text) %>% 
+    cbind(., tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//debate/debateinfo/type")))) %>% 
+    rename(body = text) %>% 
     mutate(page.no = as.numeric(page.no),
            fedchamb_flag = 0,
            sub1_flag = 0,
@@ -731,10 +727,10 @@ parse_hansard <- function(filename){
   # sometimes sub-debate 2 isn't nested in sub-debate 1 (most recent date where this is the case is 2021-10-21)
   # if the number of rows of this is > 0, let's bind that onto what we already have to ensure we aren't missing anything
   if (nrow(as_tibble(cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.2/subdebateinfo")),
-            xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.2/subdebate.text"))))) > 0) {
+                           xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.2/subdebate.text"))))) > 0) {
     
     sub2_info_chamb <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.2/subdebateinfo")),
-          xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.2/subdebate.text"))) %>% 
+                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//chamber.xscript/debate/subdebate.2/subdebate.text"))) %>% 
       as_tibble() %>% 
       mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
              fedchamb_flag = {if("page.no" %in% names(.)) 0 else NULL}) %>% 
@@ -1178,7 +1174,7 @@ parse_hansard <- function(filename){
              index = NA) %>%
       select(c(index, page.no, time.stamp, name, name.id, electorate, party, in.gov, first.speech, body, fedchamb_flag, sub1_flag, sub2_flag, question, answer))
   }
-
+  
   ######### PUTTING EVERYTHING TOGETHER #########
   # table of contents
   # before doing this, sometimes sub1_info has an extra variable called "id.no" (2012-09-11), so want to add if-else in case
@@ -1240,4 +1236,3 @@ files_get <- files_all %>%
 for(i in 1:length(files_get)){
   parse_hansard(files_get[i])
 }
-

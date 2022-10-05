@@ -10,7 +10,7 @@ library(tidyverse)
 parse_session_info <- function(filename){
   
   # parse XML file
-  hansard_xml <- xmlParse(here("input", filename))
+  hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/", filename))
   
   # store session information in tibble, correct class of variables
   session_info <- xmlToDataFrame(node=getNodeSet(hansard_xml, "//session.header")) %>% 
@@ -26,5 +26,5 @@ parse_session_info <- function(filename){
 }
 
 # call function, pass file name
-parse_session_info("2022_08_01.xml")
+parse_session_info("2018-08-23.xml")
 
