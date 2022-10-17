@@ -20,6 +20,8 @@ The House of Representatives performs a number of crucial governmental functions
 
 On each sitting day, a transcript is available for download from the official Parliament of Australia website in both scanned PDF and extensible markup language (XML) form. The scanned PDF is the official release, which is converted to typed text using Optical Character Recognition (OCR) technology [@sherratt2016]. This conversion allows for the production of the XML formatted transcript, though these are not always perfect conversions. Our database has been developed solely using the XML formatted files. The choice to create this database using the potentially incomplete or flawed XML format of Hansard as opposed to the scanned PDF is ---- mention previous work on this using the PDF and this motivated us to try to parse things from the XML side this time ------ .
 
+cases where unsure how to proceed w xml always deferred to pdf
+
 The end goal for this work is to create a publicly available database of parsed Hansard transcripts from 1901 to present in a form which can be readily analyzed. More specifically, each transcript is presented in an ordered form with details on each speaker such as their political affiliation, the time stamp of their statement, and whether they interjected (i.e. spoke out of turn). Thus far, this has been completed from 2011 to present. Due to the extensive variation in structural formatting of these transcripts, additional work is needed to parse transcripts from further in the past.
 
 We begin this paper with a description of what datasets for Australian Hansard already exist will be provided (@sec-existing). Next will be a detailed description of the contents of our database (@sec-description), followed by a thorough discussion of how this database was created (@sec-create). Finally, @sec-apps provides a description of some applications of our database.
@@ -30,6 +32,16 @@ We begin this paper with a description of what datasets for Australian Hansard a
 -   How are these existing data sets lacking?
 -   How do we account for this in our data set?
     -   WhoGov article has good summary table offering comparison to other existing data sets
+    
+to this point various researchers have had to create
+
+- tim sherrett (historic hansard) - 
+- patrick leslie has also created a dataset as have others
+rework paragrpah about how these have been used
+
+no comprehensive dataset based on xml that goes from 1901-today
+1930s and before - ocr ruins accuracy (earlier decades) 
+    
 
 # Description of the Database {#sec-description}
 
@@ -90,10 +102,11 @@ all_files <- all_files %>%
          day = as.numeric(str_extract(value, "(?<=\\-)[[:digit:]]{2}$")))
 
 # plot of total number of sitting days per year
+# numbers are wrong
 all_files %>% 
   filter(year!=2022) %>% 
   group_by(year) %>% 
-  summarise(tot_days = sum(unique(day))) %>% 
+  summarise(tot_days = n()) %>% 
   ggplot(aes(x=year, y=tot_days)) + 
   geom_point() +
   geom_line() + 
@@ -123,24 +136,24 @@ all_files %>%
   filter(year==2015|year==2016|year==2017|year==2018|year==2019|year==2020) %>%
   mutate(month_abb = month.abb[month]) %>% 
   group_by(year, month_abb) %>% 
-  summarise(avg_days = mean(unique(day))) %>% 
+  summarise(avg_days = n()) %>% 
   ggplot(aes(x=factor(month_abb, levels=month.abb), y=avg_days)) +
   geom_col() + 
   facet_wrap(~year) +
   theme_bw() + 
   labs(x = "Month", 
-       y="Average sitting days", 
-       title = "Average number of sitting days per month (2015-2020)") +
+       y="Count", 
+       title = "Number of sitting days per month (2015-2020)") +
   theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=0.5))
 ```
 
 # Creation of the Database {#sec-create}
 
-The approach to parsing contents of an XML document is heavily dependent on its tree structure. As such, to create this database, we started by looking at a single Hansard transcript in XML form. Doing so enabled us to understand the various components of interest in the document, and how each one can be parsed according to its corresponding structural form. For example, the beginning of a speech may be followed by various interjections and continuations, all of which are structured as unique sub-elements containing further nested sub-elements within them. Extracting and correctly organizing these nested sub-elements required careful consideration. ---- this sentence feels incomplete / out of place -------. Parsing was performed in `R` using the `XML` package. Focusing on one transcript also allowed us to ensure that all key components of the transcript were being parsed and captured with as much detail as possible. Further, since we are looking at such a wide time span of these documents, there are expectedly a number of changes in the way they are formatted. Some changes are as subtle as a differently named child-node, while others are as extensive as a completely different nesting structure. Smaller changes were accounted for as we became aware of them, and embedded into the final scripts in a way that would not cause issues for parsing more current Hansards with slightly different formatting. As mentioned in section @sec-intro, the significant changes in XML structure of Hansard preceding 2011 necessitates much further development of our current scripts, which we are actively working to complete.
+The approach to parsing contents of an XML document is heavily dependent on its tree structure. As such, to create this database, we started by looking at a single Hansard transcript in XML form. Doing so enabled us to understand the various components of interest in the document, and how each one can be parsed according to its corresponding structural form. For example, the beginning of a speech may be followed by various interjections and continuations, all of which are structured as unique sub-elements containing further nested sub-elements within them. Parsing was performed in `R` using the `XML` package. Focusing on one transcript also allowed us to ensure that all key components of the transcript were being parsed and captured with as much detail as possible. Further, since we are looking at such a wide time span of documents, there are expectedly a number of changes in the way they are formatted. Some changes are as subtle as a differently named child-node, while others are as extensive as a completely different nesting structure. Smaller changes were accounted for as we became aware of them, and embedded into the final scripts in a way that would not cause issues for parsing more current Hansards with slightly different formatting. As mentioned in @sec-intro, the significant changes in XML structure of Hansard preceding 2011 necessitates much further development of our current scripts, which we are actively working to complete.
 
 ----- should I add little example of the XML to give the reader a visual?? it's hard to put into words clearly -----
 
-The XML structure begins with a root or parent element "hansard", followed by a child element "session header" with sub-child elements with information such as the date, and parliament number. Next there is a child element containing everything that takes place in the Chamber, "chamber.xscript". On sitting days where the Federation Chamber met as well, a child element exists for the Federation Chamber too. This allows for the distinction of proceedings of the Chamber and Federation Chamber. Each proceeding begins with a business start, naming the speaker and what time they took the chair. Next comes the debates and nested sub-debates. Broadly, the speeches within Hansard transcripts are structured with a debate node, containing a sub-debate 1 child-node which has a sub-debate 2 child-node nested within it. That said, sometimes sub-debate 2 is not nested within sub-debate 1. Each of these three elements as well as their respective sub-elements contain important information on the title of the debate or sub-debate, who is speaking, and what is being said. As mentioned, in many cases speeches are interrupted by interjections, which are embedded in these sub-elements as well. The final key distinct component of Hansard is Question Time, in which question and answer elements are classified differently than general debate text. Sometimes questions and answers are nested within debate or sub-debate child nodes, and other times they have their own child node. More detail on the processing of Question Time will follow in @sec-qa.
+The XML structure begins with a root or parent element `"hansard"`, followed by a child element `"session.header"` with sub-child elements with information such as the date, and parliament number. Next there is a child element containing everything that takes place in the Chamber, `"chamber.xscript"`. On sitting days where the Federation Chamber met as well, a child element exists for the Federation Chamber too. This allows for the distinction of proceedings of the Chamber and Federation Chamber. Each proceeding begins with a business start, naming the speaker and what time they took the chair. Next comes the debates and nested sub-debates. Broadly, the speeches within Hansard transcripts are structured with a debate node, containing a sub-debate 1 child-node which has a sub-debate 2 child-node nested within it. That said, sometimes sub-debate 2 is not nested within sub-debate 1. Each of these three elements as well as their respective sub-elements contain important information on the title of the debate or sub-debate, who is speaking, and what is being said. As mentioned, in many cases speeches are interrupted by interjections, which are embedded in these sub-elements as well. The final key distinct component of Hansard is Question Time, in which question and answer elements are classified differently than general debate text. Sometimes questions and answers are nested within debate or sub-debate child nodes, and other times they have their own child node. More detail on the processing of Question Time will follow in @sec-qa.
 
 Once code was written to parse all components, it was organized into individual scripts. The first script includes everything from the session header element, the second contains everything from the debate element, and the third and fourth contain everything from the sub-debate 1 and 2 elements, respectively. The fifth script contains debate interjection information, and the sixth contains content from Question Time. The final script is a compilation of everything. The next step was to further develop these scripts to produce tidy data sets from each parsed element, where each statement is separated onto its own row with details about the speaker, and rows are placed in chronological order. This first involved correcting the variable classes and adding a number of indicator variables to differentiate where statements came from, such as Chamber versus Federation Chamber or sub-debate 1 versus sub-debate 2. The next key task revolved around the fact that the raw text data were not separated by each statement when parsed. In other words, any interjections, comments made by the Speaker and Deputy Speaker and continuations within an individual speech were all parsed together as a single string. As such, the name, name ID, electorate and party details were only provided for the person who's turn it was to speak. Splitting up these speeches in a way which would be generalizable across sitting days required much thought and effort. @sec-interject will provide further details on the intricacies of this task.
 
