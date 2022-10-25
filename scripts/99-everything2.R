@@ -1077,8 +1077,8 @@ parse_hansard_maincomm <- function(filename){
         mutate(page.no = as.numeric(page.no),
                party = as.factor(party),
                time.stamp = str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d")) %>% 
-        mutate(question = ifelse(str_detect(body, "The answer to the .{1,30} question is as follows\\:"), 0, 1),
-               answer = ifelse(str_detect(body, "The answer to the .{1,30} question is as follows\\:"), 1, 0)) %>% 
+        mutate(question = ifelse(str_detect(body, "The answer to the .{1,30} question is as follows\\:|has provided the following answer to the honourable member's question\\:"), 0, 1),
+               answer = ifelse(str_detect(body, "The answer to the .{1,30} question is as follows\\:|has provided the following answer to the honourable member's question\\:"), 1, 0)) %>% 
         mutate(time.stamp = ifelse(str_detect(time.stamp, "^\\d:\\d\\d"), paste0("0", time.stamp), time.stamp)) 
       # arrange(page.no, time.stamp) 
       
@@ -1099,8 +1099,8 @@ parse_hansard_maincomm <- function(filename){
                  answer = 1,
                  time.stamp = str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d")) %>% 
           mutate(time.stamp = ifelse(str_detect(time.stamp, "^\\d:\\d\\d"), paste0("0", time.stamp), time.stamp)) %>% 
-          rbind(., sub1_a_writing)
-        #arrange(page.no, time.stamp)
+          rbind(., sub1_a_writing) %>% 
+          arrange(page.no)
       } 
     } else {
       sub1_q_writing <- tibble()
@@ -1169,8 +1169,8 @@ parse_hansard_maincomm <- function(filename){
       mutate(page.no = as.numeric(page.no),
              party = as.factor(party),
              time.stamp = str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d")) %>% 
-      mutate(question = ifelse(str_detect(body, "The answer to the .{1,30} question is as follows\\:"), 0, 1),
-             answer = ifelse(str_detect(body, "The answer to the .{1,30} question is as follows\\:"), 1, 0)) %>% 
+      mutate(question = ifelse(str_detect(body, "The answer to the .{1,30} question is as follows\\:|has provided the following answer to the honourable member's question\\:"), 0, 1),
+             answer = ifelse(str_detect(body, "The answer to the .{1,30} question is as follows\\:|has provided the following answer to the honourable member's question\\:"), 1, 0)) %>% 
       mutate(time.stamp = ifelse(str_detect(time.stamp, "^\\d:\\d\\d"), paste0("0", time.stamp), time.stamp)) 
     #arrange(page.no, time.stamp)
     
@@ -1193,8 +1193,8 @@ parse_hansard_maincomm <- function(filename){
                answer = 1,
                time.stamp = str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d")) %>% 
         mutate(time.stamp = ifelse(str_detect(time.stamp, "^\\d:\\d\\d"), paste0("0", time.stamp), time.stamp)) %>% 
-        rbind(., sub1_a_writing)
-      #arrange(page.no, time.stamp)
+        rbind(., sub1_a_writing) %>% 
+        arrange(page.no)
     } else {
       sub1_a_writing <- tibble()
     }
