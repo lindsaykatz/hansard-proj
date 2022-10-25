@@ -25,6 +25,20 @@ parse_session_info <- function(filename){
   return(session_info)
 }
 
-# call function, pass file name
+# ex: call function, pass file name
 parse_session_info("2018-08-23.xml")
 
+# grab list of all file names
+files_all <- list.files("/Volumes/Verbatim/input/")
+
+# define empty tibble
+session_info_all <- tibble()
+
+# loop through all files, parse session info, store in tibble
+for(i in 1:length(files_all)){
+  this_session_info <- parse_session_info(files_all[i])
+  session_info_all <- rbind(session_info_all, this_session_info)
+}
+
+# export all session info
+write.csv(session_info_all, paste0("/Volumes/Verbatim/output/session_info/session_info_all.csv"), row.names = FALSE)
