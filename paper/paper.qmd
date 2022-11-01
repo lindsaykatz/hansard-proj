@@ -1,44 +1,46 @@
 ---
-title: "Digitization of the Australian Parliamentary Debates (1901-2022)"
+title: "Digitization of the Australian Parliamentary Debates (1901-2022)^[Code is available at: https://github.com/lindsaykatz/hansard-proj]"
 number-sections: true
-format: pdf
+format: 
+  pdf:
+    keep-tex: true
 bibliography: references.bib
 editor: visual
 date: "now"
 date-format: long
 author:
-  - Lindsay Katz
-  - Rohan Alexander
-abstract: "Parliamentary dialogue is critical for political science research. In Australia, following the UK tradition, the written record of what is said in parliament is known as Hansard. While the Australian Hansard has always been publicly available, it has been difficult to use it for the purpose of large-scale macro and micro-level text analysis because it has not been available as a dataset of sufficient quality to be credibly analysed with statistical models. Following the lead of the LiPaD project which achieved this for Canada, our project aims to provide a new, comprehensive, high-quality database that captures all proceedings of the Australian parliamentary debates from 1901 to the present day using Hansard. Our dataset will be publicly available and linked to other datasets such as election results. The creation of this dataset will enable the exploration of questions that are not currently possible to explore, serving as a valuable resource for both researchers and policymakers. This work will provide a thorough description of the creation and computational underpinnings of this database, followed by a discussion of some applications."
+  - Lindsay Katz^[University of Toronto, lindsay.katz@mail.utoronto.ca]
+  - Rohan Alexander^[University of Toronto, rohan.alexander@utoronto.ca]
+abstract: "Public knowledge of what is said in parliament is a key tenet of democracy. Parliamentary dialogue is also critical for political science research. In Australia, following the UK tradition, the written record of what is said in parliament is known as Hansard. While the Australian Hansard has always been publicly available, it has been difficult to use it for the purpose of large-scale macro and micro-level text analysis because it has not been available as a dataset of sufficient quality to be credibly analysed with statistical models. Following the lead of the LiPaD project which achieved this for Canada, our project aims to provide a new, comprehensive, high-quality database that captures all proceedings of the Australian parliamentary debates from 1901 to the present day using Hansard. Our dataset will be publicly available and linked to other datasets such as election results. The creation of this dataset will enable the exploration of questions that are not currently possible to explore, serving as a valuable resource for both researchers and policymakers. This work will provide a thorough description of the creation and computational underpinnings of this database, followed by a discussion of some applications. To this point, we have completed this for 2011 to 2022."
 ---
 
 # Introduction {#sec-intro}
 
-The official written record of parliamentary debates, formally known as Hansard, plays a fundamental role in capturing the history of political proceedings and facilitating the exploration of valuable research questions. Originating in the British parliament, the production of Hansard became tradition in a number of Commonwealth countries such as Canada, the United Kingdom, and Australia [@vice2017history]. Given the contents and sheer magnitude of these records, their value cannot be overstated, particularly in the context of political science research. In the case of Canada, a team of researchers at the University of Toronto have digitized Hansard from 1901 to 2019, an endeavor called the Linked Parliamentary Data (LiPaD) project [@lipad]. Having a digitized version of Hansard enables researchers to perform advanced analyses on these records using text analysis tools and statistical modelling. Following the lead of the LiPaD project, in this paper we introduce a novel database for Australian Hansard. This is composed of individual datasets for each sitting day in the House of Representatives, containing details on everything said in parliament in a form which can be readily used by researchers. With the development of tools for large-scale text analysis, this database will serve as a valuable resource for efficiently studying and exploring political behaviour in Australia over time.
+The official written record of parliamentary debates, formally known as Hansard, plays a fundamental role in capturing the history of political proceedings and facilitating the exploration of valuable research questions. Originating in the British parliament, the production of Hansard became tradition in a number of Commonwealth countries such as Canada, the United Kingdom, and Australia [@vice2017history]. Given the content and magnitude of these records, they have significance, particularly in the context of political science research. In the case of Canada, a team of researchers at the University of Toronto have digitized Hansard from 1901 to 2019, an endeavor called the Linked Parliamentary Data (LiPaD) project [@lipad]. Having a digitized version of Hansard enables researchers to perform advanced analyses on these records using text analysis tools and statistical modelling. Following the lead of the LiPaD project, in this paper we introduce a novel database for the Australian Hansard. This is composed of individual datasets for each sitting day in the House of Representatives, containing details on everything said in parliament in a form which can be readily used by researchers. With the development of tools for large-scale text analysis, this database will serve as a valuable resource for efficiently studying and exploring political behaviour in Australia over time.
 
-The House of Representatives performs a number of crucial governmental functions, such as creating new laws and overseeing government expenditure [@australia2018house, ch. 1]. Sittings of the House follow a predefined order of business, regulated by procedural rules called standing orders [@australia2018house, ch. 8]. A typical sitting day in the Chamber has a number of scheduled proceedings including debates on government business, 90 second member statements, and Question Time [@australia2018house, ch. 8]. In contrast, the Federation Chamber was created in 1994 as a subordinate debate venue of the Chamber. This allows for better time management of House business as its proceedings occur simultaneously with those of the Chamber [@australia2018house, ch. 21]. Sittings in the Federation Chamber are quite different than those of the Chamber in terms of their order of business and scope of discussion. Business matters discussed in the Federation Chamber are limited largely to intermediate stages of bill development, and the business of private Members [@australia2018house, ch. 21]. It is the recording and compilation of all of these proceedings upon which Hansard is based.
+The House of Representatives performs a number of crucial governmental functions, such as creating new laws and overseeing government expenditure [@australia2018house, ch. 1]. Sittings of the House follow a predefined order of business, regulated by procedural rules called standing orders [@australia2018house, ch. 8]. A typical sitting day in the Chamber has a number of scheduled proceedings including debates on government business, 90 second member statements, and Question Time [@australia2018house, ch. 8]. The Federation Chamber was created in 1994 as a subordinate debate venue of the Chamber. This allows for better time management of House business as its proceedings occur simultaneously with those of the Chamber [@australia2018house, ch. 21]. Sittings in the Federation Chamber are quite different to those of the Chamber in terms of their order of business and scope of discussion. Business matters discussed in the Federation Chamber are limited largely to intermediate stages of bill development, and the business of private Members [@australia2018house, ch. 21]. It is the recording and compilation of all of these proceedings on which Hansard is based, and it is essentially, but not entirely, verbatim.
 
-On each sitting day, a transcript is available for download from the official Parliament of Australia website in both static PDF and extensible markup language (XML) form. The PDF is the official release, which is converted to typed text using Optical Character Recognition (OCR) technology [@sherratt]. This conversion allows for the production of the XML formatted transcript, though these are not always perfect conversions and are particularly flawed in the early decades of Hansard [@sherratt]. The PDF imposes formatting designed for humans to read with ease, whereas XML is designed for consistency and machine legibility. The nature of XML enables us to more easily use code to manipulate these records at scale, motivating our choice to develop our database solely using the XML formatted files. In cases where we were unsure on how to proceed with processing the XML, we always deferred first to the PDF, and then to the video recording of the proceeding if necessary.
+A week or so after each sitting day, a transcript is available for download from the official Parliament of Australia website in both static PDF and extensible markup language (XML) form. The PDF is the official release, which is converted to typed text using Optical Character Recognition (OCR) technology [@sherratt]. This conversion allows for the production of the XML formatted transcript, though these are not always perfect conversions and are particularly flawed in the early decades of Hansard [@sherratt]. The PDF imposes formatting designed for humans to read with ease, whereas XML is designed for consistency and machine legibility. The nature of XML enables us to more easily use code to manipulate these records at scale, motivating our choice to develop our database solely using the XML formatted files. In cases where we were unsure on how to proceed with processing the XML, we defer first to the PDF, and then to the video recording of the proceeding if available.
 
-The end goal for this work is to create a publicly available database of parsed Hansard transcripts from 1901 to present in a form which can be readily analyzed. More specifically, we aim to present each transcript in an ordered form with details on each speaker such as their political affiliation, the time stamp of their statement (where available), and whether they interjected (i.e. spoke out of turn). Thus far, this has been done for Hansard from mid-2011 to present. Due to the extensive variation in structural formatting of these transcripts, additional work is needed to parse transcripts from further in the past.
+The end goal for this work is to create a publicly available database of parsed Hansard transcripts from 1901 to present in a form which can be readily analyzed. More specifically, we aim to present each transcript in an ordered form with details on each speaker such as their political affiliation, the time stamp of their statement (where available), and whether they interjected (i.e. spoke out of turn). Thus far, this has been done for Hansard from mid-2011 to present.
 
 We begin this paper with a description of what datasets for Australian Hansard already exist (@sec-existing). Next will be a detailed description of the contents of our database (@sec-description), followed by a thorough discussion of how this database was created (@sec-create).
 
 # Existing Datasets {#sec-existing}
 
-At present, the Hansard format that is available on the Parliament of Australia website is not accessible for large scale analysis. To this point, various researchers have had to create their own databases in an attempt to produce usable, complete Hansard data. For instance, @sherratt created an online, easy to read [database](http://historichansard.net) of Hansard from 1901 to 1980 using the XML files. These data can be navigated by year, parliament, people, and bills [@sherratt]. As well, @Leslie_2021_HoR_Aus has released data on all Members of the Australian House of Representatives from 1945 to 2019, and is developing an `R` package for these data.
+At present, the Hansard format that is available on the Parliament of Australia website is not accessible for large scale analysis. To this point, various researchers have had to create their own databases in an attempt to produce usable, complete Hansard data. For instance, @sherratt created an online, easy to read [database](http://historichansard.net) of Hansard from 1901 to 1980 using the XML files. These data can be navigated by year, parliament, people, and bills [@sherratt]. As well, @Leslie_2021_HoR_Aus has released data on all Members of the Australian House of Representatives from 1945 to 2019, and is developing an `R` package for these data. Further, @auspol created the `AustralianPoliticians` `R` package, which contains a number of datasets related to the political and biographical information of Australian federal politicians who were active between 1901 and 2021.
 
-A number of papers exist which utilize components of Australian Hansard to explore various research topics. For example, @salisbury2011 used online Hansard records to explore the occurrences of unparliamentary comments by members of the House, where The Speaker tells that member to withdraw their remark. @rasiah2010framework worked with Question Time data from Hansard transcripts during February and March of 2003, to investigate resistance of politicians in answering questions about Iraq. In their work, @fraussen2018 use Hansard to quantify political prominence by investigating strategic mentions of interest groups by elected officials. Finally, the work of @alexander2021 offers the most complete database for Australian Hansard we have encountered thus far, along with a thorough analysis of the effect of elections and changes in Prime Ministers upon topics mentioned in parliament. @alexander2021 created this database with the static PDF versions Hansard, using OCR to digitize these files into text which is suitable for analysis.
+A number of papers exist which utilize components of Australian Hansard to explore various research topics. For example, @salisbury2011 used online Hansard records to explore the occurrences of unparliamentary comments by members of the House, where The Speaker tells that member to withdraw their remark. @rasiah2010framework worked with Question Time data from Hansard transcripts during February and March of 2003, to investigate resistance of politicians in answering questions about Iraq. In their work, @fraussen2018 use Hansard to quantify political prominence by investigating strategic mentions of interest groups by elected officials. Finally, the work of @alexander2021 offers a dataset of the Australian Hansard, along with an analysis of the effect of elections and changes in Prime Ministers upon topics mentioned in parliament. @alexander2021 created this database with the static PDF versions Hansard, using OCR to digitize these files into text which is suitable for analysis. This means there are considerable digitization errors especially in the first half of the dataset.
 
 While there is evidently a growing body of literature on this topic, there is still no comprehensive database for Australian Hansard based on XML that spans from 1901 to the present day. Our work serves to bridge this gap.
 
 # Description of the Database {#sec-description}
 
-Our current database contains 670 comma-separated values (CSV) files, one for each sitting day of the House of Representatives from 10 May 2011 to 08 September 2022. We used two scripts to produce these files, which only have one subtle difference. Since the Federation Chamber was renamed in mid-2012 from the original title of Main Committee, the element under which all the Federation Chamber contents are nested in the XML was renamed as well [@australia2018house, ch. 21]. This difference in element name means that our original code for parsing Federation Chamber contents would not work, as the specified node path would be incorrect. We accounted for this by creating a separate script with this name change. Our first script parses Hansard from 14 August 2012 to 08 September 2022, that being everything after the Federation Chamber name change, and the second script parses Hansard from 10 May 2011 to 28 June 2012. All output files in our database are formatted and processed in the exact same way. @fig-main15rows provides a snapshot of one of these files.
+Our current database contains 670 comma-separated values (CSV) files, one for each sitting day of the House of Representatives from 10 May 2011 to 08 September 2022. We used two scripts to produce these files, which only have one subtle difference. Since the Federation Chamber was renamed in mid-2012 from the original title of Main Committee, the element under which all the Federation Chamber contents are nested in the XML was renamed as well [@australia2018house, ch. 21]. This difference in element name means that our original code for parsing Federation Chamber content would not work, as the specified node path would be incorrect. We accounted for this by creating a separate script with this name change. Our first script parses Hansard from 14 August 2012 to 08 September 2022, that being everything after the Federation Chamber name change, and the second script parses Hansard from 10 May 2011 to 28 June 2012. All output files in our database are formatted and processed in the exact same way. @fig-main15rows provides a snapshot of one of these files.
 
 ![First 15 rows of CSV file for Hansard on 25 February 2020](main_ex15.png){#fig-main15rows}
 
-Evidently, each row of the CSV file contains an individual statement, with the unique name ID, electorate, and party information of the speaker. Of course, for general statements such as "Honourable members", these variables cannot be specified. Each proceeding in the Chamber begins with the business start, where the time that The Speaker took the chair is documented, as well as the acknowledgment of the country and reading of the prayers as governed by the standing orders of the House [@standingorders, ch. 6]. Federation Chamber also begins with a business start, where it is stated at what time The Deputy Speaker takes the chair. For further clarification on each variable in the resulting CSV, @tbl-vars provides an overview of each variable in the database.
+Each row of the CSV file contains an individual statement, with the unique name ID, electorate, and party information of the speaker. Of course, for general statements such as "Honourable members", these variables cannot be specified. Each proceeding in the Chamber begins with the business start, where the time that the Speaker took the chair is documented, as well as the acknowledgment of the country and reading of the prayers as governed by the standing orders of the House [@standingorders, ch. 6]. The Federation Chamber also begins with a business start, where it is stated at what time 5he Deputy Speaker takes the chair. For further clarification on each variable in the resulting CSV, @tbl-vars provides an overview of each variable in the database.
 
 ```{r}
 #| warning: false
@@ -57,6 +59,8 @@ library(kableExtra)
 
 # read in example csv
 main_ex <- read_csv("/Volumes/Verbatim/output/main/2020-02-25-main.csv", show_col_types = F)
+
+main_ex <- main_ex %>% select(-c(gender, uniqueID))
 
 # create tibble with var names and descriptions
 main_ex_vars <- tibble("Variable" = names(main_ex),
@@ -82,7 +86,7 @@ knitr::kable(main_ex_vars, booktabs=T) %>%
   kable_styling(full_width = F, latex_options = "HOLD_position")
 ```
 
-The `name`, `page.no`, `time.stamp`, `name.id`, `electorate`, `party`, and `body` variables all came directly from the XML contents. In addition to these variables, we added a number of flags to enable easy filtering of statements. For example, adding the `fedchamb_flag` provides a clear distinction between the proceedings of the Chamber with those of the Federation Chamber. As well, the `sub1_flag` and `sub2_flag` variables allow us to keep track of where various statements are being parsed from in the XML document. Further details on this XML structure will follow in @sec-create. The `question`, `answer`, and `q_in_writing` flags were added to identify statements belonging to Question Time, and the nature of these statements.[^1] We also added a flag for interjections, which are defined as statements made during one members speech by another member who is not The Speaker or Deputy Speaker. Further, the `speech_no` variable allows us to keep track of the speech number that each statement and interjection belongs to. For example, in @fig-main15rows, statements belonging to speech number 3 spans five rows, including two interjections. Having the speech number variable offers an easy way to group statements by speech or isolate specific speeches of interest. Finally, the `order` variable was added to keep track of the order in which everything was said, and was created after all statements and interjections were separated onto their own rows.
+The `name`, `page.no`, `time.stamp`, `name.id`, `electorate`, `party`, and `body` variables all came directly from the XML contents. In addition to these variables, we added a number of flags to enable easy filtering of statements. For example, adding the `fedchamb_flag` provides a clear distinction between the proceedings of the Chamber with those of the Federation Chamber. As well, the `sub1_flag` and `sub2_flag` variables allow us to keep track of where various statements are being parsed from in the XML document. Further details on this XML structure will follow in @sec-create. The `question`, `answer`, and `q_in_writing` flags were added to identify statements belonging to Question Time, and the nature of these statements.[^1] We also added a flag for interjections, which are defined as statements made during one members speech by another member who is not the Speaker or Deputy Speaker. Further, the `speech_no` variable allows us to keep track of the speech number that each statement and interjection belongs to. For example, in @fig-main15rows, statements belonging to speech number 3 spans five rows, including two interjections. Having the speech number variable offers an easy way to group statements by speech or isolate specific speeches of interest. Finally, the `order` variable was added to keep track of the order in which everything was said, and was created after all statements and interjections were separated onto their own rows.
 
 [^1]: More on this in @sec-qa
 
@@ -172,38 +176,72 @@ for(i in 1:length(all_dfs)){
     select(date, fedchamb_flag, n_rows)
   
   # number of unique things (NAs omitted) - need to fix a tiny bit more but better for now
-  this_unique_data <- tibble(this_df %>% select(electorate) %>% unique() %>% na.omit() %>% summarise(n_electorate = n()),
-                           this_df %>% select(party) %>% unique() %>% na.omit() %>% summarise(n_party = n()),
-                           this_df %>% select(name.id) %>% unique() %>% na.omit() %>% summarise(n_name.id = n()),
-                           this_df %>% select(name) %>% unique() %>% filter(name!="business start" & name!="stage direction" & 
-                                                                              !str_detect(name, "member") & name!="The DEPUTY SPEAKER" & name!="The SPEAKER") %>% 
-                             na.omit() %>% 
-                             mutate(name = str_remove(name, "^Mrs[[:space:]]|^Mr[[:space:]]|^Ms[[:space:]]|^Dr[[:space:]]"),
-                                    surname = str_extract(name, "^.{1,20}(?=\\,[[:space:]][[:upper:]][[:lower:]])"),
-                                    surname = ifelse(is.na(surname), name, surname),
-                                    surname = str_to_title(surname),
-                                    first_name = str_extract(name, "(?<=\\,[[:space:]]).{1,20}(?=\\,[[:space:]]MP)|(?<=\\,[[:space:]]).{1,20}(?=[[:space:]]MP)"),
-                                    first_name = ifelse(is.na(first_name) & str_detect(name, "\\(The"), str_extract(name, "(?<=\\,[[:space:]]).{1,20}(?=[[:space:]]\\(The)"), first_name)) %>%
-                             group_by(surname) %>% 
-                             fill(first_name, .direction = "updown") %>% select(-name) %>% 
-                             unique() %>% ungroup() %>% summarise(n_names=n())) %>% 
-    mutate(date = as.Date(str_extract(all_dfs[i], "\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d"))) %>% 
-    select(date, n_names, n_name.id, n_electorate, n_party)
+  this_nameid <- this_df %>% select(name.id, fedchamb_flag) %>% 
+    group_by(fedchamb_flag) %>% 
+    unique() %>% 
+    na.omit() %>% 
+    summarise(n_name.id = n())
+  
+  this_electorate <- this_df %>% select(electorate, fedchamb_flag) %>% 
+    group_by(fedchamb_flag) %>% 
+    unique() %>% 
+    na.omit() %>% 
+    summarise(n_electorate = n())
+  
+  this_party <- this_df %>% select(party, fedchamb_flag) %>% 
+    group_by(fedchamb_flag) %>% 
+    unique() %>% 
+    na.omit() %>% 
+    summarise(n_party = n())
+  
+  this_name <- this_df %>% select(name, fedchamb_flag) %>% 
+    group_by(fedchamb_flag) %>% 
+    unique() %>% 
+    filter(name!="business start" & name!="stage direction" & !str_detect(name, "member") & name!="The DEPUTY SPEAKER" & name!="The SPEAKER") %>% 
+    na.omit() %>% 
+    mutate(name = str_remove(name, "^Mrs[[:space:]]|^Mr[[:space:]]|^Ms[[:space:]]|^Dr[[:space:]]"),
+           surname = str_extract(name, "^.{1,20}(?=\\,[[:space:]][[:upper:]][[:lower:]])"),
+           surname = ifelse(is.na(surname) & !str_detect(name, "^The DEPUTY SPEAKER"), name, surname),
+           surname = ifelse(is.na(surname) & str_detect(name, "^The DEPUTY SPEAKER"), str_extract(name, "(?<=\\(Mrs[[:space:]]|\\(Mr[[:space:]]|\\(Ms[[:space:]]|\\(Dr[[:space:]]).{1,20}(?=\\))"), surname),
+           surname = str_to_title(surname),
+           first_name = str_extract(name, "(?<=\\,[[:space:]]).{1,20}(?=\\,[[:space:]]MP)|(?<=\\,[[:space:]]).{1,20}(?=[[:space:]]MP \\(The DEPUTY SPEAKER\\))|(?<=\\,[[:space:]]).{1,20}(?=[[:space:]]MP)"),
+           first_name = ifelse(is.na(first_name) & str_detect(name, "\\(The"), str_extract(name, "(?<=\\,[[:space:]]).{1,20}(?=[[:space:]]\\(The)"), first_name)) %>%
+    group_by(surname) %>% 
+    fill(first_name, .direction = "updown") %>% select(-name) %>% 
+    unique() %>% 
+    ungroup() %>% 
+    group_by(fedchamb_flag) %>% 
+    summarise(n_names=n())
+
+this_unique_data <- merge(this_nameid, this_electorate, by="fedchamb_flag") %>% 
+  merge(., this_party, by="fedchamb_flag") %>% 
+  merge(., this_name, by="fedchamb_flag") %>% 
+  as_tibble() %>% 
+  mutate(date = as.Date(str_extract(all_dfs[i], "\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d")))
+  
+# this_unique_data <- tibble(this_df %>% select(electorate) %>% unique() %>% na.omit() %>% summarise(n_electorate = n()),
+#                            this_df %>% select(party) %>% unique() %>% na.omit() %>% summarise(n_party = n()),
+#                            this_df %>% select(name.id) %>% unique() %>% na.omit() %>% summarise(n_name.id = n()),
+#                            this_df %>% select(name) %>% unique() %>% filter(name!="business start" & name!="stage direction" & 
+#                                                                               !str_detect(name, "member") & name!="The DEPUTY SPEAKER" & name!="The SPEAKER") %>% 
+#                              na.omit() %>% 
+#                              mutate(name = str_remove(name, "^Mrs[[:space:]]|^Mr[[:space:]]|^Ms[[:space:]]|^Dr[[:space:]]"),
+#                                     surname = str_extract(name, "^.{1,20}(?=\\,[[:space:]][[:upper:]][[:lower:]])"),
+#                                     surname = ifelse(is.na(surname), name, surname),
+#                                     surname = str_to_title(surname),
+#                                     first_name = str_extract(name, "(?<=\\,[[:space:]]).{1,20}(?=\\,[[:space:]]MP)|(?<=\\,[[:space:]]).{1,20}(?=[[:space:]]MP)"),
+#                                     first_name = ifelse(is.na(first_name) & str_detect(name, "\\(The"), str_extract(name, "(?<=\\,[[:space:]]).{1,20}(?=[[:space:]]\\(The)"), first_name)) %>%
+#                              group_by(surname) %>% 
+#                              fill(first_name, .direction = "updown") %>% select(-name) %>% 
+#                              unique() %>% ungroup() %>% summarise(n_names=n())) %>% 
+#     mutate(date = as.Date(str_extract(all_dfs[i], "\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d"))) %>% 
+#     select(date, n_names, n_name.id, n_electorate, n_party)
     
   # bind new stuff onto existing tibble
   interject_data <- rbind(interject_data, this_interject_data)
   fedchamb_rows <- rbind(fedchamb_rows, this_fedchamb_rows)
   unique_data <- rbind(unique_data, this_unique_data)
 }
-
-
-main_ex %>% select(name) %>% 
-  unique() %>% 
-  filter(name!="business start" & name!="stage direction" & !str_detect(name, "member") & 
-           !str_detect(name, "^Mrs[[:space:]]|^Mr[[:space:]]|^Ms[[:space:]]|^Dr[[:space:]]") & name!="The DEPUTY SPEAKER" & name!="The SPEAKER") %>% 
-  na.omit() %>% 
-  summarise(name_use = str_remove(name, "\\,[[:space:]]MP[[:space:]]\\(The SPEAKER\\)$|[[:space:]]\\(The DEPUTY SPEAKER\\)$|\\,[[:space:]]MP$|[[:space:]]MP$")) %>% 
-  unique() %>% summarise(n_names=n())
 
 write.csv(interject_data, paste0("~/Desktop/RA/hansard-proj/paper/interject_data.csv"), row.names = FALSE)
 write.csv(fedchamb_rows, paste0("~/Desktop/RA/hansard-proj/paper/fedchamb_rows.csv"), row.names = FALSE)
@@ -219,8 +257,13 @@ interject_data <- read_csv("interject_data.csv", show_col_types = FALSE)
 fedchamb_rows <- read_csv("fedchamb_rows.csv", show_col_types = FALSE)
 unique_data <- read_csv("unique_data.csv", show_col_types = FALSE)
 
+# checking meeting of fed chamb on fridays, only happened once in our database on 12 June 2020
+# library(lubridate)
+# fedchamb_rows$day_of_week <- wday(fedchamb_rows$date, label=T)
+# fedchamb_rows %>% filter(day_of_week=="Fri")
+
 # average number of rows per day by year, broken down by chamber and federation chamber
-fedchamb_rows$fedchamb_flag <- factor(fedchamb_rows$fedchamb_flag, levels=c(0, 1), labels=c("Chamber", "Federation Chamber"))
+fedchamb_rows$fedchamb_flag <- factor(fedchamb_rows$fedchamb_flag, levels=c(0, 1), labels=c("House of Representatives", "Federation Chamber"))
 
 plot2 <- fedchamb_rows %>% 
   mutate(year = as.numeric(str_extract(date, "\\d\\d\\d\\d(?=-)"))) %>% 
@@ -240,12 +283,12 @@ plot3 <- interject_data %>%
   summarise(pct_interject = 100*(n_interject[interject==1]/sum(n_interject))) %>% 
   ggplot(aes(x = date, y = pct_interject)) +
   geom_smooth() +
-  geom_point()+
+  geom_point(alpha = 0.4)+
   theme_bw() +
   labs(x = "Date", y = "Percent interjections")
 ```
 
-In @fig-plot2, we plotted the average number of rows per sitting day per year, disaggregated by Chamber and Federation Chamber proceedings. We can see that 2014 has the highest average number of rows per day, and 2021 has the lowest average number of rows per day. There appears to be less fluctuation in the average number of rows per day in the Federation Chamber than there is in that of the Chamber.
+In @fig-plot2, we consider the average number of rows per sitting day per year, disaggregated by Chamber and Federation Chamber proceedings. We can see that 2014 has the highest average number of rows per day, and 2021 has the lowest average number of rows per day. There appears to be less fluctuation in the average number of rows per day in the Federation Chamber than there is in that of the Chamber.
 
 ```{r, out.width="80%"}
 #| fig-cap: "Average number of rows in Hansard per year,\nby Chamber and Federation Chamber"
@@ -256,7 +299,7 @@ In @fig-plot2, we plotted the average number of rows per sitting day per year, d
 plot2
 ```
 
-Next we were interested in the percentage of rows in each Hansard which are flagged as interjections, using our definition of interjections mentioned above. We found that on average, approximately 18.4% of rows are characterized as interjections. Further, of all sitting days in our database, 25 June 2014 had the greatest percentage of rows being interjections, which was approximately 33.1%. The day with the smallest percentage of interjections was 23 March 2015, at approximately 2.8%. Based on @fig-plot3, there do not appear to be any significant fluctuations or patterns in the percentage of rows that are interjections across our time span.
+Next we were interested in the percentage of rows in each Hansard which are flagged as interjections, using our definition of interjections mentioned above. We found that on average, approximately 18% of rows are characterized as interjections. Further, of all sitting days in our database, 25 June 2014 had the greatest percentage of rows being interjections, which was approximately 33%. The day with the smallest percentage of interjections was 23 March 2015, at approximately 3%. Based on @fig-plot3, there do not appear to be any significant fluctuations or patterns in the percentage of rows that are interjections across our time span.
 
 ```{r, out.width="80%"}
 #| fig-cap: "Percentage of rows in Hansard that are interjections, 10 May 2011 - 08 September 2022"
@@ -267,7 +310,47 @@ Next we were interested in the percentage of rows in each Hansard which are flag
 plot3
 ```
 
-Finally, we created a @tbl-descrip to summarize the average number of unique speakers, electorates, and parties found in Hansard per year. For each of these variables the numbers do not fluctuate much over the years, and across all years, there are on average approximately 94 unique speakers, 89 unique electorates, and 6 unique parties.
+Finally, @fig-unique_plots summarizes the number of unique speakers, electorates, and parties found in Hansard over time. In all three panels, the data exhibit the same general pattern over time for both the House of Representatives and the Federation Chamber, where the magnitude for the House data is consistently greater than that of the Federation Chamber. Panels A and B in @fig-unique_plots illustrate that the number of unique names and electorates follow a very consistent trend across the entire time frame. Panel C shows that the number of unique parties has increased slightly since 2018.
+
+![Number of unique names (A), electorates (B), and parties (C) found on each sitting day.](unique_plots.png){#fig-unique_plots}
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| eval: false
+
+unique_data$fedchamb_flag <- factor(unique_data$fedchamb_flag, levels=c(0, 1), labels=c("House of Representatives", "Federation Chamber"))
+
+unique_plot1 <- ggplot(unique_data, aes(x = date, y = n_names, color = fedchamb_flag)) + 
+  geom_point(alpha = 0.5)+
+  geom_smooth() +
+  theme_bw() +
+  labs(y = "# unique names", x = "Date", color = "")
+
+unique_plot2 <- ggplot(unique_data, aes(x = date, y = n_electorate, color = fedchamb_flag)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth() +
+  theme_bw() +
+  labs(y = "# unique electorates", x = "Date", color = "")
+
+unique_plot3 <- ggplot(unique_data, aes(x = date, y = n_party, color = fedchamb_flag)) + 
+  geom_point(position = "jitter", alpha = 0.5) +
+  geom_smooth() +
+  theme_bw() +
+  labs(y = "# unique parties", x = "Date", color = "")
+
+# unique_data %>% group_by(fedchamb_flag) %>% summarise(mean_name = mean(n_names),
+#                                                       mean_nameID = mean(n_name.id),
+#                                                       mean_elecs = mean(n_electorate),
+#                                                       mean_party = mean(n_party))
+
+# ggsave("unique_plot1.png", unique_plot1)
+# ggsave("unique_plot2.png", unique_plot2)
+# ggsave("unique_plot3.png", unique_plot3)
+
+ggpubr::ggarrange(unique_plot1, unique_plot2, unique_plot3, ncol=2, nrow=2, common.legend = T, legend = "top", labels = "AUTO")
+```
 
 ```{r}
 #| warning: false
@@ -275,15 +358,18 @@ Finally, we created a @tbl-descrip to summarize the average number of unique spe
 #| echo: false
 #| label: tbl-descrip
 #| tbl-cap: "Average number of unique names, electorates, and parties in Hansard per year"
+#| eval: false
+
+######## not using this
 
 # create table of averages by year
 unique_table <- unique_data %>% 
   mutate(year = str_extract(date, "^\\d\\d\\d\\d")) %>% 
   filter(year!=2022) %>% 
   group_by(year) %>% 
-  summarise(mean_name = round(mean(n_names), 2),
-            mean_elec = round(mean(n_electorate), 2),
-            mean_party = round(mean(n_party), 2)) %>% 
+  summarise(mean_name = round(mean(n_names), 0),
+            mean_elec = round(mean(n_electorate), 0),
+            mean_party = round(mean(n_party), 0)) %>% 
   rename("Names" = mean_name,
          "Electorates" = mean_elec,
          "Parties" = mean_party,
@@ -293,9 +379,9 @@ unique_table <- unique_data %>%
 unique_avgs <- unique_data %>% 
   mutate(year = str_extract(date, "^\\d\\d\\d\\d")) %>% 
   filter(year!=2022) %>% 
-  summarise(mean_name = round(mean(n_names), 2),
-            mean_elec = round(mean(n_electorate), 2),
-            mean_party = round(mean(n_party), 2))
+  summarise(mean_name = round(mean(n_names), 0),
+            mean_elec = round(mean(n_electorate), 0),
+            mean_party = round(mean(n_party), 0))
 
 # print table
 knitr::kable(unique_table, booktabs=T) %>% 
@@ -314,7 +400,7 @@ Once code was written to parse all components, it was organized into individual 
 
 When beginning to run these scripts on transcripts from other sitting days, it became clear that not every sitting day contains every possible XML element. For example, some days did not have sub-debate 2 content, and some days did not have a Federation Chamber proceeding. To improve the generalizability of these scripts, if-else statements were embedded within the code wherever an error might arise due to a missing element. For example, the entire Federation Chamber block of code is wrapped in an if-else statement for each script, so that it only executes if what the code attempts to parse actually exists in the file. Once the script ran without error for a few recent years of Hansard, we continued to work backwards until extensive changes in tree structure made our script incompatible with parsing earlier XML files. Specifically, the earliest date for which it works is 10 May 2011. Before writing a new script for parsing earlier Hansard, we decided to prioritize cleaning and finalizing what we have been able to parse. As such we continued building our scripts, fixing any issues we noticed in the resulting datasets, and splitting up any additional sections of the parsed text onto separate rows where necessary. Specifically, we added a section of our script to separate out general stage directions. More information on this separation will be provided in @sec-stage.
 
-After completing the scripts, they were formatted as functions which take a file name argument. The final script which parses everything from Hansard produces two CSV files: one table of contents dataset with the title of each debate and sub-debate topic, and one dataset with the data on all proceedings (example shown in @fig-main15rows). Emphasis is placed on the latter as this contains the vast majority of information of interest, and required much more work to produce.
+After completing the scripts, they were formatted as functions which take a file name argument. The final script which parses everything from Hansard produces one CSV file with the data on all proceedings for each sitting day (example shown in @fig-main15rows).
 
 ## Question Time {#sec-qa}
 
@@ -354,7 +440,9 @@ In many of the XML files, below the full speech including all interjections and 
 
 ![Snapshot of XML structure with interjection and continuation from 03 February 2021 Hansard](xml3.png){#fig-xml3 width="345"}
 
-We then created lists using both the `interject` and `main` dataframes to capture all the names of individuals who spoke that day. We added the names of all Members in a number of unique formats, due to the frequent variation in how names are transcribed in Hansard. When a Member interjects or continues a speech, the usual form of their name is a prefix followed by their first name or first initial and/or last name. There is also variation in the capitalization of these names.^[Sometimes when someones first name is included, only their last name is capitalized, while sometimes their full name is capitalized, or other times neither are capitalized.] Another source of variation is in individuals with more than one first name, as sometimes only their first first name is written, while other times their entire first name is written. Additionally, some surnames have punctuation, and some surnames have specific capitalization such as "McCormack", where even in full capitalization, the first "c" remains lower case. This variation demands careful consideration when writing regular expression patterns to search for in the text. In these lists we also accounted for any general interjection statements transcribed that were not attributed to an individual, such as "An opposition member interjecting-".
+We then created lists using both the `interject` and `main` dataframes to capture all the names of individuals who spoke that day. We added the names of all Members in a number of unique formats, due to the frequent variation in how names are transcribed in Hansard. When a Member interjects or continues a speech, the usual form of their name is a prefix followed by their first name or first initial and/or last name. There is also variation in the capitalization of these names.[^3] Another source of variation is in individuals with more than one first name, as sometimes only their first first name is written, while other times their entire first name is written. Additionally, some surnames have punctuation, and some surnames have specific capitalization such as "McCormack", where even in full capitalization, the first "c" remains lower case. This variation demands careful consideration when writing regular expression patterns to search for in the text. In these lists we also accounted for any general interjection statements transcribed that were not attributed to an individual, such as "An opposition member interjecting-".
+
+[^3]: Sometimes when someones first name is included, only their last name is capitalized, while sometimes their full name is capitalized, or other times neither are capitalized.
 
 Having these lists enabled us to extract the names of Members and their associated prefixes as they exist in the text, by searching for exact matches with regular expression patterns. We then used these extracted names to split all the speeches up, using a number of regular expressions with lookarounds. A lookaround can be added to a regular expression pattern to enhance the specificity of matches. These were used to ensure that the text was not being split in the wrong places, such as places where Members were simply being named in the statement of another Member.
 
@@ -374,7 +462,7 @@ As mentioned, one of the final components added to our script was to separate ge
 
 Using a number of computational tools, we have created a novel database for Australian Hansard entirely based on XML data. Despite the public availability of Hansard, it is not functional in its current form for analysis at scale. Our work will enable individuals from various disciplines to perform broad spectrum research on Australian parliamentary proceedings without requiring a strong computational background.
 
-Our database provides a CSV file for each sitting day of Hansard from 10 May 2011 to 08 September 2022. In our work, we have embedded a number of additional variables to the resulting datasets and accounted for variation in the way that proceedings were initially transcribed. This ensured that users of our database can easily filter through transcripts as needed to achieve their distinct research goal. 
+Our database provides a CSV file for each sitting day of Hansard from 10 May 2011 to 08 September 2022. In our work, we have embedded a number of additional variables to the resulting datasets and accounted for variation in the way that proceedings were initially transcribed. This ensured that users of our database can easily filter through transcripts as needed to achieve their distinct research goal.
 
 The vastness of our database and the significance of the content within it enables the exploration of an endless variety of research questions. For example, one might be interested in investigating the frequency of certain words or phrases, such as those relating to Covid-19. Another area of interest would be frequency of interjections, and the gender of individuals both being interrupted and doing the interrupting. This database would also act as a valuable resource for research using Natural Language Processing tools.
 
