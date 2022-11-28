@@ -5,7 +5,7 @@ library(here)
 
 # 2010-2022
 # read in excel sheet with URLs
-urls_df <- read.csv(here("hansard-urls-2010-2022.csv"))
+urls_df <- read.csv(here("urls/hansard-urls-1998-1999.csv"))
 
 # define tibble with URLs and file names
 urls <- tibble(locations_are = urls_df$URL, 

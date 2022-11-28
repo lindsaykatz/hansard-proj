@@ -1847,8 +1847,8 @@ files_all <- list.files("/Volumes/Verbatim/input/")
 # grab a couple years
 files_get <- files_all %>%
   as_tibble() %>%
-  filter(str_detect(value, "^2022-")) %>%
-  filter(value > "2020-03-05.xml") %>%
+  filter(str_detect(value, "^2013|^2014-|^2015-|^2016-|^2017-|^2018-|^2019-|^2020-|^2021-|^2022-")) %>%
+  #filter(value > "2020-03-05.xml") %>%
   pull(value)
 
 #"^2014-|^2015-|^2016-|^2017-|^2018-|^2019-|^2020-|^2021-|^2022-"

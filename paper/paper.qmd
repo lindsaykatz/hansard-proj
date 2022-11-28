@@ -30,7 +30,7 @@ We begin this paper with a description of what datasets for Australian Hansard a
 
 At present, the Hansard format that is available on the Parliament of Australia website is not accessible for large scale analysis. To this point, various researchers have had to create their own databases in an attempt to produce usable, complete Hansard data. For instance, @sherratt created an online, easy to read [database](http://historichansard.net) of Hansard from 1901 to 1980 using the XML files. These data can be navigated by year, parliament, people, and bills [@sherratt]. As well, @Leslie_2021_HoR_Aus has released data on all Members of the Australian House of Representatives from 1945 to 2019, and is developing an `R` package for these data. Further, @auspol created the `AustralianPoliticians` `R` package, which contains a number of datasets related to the political and biographical information of Australian federal politicians who were active between 1901 and 2021.
 
-A number of papers exist which utilize components of Australian Hansard to explore various research topics. For example, @salisbury2011 used online Hansard records to explore the occurrences of unparliamentary comments by members of the House, where The Speaker tells that member to withdraw their remark. @rasiah2010framework worked with Question Time data from Hansard transcripts during February and March of 2003, to investigate resistance of politicians in answering questions about Iraq. In their work, @fraussen2018 use Hansard to quantify political prominence by investigating strategic mentions of interest groups by elected officials. Finally, the work of @alexander2021 offers a dataset of the Australian Hansard, along with an analysis of the effect of elections and changes in Prime Ministers upon topics mentioned in parliament. @alexander2021 created this database with the static PDF versions Hansard, using OCR to digitize these files into text which is suitable for analysis. This means there are considerable digitization errors especially in the first half of the dataset.
+A number of papers exist which utilize components of Australian Hansard to explore various research topics. For example, @salisbury2011 used online Hansard records to explore the occurrences of unparliamentary comments by members of the House, where The Speaker tells that member to withdraw their remark. @rasiah2010framework worked with Question Time data from Hansard transcripts during February and March of 2003, to investigate resistance of politicians in answering questions about Iraq. In their work, @fraussen2018 use Hansard to quantify political prominence by investigating strategic mentions of interest groups by elected officials. Finally, the work of @alexander2021 offers a dataset of the Australian Hansard, along with an analysis of the effect of elections and changes in Prime Ministers upon topics mentioned in parliament. @alexander2021 created this database with the static PDF versions of Hansard, using OCR to digitize these files into text which is suitable for analysis. This means there are considerable digitization errors especially in the first half of the dataset.
 
 While there is evidently a growing body of literature on this topic, there is still no comprehensive database for Australian Hansard based on XML that spans from 1901 to the present day. Our work serves to bridge this gap.
 
@@ -135,6 +135,8 @@ plot1 <- all_files %>%
 #        y="Count", 
 #        title = "Number of sitting days per month (2015-2020)") +
 #   theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=0.5))
+
+#plot1 + ggtitle("Total number of sitting days per year (2000-2021)")
 ```
 
 ```{r, out.width="80%"}
@@ -273,8 +275,7 @@ plot2 <- fedchamb_rows %>%
   ggplot(aes(y = avg_rows, x = as.factor(year), fill = fedchamb_flag)) + 
   geom_bar(position = "stack", stat = "identity") +
   theme_bw() +
-  labs(x = "Year", y = "Average number of rows", fill = "") +
-  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=0.5))
+  labs(x = "Year", y = "Average number of rows", fill = "")
   
 
 # plot pct rows that are interjections
