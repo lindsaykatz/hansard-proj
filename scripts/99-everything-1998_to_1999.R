@@ -1,4 +1,3 @@
-# works from 15 February 2000 10 May 2011
 library(here)
 library(tidyverse)
 library(xml2)
@@ -29,13 +28,15 @@ item_df <- function(file, path){
 
 # grab "all" dataset from AusPol package
 all <- AustralianPoliticians::get_auspol('all')
-#all <- read.csv("/Volumes/Verbatim/all.csv")
+# all <- read.csv("/Volumes/Verbatim/all.csv")
 
-################### temp filename
-filename <- "2011-03-21.xml"
+#hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/", "1999-06-22.xml"))
+#xml_df <- read_xml(here("/Volumes/Verbatim/input/", "1998-12-10.xml"))
 
-parse_hansard <- function(filename){ 
- 
+filename<-"1998-03-05.xml"
+
+parse_hansard_1998 <- function(filename){ 
+  
   hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/", filename))
   xml_df <- read_xml(here("/Volumes/Verbatim/input/", filename))
   
@@ -105,7 +106,7 @@ parse_hansard <- function(filename){
   # federation chamber
   if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/business.start"), homogeneous = T, collectNames = F))>0) {
     bus_start_fed <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/business.start"), homogeneous = T, collectNames = F), 
-                              fedchamb_flag = 1, .name_repair = "unique") %>% 
+                            fedchamb_flag = 1, .name_repair = "unique") %>% 
       rename(date = day.start) 
     
     if ("para" %in% names(bus_start_fed)) {
@@ -143,7 +144,7 @@ parse_hansard <- function(filename){
         select(date, fedchamb_flag, body, day_of_week, start_time)
     }
     
-
+    
     if ("interjection" %in% names(bus_start_fed)) {
       bus_start_fed <- bus_start_fed %>% unite("body", c(body, interjection), na.rm = T, sep=" ")
     }
@@ -262,31 +263,9 @@ parse_hansard <- function(filename){
   
   # in one case a pattern started with a "\" so remove that b\c gonna cause a lot of issues with regex matches later
   patterns_text <- patterns_text %>% as_tibble() %>% mutate(value = ifelse(str_detect(value, "^\\\\"),
-                                                          str_replace(value, "^\\\\", ""),
-                                                          value))
+                                                                           str_replace(value, "^\\\\", ""),
+                                                                           value))
   
-  # specific issue happening b/c no page number in subdebateinfo so the pattern is missing the page number and it's not matching right
-  # one-off case
-  if (filename=="2006-02-07.xml") {
-    patterns_text <- patterns_text %>% as_tibble() %>% mutate(value = ifelse(value=="814:27:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD",
-                                                                     "14:27:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD",
-                                                                     value)) %>% pull()
-  }
-  
-  # another issue specific to 2000 03 16 - a couple instances where name ID of speaker is P10000 or 110000 instead of 10000 - remove those
-  if (filename=="2000-03-16.xml"){
-    patterns_text <- patterns_text %>% as_tibble() %>% filter(!str_detect(value, "^P10000") & !str_detect(value, "^110000")) %>% pull()
-  }
-  
-  # weird transcription thing for this one- need to manually add pattern
-  if (filename=="2007-06-20.xml"){
-    patterns_text <- patterns_text %>% add_row(value="BALDWIN, Mr Robert Charles, Paterson19011.12 amBaldwin, Robert, MPLL6PatersonLP10Mr BALDWIN(Paterson—Parliamentary Secretary to the Minister for Industry, Tourism and Resources)(11.12 am)") %>% pull()
-  }
-  
-  # weird transcription thing for this one- need to manually add pattern
-  if (filename=="2005-09-12.xml"){
-    patterns_text <- patterns_text %>% add_row(value="JENKINS, Mr Harry Alfred, Scullin15110.39 pmJenkins, Harry, MPHH4ScullinALP00Mr JENKINS(Scullin)(10.39 pm)") %>% pull()
-  }
   
   # escape all special characters in patterns so the separations happen correctly
   # this is stored separately b/c when separating rows we need the one without the backslashes
@@ -306,104 +285,85 @@ parse_hansard <- function(filename){
   patterns_text <- patterns_text %>% as_tibble() %>% arrange(desc(str_length(value))) %>% pull()
   patterns_text_esc <- patterns_text_esc %>% as_tibble() %>% arrange(desc(str_length(value))) %>% pull()
   
-if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), homogeneous = T, collectNames = F))>0) {
-  
-  # first, extract all talk.start talker info, concatenate names, and unnest names so we have full name and display name
-  patterns_data <- item_df(xml_df, "//talk.start/talker") %>% 
-    mutate(name = map(name, c)) %>% 
-    unnest_wider(name, names_sep = "_")
-  
-  # usually there are two names - one full, and one short — we want both
-  # merge the talker info with the pattern, so we can use this as a look up table to merge with main
-  # this will let us fill in the right speaker details based on the pattern preceding the speech
-  if ("name_2" %in% names(patterns_data)) {
-    patterns_data <- patterns_data %>% rename(name = name_1,
-                                              name_short = name_2) %>% 
-      unnest(everything()) %>% 
-      merge(.,  item_df(xml_df, "//talk.start") %>% 
-              unnest(everything()),
-            by = "itemindex") %>% 
-      as_tibble()
+  if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), homogeneous = T, collectNames = F))>0) {
     
-    # usually the deputy speaker has an additional title included in the beginning of "para" in brackets
-    # we want to capture these b/c they're included in that pattern we want to match with/extract
-    # we can also use these as their name_short to replace the general "The DEPUTY SPEAKER" name short
-    patterns_data <- patterns_data %>% mutate(para = ifelse((str_detect(para, "^\\(.{1,35}\\)—[[:upper:]]") & str_detect(name, "SPEAKER")) | (str_detect(para, "^\\(.{1,35}\\)—[[:upper:]]") & str_detect(name_short, "DEPUTY SPEAKER")) | (str_detect(para, "^\\(.{1,35}\\)\\(.{1,10}\\)—[[:upper:]]")),
-                                                            str_extract(para, "^\\(.{1,35}\\)(?=—[[:upper:]])"),
-                                                            NA)) %>%
-      mutate(name_short = ifelse(!is.na(para), paste(str_remove_all(para, "^\\(|\\)$")),
-                                 name_short)) %>% 
-      rename(first_pattern = talker)
+    # first, extract all talk.start talker info, and unnest names so we have full name and display name
+    patterns_data <- item_df(xml_df, "//talk.start/talker") %>% 
+      mutate(name = map(name, c)) %>% 
+      unnest_wider(name, names_sep = "_")
     
-    # need to fix a wrong name given to Peter Slipper - specific case
-    if (filename == "2004-06-24.xml"){
-      patterns_data <- patterns_data %>% mutate(name = ifelse(name.id=="0V5" & name_short=="Mr SLIPPER" & name=="O'Connor, Brendan, MP", "Slipper, Peter, MP", name))
+    # usually there are two names. one full, and one short — we want both
+    # merge the talker info with the pattern, so we can use this as a look up table to merge with main
+    # this will let us fill in the right speaker details based on the pattern preceding the speech
+    if ("name_2" %in% names(patterns_data)) {
+      patterns_data <- patterns_data %>% rename(name = name_1,
+                                                name_short = name_2) %>% 
+        unnest(everything()) %>% 
+        merge(.,  item_df(xml_df, "//talk.start") %>% 
+                unnest(everything()),
+              by = "itemindex") %>% 
+        as_tibble()
+      
+      # usually the deputy speaker has an additional title included in the beginning of "para" in brackets
+      # we want to capture these b/c they're included in that pattern we want to match with/extract
+      # we can also use these as their name_short to replace the general "The DEPUTY SPEAKER" name short
+      patterns_data <- patterns_data %>% mutate(para = ifelse(str_detect(para, "^\\(.{1,35}\\)—[[:upper:]]") & str_detect(name, "DEPUTY"),
+                                                              str_extract(para, "^\\(.{1,35}\\)(?=—[[:upper:]])"),
+                                                              NA)) %>%
+        mutate(name_short = ifelse(!is.na(para), paste(str_remove_all(para, "^\\(|\\)$")),
+                                   name_short)) %>% 
+        rename(first_pattern = talker)
+      
+      # similar to what we did with patterns_text, sometimes para is pasted with space between so add extra rows with that space before we unite — so we have both pattern variations to match for
+      patterns_data <- patterns_data %>% filter(!is.na(para)) %>% mutate(para = paste0(" ", para)) %>% 
+        bind_rows(., patterns_data %>% filter(!is.na(para)) %>% mutate(para = paste0("", para))) %>% 
+        bind_rows(., patterns_data) %>% 
+        unite("first_pattern", c(first_pattern, para), sep="", na.rm = T) %>% 
+        mutate(role = {if("role" %in% names(.)) role else NA},
+               page.no = {if("role" %in% names(.)) page.no else NA},
+               time.stamp = {if("role" %in% names(.)) time.stamp else NA},
+               electorate = {if("role" %in% names(.)) electorate else NA},
+               party = {if("role" %in% names(.)) party else NA},
+               in.gov = {if("role" %in% names(.)) in.gov else NA},
+               first.speech = {if("role" %in% names(.)) first.speech else NA}) %>% 
+        # need to filter out any page numbers which contain text that were wrongly transcribed by hansard editors
+        filter(is.na(page.no) | str_detect(page.no, "\\d")) %>% 
+        select(page.no, time.stamp, name, name_short, name.id, electorate, party, role, in.gov, first.speech, first_pattern) %>% 
+        group_by(name) %>% 
+        fill(c(electorate, party, name.id), .direction = "downup") %>% 
+        ungroup() %>% 
+        unique()
+    } else if ("name_1" %in% names(patterns_data)) {
+      patterns_data <- patterns_data %>% rename(name = name_1) %>% 
+        mutate(name_short = NA) %>% 
+        unnest(everything()) %>% 
+        merge(.,  item_df(xml_df, "//talk.start") %>% 
+                select(itemindex, talker) %>% 
+                unnest(talker),
+              by = "itemindex") %>% 
+        as_tibble() %>% 
+        mutate(para = ifelse(str_detect(para, "^\\(.{1,35}\\)—[[:upper:]]") & str_detect(name, "DEPUTY"),
+                             str_extract(para, "^\\(.{1,35}\\)(?=—[[:upper:]])"),
+                             NA)) %>% 
+        mutate(name_short = ifelse(!is.na(para), paste(str_remove_all(para, "^\\(|\\)$")),
+                                   name_short)) %>% 
+        rename(first_pattern = talker) %>% 
+        mutate(role = {if("role" %in% names(.)) role else NA},
+               page.no = {if("role" %in% names(.)) page.no else NA},
+               time.stamp = {if("role" %in% names(.)) time.stamp else NA},
+               electorate = {if("role" %in% names(.)) electorate else NA},
+               party = {if("role" %in% names(.)) party else NA},
+               in.gov = {if("role" %in% names(.)) in.gov else NA},
+               first.speech = {if("role" %in% names(.)) first.speech else NA}) %>% 
+        select(page.no, time.stamp, name, name_short, name.id, electorate, party, role, in.gov, first.speech, first_pattern) %>% 
+        group_by(name) %>% 
+        fill(c(electorate, party, name.id), .direction = "downup") %>% 
+        ungroup() %>% 
+        unique()
     }
-    
-    # wrong name - checked pdf
-    if (filename=="2004-12-07.xml") {
-      patterns_data <- patterns_data %>% mutate(name = ifelse(first_pattern=="10000Melham, Daryl, MPThe DEPUTY SPEAKER", "Wilkie, Kim (The DEPUTY SPEAKER)", name))
-    }
-    
-    if (filename=="2002-03-13.xml"){
-      patterns_data <- patterns_data %>% mutate(name = ifelse(name.id=="0V5" & name_short=="Mr SLIPPER" & name=="Swan, Wayne, MP", "Slipper, Peter, MP", name))
-    }
-    
-    # specific issue to this date - name id was transcribed as jen10000Jenkins, Harry (The DEPUTY SPEAKER)The DEPUTY SPEAKER (Mr Jenkins)—
-    if (filename=="2004-03-02.xml"){
-      patterns_data <- patterns_data %>% mutate(name.id = ifelse(name.id=="jen10000Jenkins, Harry (The DEPUTY SPEAKER)The DEPUTY SPEAKER (Mr Jenkins)—", "10000", name.id))
-    }
-    
-    # similar to what we did with patterns_text, sometimes para is pasted with space between so add extra rows with that space before we unite — so we have both pattern variations to match for
-    patterns_data <- patterns_data %>% filter(!is.na(para)) %>% mutate(para = paste0(" ", para)) %>% 
-      bind_rows(., patterns_data %>% filter(!is.na(para)) %>% mutate(para = paste0("", para))) %>% 
-      bind_rows(., patterns_data) %>% 
-      unite("first_pattern", c(first_pattern, para), sep="", na.rm = T) %>% 
-      mutate(role = {if("role" %in% names(.)) role else NA},
-             page.no = {if("role" %in% names(.)) page.no else NA},
-             time.stamp = {if("role" %in% names(.)) time.stamp else NA},
-             electorate = {if("role" %in% names(.)) electorate else NA},
-             party = {if("role" %in% names(.)) party else NA},
-             in.gov = {if("role" %in% names(.)) in.gov else NA},
-             first.speech = {if("role" %in% names(.)) first.speech else NA}) %>% 
-      # need to filter out any page numbers which contain text that were wrongly transcribed by hansard editors
-      filter(is.na(page.no) | str_detect(page.no, "\\d")) %>% 
-      select(page.no, time.stamp, name, name_short, name.id, electorate, party, role, in.gov, first.speech, first_pattern) %>% 
-      group_by(name) %>% 
-      fill(c(electorate, party, name.id), .direction = "downup") %>% 
-      ungroup() %>% 
-      unique()
-  } else if ("name_1" %in% names(patterns_data)) {
-    patterns_data <- patterns_data %>% rename(name = name_1) %>% 
-      mutate(name_short = NA) %>% 
-      unnest(everything()) %>% 
-      merge(.,  item_df(xml_df, "//talk.start") %>% 
-              select(itemindex, talker) %>% 
-              unnest(talker),
-            by = "itemindex") %>% 
-      as_tibble() %>% 
-      mutate(para = ifelse(str_detect(para, "^\\(.{1,35}\\)—[[:upper:]]") & str_detect(name, "DEPUTY"),
-                           str_extract(para, "^\\(.{1,35}\\)(?=—[[:upper:]])"),
-                           NA)) %>% 
-      mutate(name_short = ifelse(!is.na(para), paste(str_remove_all(para, "^\\(|\\)$")),
-                                 name_short)) %>% 
-      rename(first_pattern = talker) %>% 
-      mutate(role = {if("role" %in% names(.)) role else NA},
-             page.no = {if("role" %in% names(.)) page.no else NA},
-             time.stamp = {if("role" %in% names(.)) time.stamp else NA},
-             electorate = {if("role" %in% names(.)) electorate else NA},
-             party = {if("role" %in% names(.)) party else NA},
-             in.gov = {if("role" %in% names(.)) in.gov else NA},
-             first.speech = {if("role" %in% names(.)) first.speech else NA}) %>% 
-      select(page.no, time.stamp, name, name_short, name.id, electorate, party, role, in.gov, first.speech, first_pattern) %>% 
-      group_by(name) %>% 
-      fill(c(electorate, party, name.id), .direction = "downup") %>% 
-      ungroup() %>% 
-      unique()
+  } else {
+    patterns_data <- tibble()
   }
-} else {
-  patterns_data <- tibble()
-}
   
   # add motionnospeech data as well, remove repeated rows
   if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//motionnospeech"), homogeneous = T, collectNames = F))>0) {
@@ -422,67 +382,63 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
       unique()
   }
   
-  # specific issue happening b/c no page number in subdebateinfo so the pattern is missing the page number and it's not matching right
-  # one-off case
-  if (filename=="2006-02-07.xml") {
-    patterns_data <- patterns_data %>% mutate(first_pattern = ifelse(first_pattern=="814:27:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD",
-                                                                     "14:27:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD",
-                                                                     first_pattern))
+  # specific to dec 10 1998 - ms macklin given dr wooldridge's name, party and electorate - had to manually fix so when we merge on pattern the right info is filled in
+  if (filename=="1998-12-10.xml"){
+    patterns_data <- patterns_data %>% mutate(name = ifelse(first_pattern=="PG6Wooldridge, Dr Michael, MPMs MACKLIN",
+                                                            "Macklin, Jenny, MP",
+                                                            name),
+                                              electorate = ifelse(first_pattern=="PG6Wooldridge, Dr Michael, MPMs MACKLIN",
+                                                                  "Jagajaga",
+                                                                  electorate),
+                                              party = as.factor(ifelse(first_pattern=="PG6Wooldridge, Dr Michael, MPMs MACKLIN",
+                                                                       "ALP",
+                                                                       as.character(party))))
+    
+    patterns_data <- patterns_data %>% mutate(name = ifelse(first_pattern=="10000Bailey, Fran, MPMr DEPUTY SPEAKER (Mr Jenkins)",
+                                                            "DEPUTY SPEAKER",
+                                                            name),
+                                              electorate = ifelse(first_pattern=="10000Bailey, Fran, MPMr DEPUTY SPEAKER (Mr Jenkins)",
+                                                                  "NA",
+                                                                  electorate),
+                                              party = as.factor(ifelse(first_pattern=="10000Bailey, Fran, MPMr DEPUTY SPEAKER (Mr Jenkins)",
+                                                                       NA,
+                                                                       as.character(party))))
   }
   
-  # another issue specific to 2000 03 16 - a couple instances where name ID of speaker is P10000 instead of 10000 - remove those
-  if (filename=="2000-03-16.xml"){
-    patterns_data <- patterns_data %>% filter(!str_detect(first_pattern, "^P10000") & !str_detect(first_pattern, "^110000")) 
+  # another specific issue i'm fixing manually
+  if (filename=="1999-06-22.xml"){
+    patterns_data <- patterns_data %>% mutate(name.id = ifelse(name=="Vaile, Mark, MP" & name.id=="10000", "SU5", name.id))
   }
   
-  # one-off case, name ID was put in wrong in one place causing problems
-  if (filename=="2000-08-17.xml") {
-    patterns_data <- patterns_data %>% filter(first_pattern!="T4Ronaldson, Michael, MPMr RONALDSON") %>% unique()
-    patterns_text <- patterns_text %>% filter(value!="T4Ronaldson, Michael, MPMr RONALDSON")
+  # issue with sep 29 1999, Speaker given Jann MacFarlane's details, and some of her details were also missing
+  if (filename=="1999-09-29.xml"){
+    patterns_data <- patterns_data %>% mutate(name = ifelse(first_pattern=="UNKNOWNMs JANN McFARLANEMr SPEAKER", "SPEAKER", name),
+                                              name.id = ifelse(first_pattern=="UNKNOWNMs JANN McFARLANEMr SPEAKER", "10000", name.id),
+                                              electorate = ifelse(first_pattern=="UNKNOWNMs JANN McFARLANEMr SPEAKER", NA, electorate),
+                                              party = as.factor(ifelse(first_pattern=="UNKNOWNMs JANN McFARLANEMr SPEAKER", NA, as.character(party)))) %>% 
+      mutate(name.id = ifelse(name.id=="UNKNOWN", NA, name.id)) %>% 
+      mutate(name.id = ifelse(first_pattern=="10913Ms JANN McFARLANEMs JANN McFARLANEUNKNOWNUNKNOWNUNKNOWNUNKNOWN00", "83C", name.id),
+             name = ifelse(first_pattern=="10913Ms JANN McFARLANEMs JANN McFARLANEUNKNOWNUNKNOWNUNKNOWNUNKNOWN00", "McFarlane, Jann, MP", name),
+             electorate = ifelse(first_pattern=="10913Ms JANN McFARLANEMs JANN McFARLANEUNKNOWNUNKNOWNUNKNOWNUNKNOWN00", "Stirling", electorate),
+             party = as.factor(ifelse(first_pattern=="10913Ms JANN McFARLANEMs JANN McFARLANEUNKNOWNUNKNOWNUNKNOWNUNKNOWN00", "ALP", as.character(party))))
+    
+    # Allan Morris given Joe Hockey's name id by accident
+    patterns_data <- patterns_data %>% mutate(name.id = ifelse(first_pattern=="DK6Morris, Allan, MPMr ALLAN MORRIS", "FI4", name.id))
   }
   
-  # weird transcription issue, add row manually
-  if (filename=="2007-06-20.xml"){
-    patterns_data <- patterns_data %>% add_row(page.no = "190", 
-                                               time.stamp = "11:12:00", 
-                                               name = "Baldwin, Robert, MP",
-                                               name.id = "LL6",
-                                               electorate = "Paterson",
-                                               party = "LP",
-                                               role = "Parliamentary Secretary to the Minister for Industry, Tourism and Resources",
-                                               in.gov = "1",
-                                               first.speech = "0",
-                                               first_pattern = "BALDWIN, Mr Robert Charles, Paterson19011.12 amBaldwin, Robert, MPLL6PatersonLP10Mr BALDWIN(Paterson—Parliamentary Secretary to the Minister for Industry, Tourism and Resources)(11.12 am)")
-  }
-  
-  # same as above, different date
-  if (filename=="2005-09-12.xml"){
-    patterns_data <- patterns_data %>% add_row(page.no = "151", 
-                                               time.stamp = "10:39:00", 
-                                               name = "Jenkins, Harry, MP",
-                                               name.id = "HH4",
-                                               electorate = "Scullin",
-                                               party = "ALP",
-                                               role = NA,
-                                               in.gov = "0",
-                                               first.speech = "0",
-                                               first_pattern = "JENKINS, Mr Harry Alfred, Scullin15110.39 pmJenkins, Harry, MPHH4ScullinALP00Mr JENKINS(Scullin)(10.39 pm)")
+  if (filename=="1999-12-09.xml"){
+    patterns_data <- patterns_data %>% mutate(name = ifelse(first_pattern=="10000Anderson, John, MPMr SPEAKER", "SPEAKER", name),
+                                              electorate = ifelse(first_pattern=="10000Anderson, John, MPMr SPEAKER", NA, electorate),
+                                              party = as.factor(ifelse(first_pattern=="10000Anderson, John, MPMr SPEAKER", NA, as.character(party))))
+    
+    patterns_data <- patterns_data %>% mutate(name.id = ifelse(first_pattern=="ZD4Beazley, Kim, MPMr BEAZLEY", "PE4", name.id)) 
+    
+    
   }
   
   
   # saw this on 2002—05—16 — caused issues with merge later on b/c two full name versions
   patterns_data <- patterns_data %>% mutate(name = ifelse(name=="Mr MARTIN FERGUSON,AM, MP", "Ferguson, Martin, MP", name))
-  
-  # saw this on 2002—08—19 — caused issues with merge later on b/c two full name versions
-  patterns_data <- patterns_data %>% mutate(name = ifelse(name=="Mr WILLIAMS,AM, QC, MP", "Williams, Daryl, MP", name))
-  
-  if (filename=="2002-05-15.xml"){
-    patterns_data <- patterns_data %>% mutate(name = ifelse(name=="Mossfield, Frank, MP" & name.id=="0V5" & name_short=="Mr SLIPPER",
-                                           "Slipper, Peter, MP",
-                                           name),
-                             party = ifelse(name=="Slipper, Peter, MP", "LP", as.character(party)),
-                             electorate = ifelse(name=="Slipper, Peter, MP", "Fisher", electorate))
-  }
   
   # saw on 2010—06—21 that a page number was captured as a time by accident? should've been time stamp — i need to come back to this
   patterns_data <- patterns_data %>% filter(!grepl("\\.", page.no))
@@ -491,16 +447,15 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   patterns_data <- patterns_data %>% group_by(first_pattern) %>% filter(!(n()>1 & str_detect(name, "DEPUTY") & str_detect(name_short, "DEPUTY"))) %>% ungroup()
   
   # saw this on 2005—05—31 — two page numbers, let's go with bigger one (checked and this is correct in XML based on preceding/following statement page numbers)
-  # third condition of filer is for cases where there are two or more of the same first pattern but there are no page numbers for any of them
   patterns_data <-  patterns_data %>% group_by(first_pattern) %>% 
     mutate(page.no=as.numeric(page.no)) %>% 
-    filter(n()>1 & !is.na(page.no) & page.no==max(page.no) | n()==1 | n()>1 & is.na(page.no)) %>% 
+    filter(n()>1 & page.no==max(page.no) | n()==1) %>% 
     ungroup()
   
   # sometimes the party or electorate of the speaker is given but sometimes not, and when we merge with first pattern we'll get a row for both if both exist
   # so, lets just keep those as NA for the speaker b/c they can be backed out later on
   patterns_data <- patterns_data %>% mutate(electorate = ifelse(str_detect(name, "^SPEAKER"), NA, electorate),
-                           party = ifelse(str_detect(name, "^SPEAKER"), NA, party)) %>% unique()
+                                            party = as.factor(ifelse(str_detect(name, "^SPEAKER"), NA, as.character(party)))) %>% unique()
   
   # if there is a duplicated first pattern due to different name_short, take the longer one
   if (nrow(patterns_data %>% filter(duplicated(first_pattern)))>0) {
@@ -677,87 +632,23 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
     # we need to just keep those patterns that have page numbers b/c otherwise there will be splitting issues
     # if the pattern is in the middle of a speech, it'll be separated there
     if (nrow(as_tibble(sub1_patterns_info) %>% filter(!str_detect(value, "\\d")))>0) {
-      
-      # need this extra conditional b/c sometimes nodes are named differently, and want to make sure we have everything
-      if ("subdebateinfo" %in% names(item_df(xml_df, "//subdebate.1")) & "subdebate.2" %in% names(item_df(xml_df, "//subdebate.1"))) {
-        # going to grab the patterns that are just words, and check if they have subdebate2 patterns associated, and then paste those together to replace the pattern we would've filtered out
-        sub1_patterns_info <- item_df(xml_df, "//subdebate.1") %>% select(subdebateinfo, subdebate.2) %>% 
-          unnest(everything()) %>% 
-          filter(!is.na(subdebate.2)) %>% 
-          filter(!str_detect(subdebateinfo, "\\d")) %>% 
-          mutate(subdebate.2 = str_match(subdebate.2, paste0(sub2_patterns_info, collapse = "|"))) %>% 
-          unite("value", everything(),  sep="") %>% pull(value) %>% c(sub1_patterns_info, .) %>% 
-          as_tibble() %>% 
-          filter(str_detect(value, "\\d")) %>% 
-          pull(value)
-      } else {
-        # else, just remove the patterns with no page numbers to avoid splitting issues
-        # will deal with any leftover pattern problems manually
-        sub1_patterns_info <- sub1_patterns_info %>% as_tibble() %>% 
-          filter(str_detect(value, "\\d")) %>% 
-          pull(value)
-      }
+      sub1_patterns_info <- sub1_patterns_info %>% as_tibble() %>% 
+        filter(str_detect(value, "\\d")) %>% 
+        pull(value)
     }
   }
   
-  # specific issue where pattern is someones role followed by their in.gov value which we don't want to split on b/c that'll mess up the speech start patterns later on
-  # this one shouldn't be included in sub1 patterns - remove it
-  if (filename=="2003-08-19.xml") {
-   sub1_patterns_info <- sub1_patterns_info %>% as_tibble() %>% filter(value!="Minister for Regional Services, Territories and Local Government1") %>% pull(value)
+  # let's arrange the subdebate pattern vectors so the longest patterns are first
+  # this way, the first match will be the longest match and the pattern is more likely to capture everything
+  # example - if we have two patterns that are similar but one is longer and the shorter one is first, the shorter one will match and then some leftover bits that we would've wanted to remove from the pattern will be left over
+  if (length(sub1_patterns_info)){
+    sub1_patterns_info <- sub1_patterns_info %>% as_tibble() %>% arrange(desc(str_length(value))) %>% pull()
   }
-  
-  # same idea as a above, for diff day
-  # need to add full pattern version so we capture what we need without splitting on wrong things
-  if (filename=="2007-05-28.xml") {
-    sub1_patterns_info <- sub1_patterns_info %>% as_tibble() %>% filter(value!="Legal and Constitutional Affairs Committee1") %>% 
-      add_row(value="Legal and Constitutional Affairs Committee1Report1") %>% 
-      pull(value)
+ 
+   if (length(sub2_patterns_info)){
+    sub2_patterns_info <- sub2_patterns_info %>% as_tibble() %>% arrange(desc(str_length(value))) %>% pull()
   }
-  
-  # two subdebate1 titles, needs special pasting together
-  if (filename=="2003-11-04.xml"){
-    sub1_patterns_info <- sub1_patterns_info %>% as_tibble() %>% filter(value!="Communications, Information Technology and the Arts Committee21939" & value!="Treaties Committee21938") %>% 
-      add_row(value = "Treaties Committee21938 Communications, Information Technology and the Arts Committee21939") %>% 
-      pull(value)
-  }
-  
-  # this was removed above but we need to add back in and won't be an issue b/c doesn't exist in the middle of any speeches (checked)
-  if (filename=="2008-10-13.xml"){
-    sub1_patterns_info <- c(sub1_patterns_info, "Sydney Airport\\: East-West Runway")
-  }
-  
-  # this pattern is missing because editors forgot a page number so it was filtered out, let's add it manually
-  if (filename=="2006-03-01.xml"){
-    sub1_patterns_info <- c(sub1_patterns_info, "Oil for Food Program67")
-  }
-  
-  if (filename=="2006-12-07.xml"){
-    sub1_patterns_info <- c(sub1_patterns_info, "Reserve Bank of Australia76")
-  }
-  
-  if (filename=="2007-03-27.xml"){
-    sub1_patterns_info <- c(sub1_patterns_info, "Report19")
-  }
-  
-  if (filename=="2007-05-10.xml"){
-    sub1_patterns_info <- c(sub1_patterns_info, "Economy73")
-  }
-  
-  # missing space in pattern, need to manually fix
-  if (filename=="2002-08-26.xml"){
-    sub1_patterns_info <- sub1_patterns_info %>% as_tibble() %>% 
-      mutate(value = str_replace(value, 
-                                 "Public Works Committee Foreign Affairs, Defence and Trade Committee5636Foreign Affairs, Defence and Trade Committee", 
-                                 "Public Works Committee Foreign Affairs, Defence and Trade Committee5636 Foreign Affairs, Defence and Trade Committee")) %>% 
-      add_row(value = "VETERANS' AFFAIRS LEGISLATION AMENDMENT BILL \\(No\\. 1\\) 2002 Second Reading5658") %>% 
-      filter(value!="Second Reading5658") %>% 
-      pull(value)
-  }
-  
-  if (filename=="2005-05-30.xml"){
-    sub1_patterns_info <- sub1_patterns_info %>% as_tibble() %>% filter(value!="Budget 2005-0636") %>% pull(value)
-  }
-  
+
   # First separate rows at each sub debate pattern, so we know where each unique debate starts
   # sometimes when we separate rows on a pattern at the beginning of a body, an empty body is left behind, so just filter those out
   # add "(?!, | |\\?|\\. |\\.Th)" to avoid splitting when pattern is part of sentence
@@ -766,85 +657,22 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
       filter(body!="")
   }
   
-  # from 2010-10-26 - sub1 patterns had "Hon\\. Kenneth Shaw WriedtReport from Main Committee1579"  and "Report from Main Committee1579"
-  # after splitting as we did above, the "Hon\\. Kenneth Shaw Wriedt" wasn't captured so it was just left on it's own row
-  # get rid of that
-  if (filename=="2010-10-26.xml"){
-    debate_text_all <- debate_text_all %>% filter(body!="Hon. Kenneth Shaw Wriedt")
+  # first bit of pattern is being split despite arranging in descending length, so manually remove the row that just contains the bit of pattern
+  if (filename=="1998-03-02.xml"){
+    debate_text_all <- debate_text_all %>% filter(body!="Ministerial Reply")
   }
   
-  # same idea as above, with "Condolences"
-  if (filename=="2011-02-21.xml" | filename=="2007-05-08.xml"){
-    debate_text_all <- debate_text_all %>% filter(body!="Condolences: ")
+  # same idea as above
+  if (filename=="1998-04-01.xml"){
+    debate_text_all <- debate_text_all %>% filter(!str_detect(body, "^Discharge of $"))
   }
   
-  if (filename=="2000-09-07.xml"){
-    debate_text_all <- debate_text_all %>% filter(body!="Minister for Health and Aged Care: ")
+  if (filename=="1998-05-25.xml"){
+    debate_text_all <- debate_text_all %>% filter(!str_detect(body, "^Goods and Services Tax: $"))
   }
   
-  if (filename=="2001-06-07.xml"){
-    debate_text_all <- debate_text_all %>% filter(body!="Hansard: ")
-  }
   
-  if (filename=="2002-06-27.xml"){
-    debate_text_all <- debate_text_all %>% filter(body!="Parliament: ")
-  }
-  
-  if (filename=="2003-11-26.xml"){
-    debate_text_all <- debate_text_all %>% filter(body!="Consideration of ")
-  }
-  
-  if (filename=="2006-12-04.xml"){
-    debate_text_all <- debate_text_all %>% filter(body!="Hon. Kim Beazley")
-  }
-  
-  # pattern issue - this one question's subdebateinfo was missing a page number, causing an issue when we tried to remove the pattern later
-  # i fixed this manually by adding the correct page number, 8, that will allow for correct splitting and removal of the pattern
-  if (filename=="2007-02-08.xml"){
-    debate_text_all <- debate_text_all %>% mutate(body = ifelse(str_detect(body, "^Water814:15:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD—My question is also to the Treasurer"),
-                                             str_replace(body, "Water814:15:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD—My question is also to the Treasurer", "Water8814:15:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD—My question is also to the Treasurer"),
-                                             body))
-  }
-  
-  # same idea as above - missing page number, handle it manually
-  if (filename=="2006-03-01.xml"){
-    debate_text_all <- debate_text_all %>% mutate(body = ifelse(str_detect(body, "^Oil for Food Program6714:07:00Beazley, Kim, MPPE4BrandALP0Mr BEAZLEY—My question is to the Deputy Prime Minister"),
-                                                                str_replace(body, "Oil for Food Program6714:07:00Beazley, Kim, MPPE4BrandALP0Mr BEAZLEY—My question is to the Deputy Prime Minister", "Oil for Food Program676714:07:00Beazley, Kim, MPPE4BrandALP0Mr BEAZLEY—My question is to the Deputy Prime Minister"),
-                                                                body))
-  }
-  
-  if (filename=="2006-12-07.xml"){
-    debate_text_all <- debate_text_all %>% mutate(body = ifelse(str_detect(body, "^Reserve Bank of Australia7614:20:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD—My question is to the Prime Minister\\. It refers to the Treasurer’s last answer"),
-                                                                str_replace(body, "Reserve Bank of Australia7614:20:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD—My question is to the Prime Minister\\. It refers to the Treasurer’s last answer", "Reserve Bank of Australia767614:20:00Rudd, Kevin, MP83TGriffithALP0Mr RUDD—My question is to the Prime Minister. It refers to the Treasurer’s last answer"),
-                                                                body))
-  }
-  
-  if (filename=="2007-03-27.xml"){
-    debate_text_all <- debate_text_all %>% mutate(body = ifelse(str_detect(body, "^Report1915:20:00Pyne, Chris, MP9V5SturtLPMinister for Ageing10Mr PYNE—Mr Speaker, on indulgence"),
-                                                                str_replace(body, "Report1915:20:00Pyne, Chris, MP9V5SturtLPMinister for Ageing10Mr PYNE—Mr Speaker, on indulgence", "Report191915:20:00Pyne, Chris, MP9V5SturtLPMinister for Ageing10Mr PYNE—Mr Speaker, on indulgence"),
-                                                                body))
-  }
-  
-  if (filename=="2007-05-10.xml"){
-    debate_text_all <- debate_text_all %>% mutate(body = ifelse(str_detect(body, "^Economy7314:00:00Swan, Wayne, MP2V5LilleyALP0Mr SWAN—My question is directed to the Treasurer"),
-                                                                str_replace(body, "Economy7314:00:00Swan, Wayne, MP2V5LilleyALP0Mr SWAN—My question is directed to the Treasurer", "Economy737314:00:00Swan, Wayne, MP2V5LilleyALP0Mr SWAN—My question is directed to the Treasurer"),
-                                                                body))
-  }
-  
-  if (filename=="2009-02-11.xml"){
-    debate_text_all <- debate_text_all %>% mutate(body = ifelse(str_detect(body, "^884Suspension of Standing and Sessional OrdersSuspension of Standing and Sessional Orders 88410:13:00Albanese, Anthony, MPR36GrayndlerALPLeader of the House10"),
-                                                                str_replace(body, "884Suspension of Standing and Sessional OrdersSuspension of Standing and Sessional Orders 88410:13:00Albanese, Anthony, MPR36GrayndlerALPLeader of the House10", "88410:13:00Albanese, Anthony, MPR36GrayndlerALPLeader of the House10"),
-                                                                body))
-  }
-  
-  if (filename=="2008-11-25.xml"){
-    debate_text_all <- debate_text_all %>% mutate(body = ifelse(str_detect(body, "^Returned from the SenateMessage received from the Senate returning the bills without amendment or request\\.$"),
-                                                                str_replace(body, "Returned from the SenateMessage received from the Senate returning the bills without amendment or request\\.", "Message received from the Senate returning the bills without amendment or request."),
-                                                                body))
-  }
-  
-  # info stuff only necessary for very first part of speech — clean those up by matching for them and removing them
-  # when sub2 exists, it's nested in sub1, so it'll have both debate titles
+  # info stuff only necessary for very first part of speech — clean those up
   # needed to add (?!, | |\\?|\\. |\\.Th) b/c sometimes a pattern is actually used in a sentence (2009—02—04 example) and we don't want to remove those
   if (length(sub1_patterns_info)>0 & length(sub2_patterns_info)>0) {
     main <- debate_text_all %>% mutate(sub1_pattern = ifelse(str_detect(body, paste0("(?<!the |our |so—called |Minister for )", sub1_patterns_info, "(?!, | |\\?|\\. |\\.Th)", collapse = "|")),
@@ -853,21 +681,21 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                                        sub2_pattern = ifelse(str_detect(body, paste0(sub2_patterns_info, collapse = "|")),
                                                              str_match(body, paste0(sub2_patterns_info, collapse = "|")),
                                                              NA),
-                                       sub1_pattern = str_replace_all(sub1_pattern, "\\(","\\\\("),
-                                       sub1_pattern = str_replace_all(sub1_pattern, "\\)","\\\\)"),
-                                       sub1_pattern = str_replace_all(sub1_pattern, "\\:","\\\\:"),
-                                       sub1_pattern = str_replace_all(sub1_pattern, "\\.","\\\\."),
-                                       sub1_pattern = str_replace_all(sub1_pattern, "\\?","\\\\?"),
-                                       sub2_pattern = str_replace_all(sub2_pattern, "\\(","\\\\("),
-                                       sub2_pattern = str_replace_all(sub2_pattern, "\\)","\\\\)"),
-                                       sub2_pattern = str_replace_all(sub2_pattern, "\\:","\\\\:"),
-                                       sub2_pattern = str_replace_all(sub2_pattern, "\\.","\\\\."),
-                                       sub2_pattern = str_replace_all(sub2_pattern, "\\?","\\\\?"),
-                                       sub2_pattern = str_replace_all(sub2_pattern, "\\*","\\\\*"),
                                        sub2_pattern = ifelse(!is.na(sub1_pattern) & !is.na(sub2_pattern) 
                                                              & str_detect(body, paste0(sub1_pattern, sub2_pattern)),
-                                                             paste0(sub1_pattern, sub2_pattern),
+                                                             str_match(body, paste0(sub1_pattern, sub2_pattern)),
                                                              NA)) %>% 
+      mutate(sub1_pattern = str_replace_all(sub1_pattern, "\\(","\\\\("),
+             sub1_pattern = str_replace_all(sub1_pattern, "\\)","\\\\)"),
+             sub1_pattern = str_replace_all(sub1_pattern, "\\:","\\\\:"),
+             sub1_pattern = str_replace_all(sub1_pattern, "\\.","\\\\."),
+             sub1_pattern = str_replace_all(sub1_pattern, "\\?","\\\\?"),
+             sub2_pattern = str_replace_all(sub2_pattern, "\\(","\\\\("),
+             sub2_pattern = str_replace_all(sub2_pattern, "\\)","\\\\)"),
+             sub2_pattern = str_replace_all(sub2_pattern, "\\:","\\\\:"),
+             sub2_pattern = str_replace_all(sub2_pattern, "\\.","\\\\."),
+             sub2_pattern = str_replace_all(sub2_pattern, "\\?","\\\\?"),
+             sub2_pattern = str_replace_all(sub2_pattern, "\\*","\\\\*")) %>% 
       mutate(body = ifelse(!is.na(sub2_pattern) & str_detect(body, paste0("^", sub2_pattern)),
                            str_remove(body, paste0("^", sub2_pattern)),
                            body),
@@ -969,13 +797,6 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
       rowid_to_column("speech_no")
   }
   
-  # specific pattern issue - fix manually
-  if (filename=="2003-06-24.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "^Reference17311Mr LLOYD \\(Robertson\\) \\(4\\.24 p\\.m\\.\\)—by leave—I move:That the following order of the day"),
-                                          str_replace(body, "^Reference17311Mr LLOYD \\(Robertson\\) \\(4\\.24 p\\.m\\.\\)—by leave—I move:That the following order of the day", "Mr LLOYD (Robertson) (4.24 p.m.)—by leave—I move:That the following order of the day"),
-                                          body))
-  }
-  
   # grab nrow to check in after merge
   main_row_here <- nrow(main)
   
@@ -1029,33 +850,6 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                                         str_replace_all(body, "(?<!1)0000SPEAKER, MrMr SPEAKER", "10000SPEAKER, MrMr SPEAKER"),
                                         body))
   
-  # issue with name id on one statement, messing up pattern, need to fix manually
-  if (filename=="2000-08-17.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "84HZahra, Christian, MPT4Ronaldson, Michael, MPMr RONALDSON—I think I might take the interjection from the member for McMillan"),
-                                          str_replace(body, "84HZahra, Christian, MPT4Ronaldson, Michael, MPMr RONALDSON—I think I might take the interjection from the member for McMillan",
-                                                      "84HZahra, Christian, MPXT4Ronaldson, Michael, MPMr RONALDSON—I think I might take the interjection from the member for McMillan"),
-                                          body))
-    
-    patterns_text <- patterns_text %>% as_tibble() %>% filter(value!="T4Ronaldson, Michael, MPMr RONALDSON") %>% pull()
-    patterns_text_esc <- patterns_text_esc %>% as_tibble() %>% filter(value!="T4Ronaldson, Michael, MPMr RONALDSON") %>% pull()
-  }
-  
-  # messed up pattern b/c name id of speaker is sometimes P10000 or 110000, need to fix manually
-  if (filename=="2000-03-16.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "to whip up is going to have the desired effect\\.P10000Nehl, Garry \\(Mr DEPUTY SPEAKER\\)Mr DEPUTY SPEAKER \\(Mr Nehl\\)"),
-                                  str_replace(body, "to whip up is going to have the desired effect\\.P10000Nehl, Garry \\(Mr DEPUTY SPEAKER\\)Mr DEPUTY SPEAKER \\(Mr Nehl\\)", "to whip up is going to have the desired effect.10000Nehl, Garry (Mr DEPUTY SPEAKER)Mr DEPUTY SPEAKER (Mr Nehl)"),
-                                  body),
-                    body = ifelse(str_detect(body, "asking for an opinion from the minister and, as such, should be ruled out of order\\.P10000SPEAKER, MrMr SPEAKER—The member for Farrer makes real what is a difficult"),
-                                  str_replace(body, "asking for an opinion from the minister and, as such, should be ruled out of order\\.P10000SPEAKER, MrMr SPEAKER—The member for Farrer makes real what is a difficult", "asking for an opinion from the minister and, as such, should be ruled out of order.10000SPEAKER, MrMr SPEAKER—The member for Farrer makes real what is a difficult"),
-                                  body),
-                    body = ifelse(str_detect(body, "PE4Beazley, Kim, MP110000SPEAKER, MrMr SPEAKER—Leader of the Opposition\\!"),
-                                  str_replace(body, "PE4Beazley, Kim, MP110000SPEAKER, MrMr SPEAKER—Leader of the Opposition\\!", "PE4Beazley, Kim, MP10000SPEAKER, MrMr SPEAKER—Leader of the Opposition!"),
-                                  body),
-                    body = ifelse(str_detect(body, "rules which apply—CE4O'Keefe, Neil, MP110000SPEAKER, MrMr SPEAKER—The Treasurer will resume his seat"),
-                                  str_replace(body, "rules which apply—CE4O'Keefe, Neil, MP110000SPEAKER, MrMr SPEAKER—The Treasurer will resume his seat", "rules which apply—CE4O'Keefe, Neil, MP10000SPEAKER, MrMr SPEAKER—The Treasurer will resume his seat"),
-                                  body))
-  }
-  
   # separate rows on patterns
   # sometimes it's too long — we need to split on subsets of the patterns if this is the case
   if (length(patterns_text_esc)>400) {
@@ -1071,10 +865,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   main <- main %>% filter(!str_detect(body, paste0("^", name.id, "$")))
   
   # 2010-06-21 saw a row that was just a sub2 pattern - remove this
-  main <- main %>% filter(!str_detect(body, paste0("^", sub2_patterns_info, "[[:space:]]{0,1}$", collapse = "|")))
-  
-  # same idea but for sub1 pattern
-  main <- main %>% filter(!str_detect(body, paste0("^", sub1_patterns_info, "[[:space:]]{0,1}$", collapse = "|")))
+  main <- main %>% filter(!str_detect(body, paste0("^", sub2_patterns_info, "$", collapse = "|")))
   
   # define general interjections to split on
   # dec 13 - removed The Clerk- b/c causing issues since the clerk is often written like "10000The ClerkThe Clerk—" and it was separating this in half (tried neg. lookbehind but caused issues later)
@@ -1089,7 +880,11 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                          "Honourable member and senators—", "Opposition member—", "Opposition members—")
   
   # separate rows on general interjections
-  main <- separate_rows(main, body, sep=paste0("(?=", interject_general, ")(?!", interject_general, "[[:space:]]on[[:space:]]my)(?!", interject_general, "[[:space:]]having)(?!", interject_general, "[[:space:]]standing)(?!", interject_general, "[[:space:]]will )(?!", interject_general, "[[:space:]]can )",collapse="|"))
+  main <- separate_rows(main, body, sep=paste0("(?=", interject_general, ")(?!", interject_general, "[[:space:]]on[[:space:]]my)(?!", interject_general, "[[:space:]]having)(?!", interject_general, "[[:space:]]standing)(?!", interject_general, "[[:space:]]will )(?!", interject_general, "[[:space:]]can )",  collapse="|"))
+  
+  # remove any rows that are just like "UNKNOWNOpposition members" - this comes from splitting out general interjections where this bit of pattern precedes the interjection
+  # for example, original row would be "UNKNOWNOpposition membersOpposition members-Hear hear!" - just get rid of preceding pattern bit
+  main <- main %>% filter(!str_detect(body, "^UNKNOWNOpposition members$|^UNKNOWNHonourable members$|^UNKNOWNOpposition member$|^UNKNOWNHonourable member$|^UNKNOWNGovernment members$|^UNKNOWNGovernment member$"))
   
   # define stage notes
   stage_notes <- c("Bill read a [[:alpha:]]{0,10}[[:space:]]time\\.",
@@ -1103,12 +898,8 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "The House divided\\.",
                    "The House divided\\.     ",
                    "Question put\\.",
-                   "Ordered that the report be made a parliamentary paper",
-                   "Question put:[[:space:]]{0,1}That this bill be now read a second time",
-                   "Question put:That this bill be now read a second time\\.",
                    "Cognate bills:",
                    "Cognate bill:",
-                   "Message No\\. 135 of 23 October 2002 received from the Senate acquainting the House that, in accordance with",
                    "Question negatived\\.",
                    "Question proposed\\. That grievances be noted\\.",
                    "Original question agreed to\\.",
@@ -1137,8 +928,6 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Members and senators rising and applauding,.{1,50}left the chamber\\.",
                    "Proposed expenditure agreed to\\.",
                    "Bill agreed to\\.",
-                   "Bill and explanatory memorandum presented by",
-                   "Bill and explanatory memorandum and—by leave—a regulation",
                    "The following papers were deemed to have been presented on \\d{1,2} [[:alpha:]]{1,10} \\d{4}\\:",
                    "Bill returned from Main Committee with amendments; certified copy of bill and schedule of amendments presented\\.Ordered that the bill be taken into consideration forthwith\\.",
                    "Bill returned from Main Committee without amendment; certified copy presented\\.Ordered that the bill be taken into consideration forthwith\\.",
@@ -1154,19 +943,15 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Bill, explanatory memorandum and the report of the Committee for the Review of Parliamentary Entitlements presented by.{1,35}\\.",
                    "Bill returned from Main Committee without having been fully considered; certified copy presented\\.Ordered that the bill be taken into consideration forthwith\\.",
                    "Order of the day returned from Main Committee for further consideration; certified copy of the motion presented\\.",
-                   "Order of the day returned from Main Committee for further consideration;",
+                   "Order of the day returned from Main Committee for further consideration; certified copy presented\\.",
                    "Order of the day reported from Main Committee; certified copy of the report presented\\.",
                    "Bill returned from Main Committee with amendments, message from the Governor-General recommending appropriation for proposed amendments having been reported; certified copy of bill and schedule of the amendments presented\\.Ordered that the bill be taken into consideration forthwith\\.",
                    "Bill—by leave—and explanatory memorandum presented by .{1,35}\\.",
                    "Bill and explanatory memorandum presented by .{1,35}\\.",
                    "Bill and explanatory memorandum presented by\\n.{1,35}\\.",
                    "Bill and explanatory memorandum presented by\\n.{1,35}\\nfor .{1,35}\\.",
-                   "Bill and explanatory memorandum—by leave—presented by",
-                   "Bill, explanatory memorandum and regulation impact statement presented",
-                   "Bill, explanatory memorandum and regulatory impact statement presented by",
                    "Ordered that the order of the day be considered immediately\\.",
                    "Order of the day returned from Main Committee with an unresolved question\\.Ordered that the matter be taken into consideration forthwith\\.Unresolved question\\—That further proceedings be conducted in the House\\.Question resolved in the [[:alpha:]]{5,15}\\.Ordered that further consideration of the matter be set down as an order of the day for the next sitting\\.",
-                   "Order of the day returned from the Main Committee",
                    "Bill returned from the Senate with amendments\\.",
                    "Consideration resumed.{0,40}\\.",
                    "Consideration resumed from \\d{1,2} [[:alpha:]]{1,10}",
@@ -1181,16 +966,14 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Messages received from the Senate returning the bills without amendment or request\\.",
                    "Message received from the Senate requesting the House to consider immediately the .{1,200}\\.",
                    "Message received from the Senate acquainting the House that the Senate has agreed to a resolution extending until .{1,500}\\.",
-                   "Message from Governor-General recommending.{1,250}\\.",
                    "Ordered that this bill be considered immediately\\.",
                    "Question put:That the motion.{1,50}be agreed to\\.",
                    "The following notices were given\\:",
                    "The following notices were given",
                    "The following\\nnotices were\\ngiven\\:",
-                   "Bill presented by",
-                   "Bill presented—by leave—by",
-                   "Proposed expenditure \\$.{1,30}",
-                   "Proposed expenditure, \\$.{1,30}",
+                   "Bill presented by .{1,35}, and read a first time\\.",
+                   "Proposed expenditure \\$.{1,20}\\.",
+                   "Proposed expenditure, \\$.{1,20}\\.",
                    "Proposed expenditure\\$.{1,30}",
                    "Proposed expenditure,\\$.{1,30}",
                    "Bill—by leave—taken as a whole\\.",
@@ -1200,7 +983,6 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Leave granted for .{3,7} reading to be moved forthwith\\.Bill \\(on motion by .{1,35}\\) read a .{3,7} time\\.",
                    "Bill \\(on motion by .{1,35}\\).{1,20}read a [[:alpha:]]{1,10} time\\.",
                    "Motion \\(by .{1,35}\\) proposed: That the House do now adjourn\\.",
-                   "The following bill was returned from the Senate without amendment:.{1,50}",
                    "The following bill was returned from the Senate without amendment or request: .{1,50}",
                    "The following bills were returned from the Senate without amendment or request:.{1,100}",
                    "Debate—by leave—adjourned\\.",
@@ -1213,11 +995,9 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Bill returned from the Senate with an amendment made in place of the amendment disagreed to by the House\\.[[:space:]]{0,2}Ordered that the amendment be taken into consideration forthwith\\.",
                    "Bill returned from the Senate with a request for amendments\\.[[:space:]]{0,2}Ordered that the requested amendments be taken into consideration forthwith\\.",
                    "Question proposed: That grievances be noted\\.",
-                   "Messages from the Governor-General.{0,20} reported informing the House of assent to the following bills:",
-                   "Messages from the Governor-General and the Deputy of the Governor-General reported informing the House of assent to the bills",
+                   "Messages from the Governor-General reported informing the House of assent to the following bills:",
                    "Bill presented by.{1,150}\\.",
                    "Bills presented by.{1,150}\\.",
-                   "Bill received from the Senate\\.",
                    "Bill received from the Senate, and read a .{1,10} time\\.",
                    "Bill received from the Senate and read a .{1,10} time\\.",
                    "Bills received from the Senate, and read a .{1,10} time\\.",
@@ -1237,9 +1017,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Messages from the Governor-General and the Administrator reported informing the House of assent to the bills\\.",
                    "Message from the Governor-General and the Administrator reported informing the House of assent to the bills\\.",
                    "Message from the Governor-General and the Administrator reported informing the House of assent to the bill\\.",
-                   "Messages from the Administrator and the Governor-General reported informing the House of assent to the bills",
-                   "Messages from the Governor-General/Administrator.{1,250}\\.",
-                   "Message from the Governor-General recommending.{1,500} announced\\.",
+                   "Message from the Governor-General recommending appropriation for amendments to the .{1,300} announced\\.",
                    "Ordered that the amendment be considered at a later hour this day\\.",
                    "Ordered that the .{1,15} reading be made an order of the day for the next sitting\\.",
                    "Bill returned from the Senate with an amendment\\.",
@@ -1257,7 +1035,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Motion \\(by .{1,35}\\)—agreed to:.{5,400}\\.{0,1}",
                    "Motion \\(by .{1,35}\\)—by leave—agreed to:.{5,400}\\.{0,1}",
                    "Motion \\(by .{1,35}\\)—by leave—proposed\\:.{5,400}\\.{0,1}",
-                   "Motion \\(by .{1,35}\\) proposed[[:punct:]][[:space:]]{0,1}That the Main Committee do now adjourn\\.",
+                   "Motion \\(by .{1,35}\\) proposed: That the Main Committee do now adjourn\\.",
                    "Message received from the Senate returning the bill and informing the House that the Senate has agreed to the amendments made by the house\\.",
                    "Message received from the Senate returning the bill and informing the House that the Senate does not insist upon its amendments .{1,100}, disagreed to by the House.{0,150}\\.",
                    "Message received from the Senate returning the bill and informing the House that the Senate does not insist upon its amendment disagreed to by the House\\.",
@@ -1273,20 +1051,16 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "The Usher of the Black Rod, having been announced, was admitted and delivered a message that Her Excellency the Governor-General desired the attendance of honourable members in the Senate chamber forthwith\\.",
                    "The Usher of the Black Rod, having been announced, was admitted, and delivered a message that His Excellency the Governor-General desired the attendance of honourable members in the Senate chamber immediately\\.",
                    "The Usher of the Black Rod, being announced, was admitted, and delivered a message that His Excellency the Governor-General desired the attendance of honourable members in the Senate chamber",
-                   "The Usher of the Black Rod, having been announced, was admitted, and delivered a message that His Excellency the Governor-General",
                    "The Speaker and honourable members attended accordingly, and having returned—",
-                   "The House met at \\d{1,2}\\.\\d\\d [[:alpha:]]{2}, pursuant to the proclomation of Her Excellency the Goveror-General.[[:space:]]{0,2}The Clerk read the Proclomation\\.",
-                   "The House met at \\d{1,2}\\.\\d\\d [[:alpha:]]{2}, pursuant to the proclamation of Her Excellency the Governor-General.[[:space:]]{0,2}The Clerk read the Proclamation\\.",
+                   "The House met at \\d{1,2}\\.\\d\\d [[:alpha:]]{2}, pursuant to the proclomation of Her Excellency the Goveror-General. The Clerk read the Proclomation\\.",
                    "The House met at .{2,15} pursuant to the proclamation of His Excellency the Governor-General\\.[[:space:]]{0,2}The Clerk read the proclamation\\.",
                    "The House met at 10\\.30 a\\.m\\. pursuant to the proclamation of His Excellency the Governor-General\\.The Clerk read the proclamation\\.",
                    "His Excellency, Dr Susilo Bambang Yudhoyono, having been announced and escorted into the chamber—",
                    "Message received from the Senate acquainting the House that the Senate does not insist on its amendments disagreed to by the House and has agreed to the amendments made by the House in place of them\\.",
                    "(Ms|Mr|Mrs|Dr) .{5,35} made and subscribed the oath of allegiance\\.",
                    "(Ms|Mr|Mrs|Dr) .{5,35} made and subscribed the oath of allegiance:",
-                   "A message from the Senate has been received advising the House that",
                    "Message received from the Senate returning the bill and informing the House that the Senate has agreed to the amendments made by the House\\.",
                    "The Rt Hon\\. Tony Blair having been announced and escorted into the chamber—",
-                   "The Speaker has received a message from the Senate transmitting a resolution agreed to by the Senate",
                    "Message received from the Senate returning the bill and acquainting the House that the Senate insists on amendments Nos .{1,30} disagreed to by the House and desires the reconsideration of the bill by the House in respect of the amendments\\. Ordered that consideration of the message be made an order of the day for the next sitting\\.",
                    "Bill returned from Main Committee without amendment[[:punct:]] appropriation message having been reported; certified copy presented\\.[[:space:]]{0,2}Ordered that the bill be taken into consideration forthwith\\.",
                    "Bill returned from Main Committee without having been fully considered[[:punct:]] certified copy presented\\.[[:space:]]{0,2}Ordered that the bill be taken into consideration at the next sitting\\.",
@@ -1295,38 +1069,16 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Bill returned from Main Committee without amendment[[:punct:]].{0,300} certified copy.{0,20} presented\\.[[:space:]]{0,2}Ordered that the bill be taken into consideration .{1,50}\\.",
                    "Bill returned from Main Committee without having been fully considered; certified copy presented\\.[[:space:]]{0,2}Ordered that further proceedings of the bill be taken into consideration at the next sitting\\.",
                    "Bill returned from Main Committee with an unresolved question; certified copy of the bill and schedule of unresolved question presented\\.[[:space:]]{0,2}Ordered that the bill be taken into consideration forthwith\\.",
-                   "Bill returned from Main Committee for further consideration; certified copy of the bill presented\\.",
-                   "Bill returned from Main Committee having been considered",
-                   "Bill returned from Main Committee with amendments[[:punct:]]",
-                   "Bill returned from Main Committee with an amendment[[:punct:]]",
-                   "Bill returned from Main Committee with an unresolved question[[:punct:]]",
-                   "Bill returned from Main Committee with unresolved questions[[:punct:]]",
-                   "Bill returned from Main Committee with an unresolved question and amendments",
-                   "Bill returned from Main Committee without amendment[[:punct:]]",
-                   "Bill returned from Main Committee without having been fully considered[[:punct:]]",
-                   "Bill returned from Main Committee; certified copy of the bill presented\\.",
-                   "Bill returned from the Senate with[[:space:]]{1,3}a request for an amendment",
-                   "Bill returned from the Senate with a request for amendments\\.",
-                   "Bill returned from the Senate with a requested amendment\\.",
-                   "Bill returned from the Senate with amendment\\.",
-                   "Bill returned from the Senate with further amendments\\.",
-                   "Bill returned from the Senate with request[[:lower:]]{0,1} for amendments\\.",
-                   "Bill returned from the Senate with requested amendments\\.",
-                   "Bill returned from the Senate, with amendments\\.",
                    "Message[[:lower:]]{0,1} received from the Senate ",
                    "Message[[:lower:]]{0,1} .{0,20}from the Governor-General reported informing the House of assent to the following bill[[:lower:]]{0,1}",
                    "Message received from the Governor-General informing the House of assent to the following bills:",
                    "Consideration resumed, on motion by",
-                   "Bill—by leave—taken as a whole",
-                   "Billby leavetaken as a whole\\.",
                    "Motion \\(by .{1,45}\\){0,1}—by leave—put:",
                    "Motion \\(by .{1,45}\\){0,1} put:",
                    "Motion \\(by .{1,45}\\){0,1} agreed.{0,5}:",
                    "Motion \\(by .{1,45}\\) proposed:",
-                   "Motion by \\(.{1,45}\\) proposed",
                    "Bills returned from the Senate with amendments",
                    "Bills returned from the Senate with a request for [[:space:]]{0,2}amendments and amendments",
-                   "Bills returned from Main Committee without amendment;",
                    "Schedule \\d{1,2}, items \\d{1,2} to \\d{1,2}—by leave—taken together, and agreed to",
                    "Schedule \\d{1,2} agreed to\\.[[:space:]]{0,2}Schedule \\d{1,2}, items \\d{1,2} and \\d{1,2}—by leave—taken together, and agreed to\\.",
                    "Schedule \\d{1,2}, item \\d{1,2}\\.",
@@ -1334,63 +1086,36 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                    "Mr Allan Agapitos Morris made and subscribed the affirmation of allegiance\\.",
                    "The Clerk laid on the table duly endorsed return to the writ for the supplementary election for the division of Newcastle, in the state of New South Wales\\.",
                    "Order of the day returned from Main Committee\\.",
-                   "Order of the day returned from Main Committee[[:punct:]]",
                    "Bill—by leave—taken as whole\\.",
-                   "Schedule \\d{1,2}—by leave—taken as a whole\\.",
-                   "On 7 December 2000, at page 23642, the incorrect Senate amendments were inserted into Hansard for the States Grants \\(Primary and Secondary Education Assistance\\) Bill 2000\\. The correct text should read as follows:",
-                   "Messages from the Administrator reported informing the House of assent to the following bills",
                    "The following papers were deemed to be presented on \\d{1,2} [[:alpha:]]{1,15} \\d{4}",
                    "The following paper was deemed to have been presented on \\d{1,2} [[:alpha:]]{1,15} \\d{4}",
                    "Mr Cameron Thompson, for the committee appointed to prepare an address-in-reply to the speech of His Excellency the Governor-General, presented the proposed address, which was read by the Clerk\\.",
-                   "The Honourable George Walker Bush having been announced and escorted into the chamber—",
-                   "The Rt Hon\\. Stephen Harper having been announced and escorted into the chamber—",
-                   "His Excellency Hu Jintao having been announced and escorted into the chamber—",
-                   "Ms O’Neill, for the committee elected to prepare an address-in-reply to the speech of Her Excellency the Governor-General, presented the proposed address, which was read by the Clerk\\.",
-                   "A message has been received from the Senate acquainting the House that",
-                   "The following bills were returned from the Senate without amendment",
-                   "Message from the Senate returning the bill and acquainting the House that",
-                   "Message from the Administrator reported informing the House of assent to the following bills",
-                   "Mrs Louise Markus, for the committee appointed to prepare an address-in-reply to the speech of His Excellency the Governor-General, presented the proposed address, which was read by the Clerk\\.",
-                   "Mrs Sussan Ley, for the committee appointed to prepare an address-in-reply to the speech of His Excellency the Governor-General, presented the proposed address, which was read by the Clerk\\.",
-                   "Mr Hale, for the committee elected to prepare an address-in-reply to the speech of His Excellency the Governor-General, presented the proposed address, which was read by the Clerk\\.",
-                   "Bill, explanatory memorandum and—by leave—",
-                   "Message from His Excellency the Administrator reported informing the House of assent to the following bill",
-                   "The following honourable member made and subscribed the oath or affirmation of allegiance",
-                   "Mr Rodney Weston Sawford made and subscribed the affirmation of allegiance",
-                   "Message[[:lower:]]{0,1} from the Administrator reported informing the House of assent to the bills\\.",
                    "Consideration interrupted\\.",
                    "The petition read as follows—",
+                   "Proposed expenditures agreed to\\.",
+                   "\\(Quorum formed\\)",
                    "Schedule agreed to\\.",
                    "Amendment negatived\\.",
                    "Amendments agreed to\\.",
                    "Amendments negatived\\.",
                    "Question resolved in the negative\\.",
                    "Question resolved in the affirmative\\.",
+                   "Question so resolved in the affirmative\\.",
                    "An incident having occurred in the gallery—",
                    "Bill, as amended, agreed to\\.",
                    "Question put: That this bill be now read a second time\\.",
                    "Question put:[[:space:]]{0,1}That the amendment \\(.{1,35}\\) be agreed to\\.",
-                   "Question put:[[:space:]]{0,1}That the amendments \\(.{1,35}\\) be agreed to\\.",
                    "Original question resolved in the affirmative\\.",
                    "Question put:[[:space:]]{0,1}That the words proposed to be omitted stand part of the question\\.",
                    "Question put:[[:space:]]{0,1}That the words proposed to be omitted \\(.{1,50}\\) stand part of the question\\.",
-                   "\\nQuestion put:[[:space:]]{0,1}That the amendments be agreed to\\.", 
-                   "\\nQuestion put:[[:space:]]{0,1}That the amendments \\(.{1,50}\\) be agreed to\\.",
-                   "\\nMain committee adjourned at \\d\\.\\d\\d pm",
-                   "\\nQuestion put: That the words proposed to be omitted \\(.{1,50}\\) stand part of the question\\.",
-                   "\\n That the Main Committee do now adjourn\\.",
-                   "\\n That the House do now adjourn\\.",
-                   "\\nDebated adjourned\\.",
-                   "\\nQuestion put:[[:space:]]{0,1}That the Speaker’s ruling be dissented from\\.",
-                   "\\nQuestion put: That the amendment \\(.{1,50}\\) be agreed to\\.",
-                   "\\n\\(Quorum formed\\)",
-                   "\\nAt 6\\.45pm, an audio system failure prevented the recording and transcription of the speeches of Ms Parke, MrBruce Scott, Mr Stephen Smith and Mr Simpkins, and of any further proceedings of the Main Committee\\.In accordance with the Speaker’s statement of 1 December 2008, the text of those speeches has been incorporated below\\.",
-                   "\\nQuestion put:[[:space:]]{0,1}That Senate amendments .{1,50} be disagreed to\\.",
-                   "\\nThe petitions read as follows—",
-                   "Petitions received\\.",
-                   "\\nI seek leave to continue my remarks later\\.",
-                   "\\nDebate \\(on motion by\\nMr Debus\\) adjourned\\.",
-                   "\\n[[:upper:]][[:lower:]]{5,9}, \\d{1,2} [[:upper:]][[:lower:]]{3,10} 20\\d{2}")
+                   "Question put:\\t That the motion \\(.{1,50}\\) be agreed to\\.",
+                   "Consideration interrupted; adjournment proposed and negatived\\.",
+                   "Question \\(.{1,35}\\) put:\\t That the question be now put\\.",
+                   "Question put:\\t That the amendments \\(.{1,35}\\) be agreed to\\.",
+                   "Question put:\\t That the words proposed to be omitted \\(.{1,50}\\) stand part of the question\\.",
+                   "Question put: That the words proposed to be omitted \\(.{1,50}\\) stand part of the question\\.",
+                   "Question put:\\n\\tThat the amendment \\(.{1,50}\\) be agreed to.\\n",
+                   "Question put:[[:space:]]{0,1}That the amendments \\(.{1,50}\\) be agreed to.")
   
   
   # split on stage notes
@@ -1417,8 +1142,8 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # now fill in the time stamp using what's at the beginning of the body
   main <- main %>% mutate(time.stamp = ifelse(str_detect(body, "^\\d\\d\\:\\d\\d\\:\\d\\d"),
-                                      str_extract(body, "^\\d\\d\\:\\d\\d\\:\\d\\d"),
-                                      time.stamp),
+                                              str_extract(body, "^\\d\\d\\:\\d\\d\\:\\d\\d"),
+                                              time.stamp),
                           body = ifelse(str_detect(body, "^\\d\\d\\:\\d\\d\\:\\d\\d"),
                                         str_remove(body, "^\\d\\d\\:\\d\\d\\:\\d\\d"),
                                         body))
@@ -1433,16 +1158,6 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
     main <- main %>% mutate(body = ifelse(str_detect(body, "^41414141—"),
                                           str_remove(body, "^41414141—"),
                                           body))
-  }
-  
-  # pattern issue
-  if (filename=="2001-03-05.xml" | filename=="2001-03-07.xml"){
-    main <- main %>% filter(body!="[WORKPLACE RELATIONS AMENDMENT (TALLIES) BILL 2000] ")
-  }
-  
-  # pattern issue same across these 3 dates
-  if (filename=="2007-02-26.xml" | filename=="2007-02-12.xml" | filename=="2006-10-09.xml"){
-    main <- main %>% filter(!str_detect(body, "^3\\dReport13\\d[[:space:]]{0,2}$"))
   }
   
   # 2009—11—19 noticed some rows where text is just page number — this is the result of separating on patterns where likely an extra page number was parsed but not captured in the pattern
@@ -1474,23 +1189,16 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   }
   
   # we need to split on statements that start with something like "Mr CHARLES (La Trobe) (10.03 a.m.)—" that wasn't picked up in the patterns data
-  # for some reason, Fran Bailey is usually not given a prefix. this is the only person this is an issue for that i've seen, so let's just grab those in their own step
   # grab matches for these
-  talk_start <- str_extract_all(main$body, "(Mrs|Ms|Mr|Dr|The|Miss) .{1,25}(?!=—) \\(.{1,250}\\)[[:space:]]{0,2}\\(\\d{1,2}\\.\\d\\d .{2,4}\\)—") %>% 
-    unlist() %>% 
+  talk_start <- str_extract_all(main$body, "(Mrs|Ms|Mr|Dr) .{1,35} \\(.{1,250}\\) \\(\\d{1,2}\\.\\d\\d .{2,4}\\)—") %>% unlist() %>% 
     na.omit() %>% 
     unique() %>% 
     as_tibble() %>% 
-    bind_rows(., str_extract_all(main$body, "FRAN BAILEY \\(.{1,250}\\)[[:space:]]{0,2}\\(\\d{1,2}\\.\\d\\d .{2,4}\\)—") %>% 
-                unlist() %>% 
-                na.omit() %>% 
-                unique() %>% 
-                as_tibble()) %>% 
     mutate(value=str_replace_all(value, "\\.", "\\\\."),
            value=str_replace_all(value, "\\(", "\\\\("),
            value=str_replace_all(value, "\\)", "\\\\)")) %>% 
     pull(value)
-    
+  
   
   if (length(talk_start)>0){
     main <- separate_rows(main, body, sep=paste0("(?=", talk_start, ")", collapse = "|")) %>% filter(body!="")
@@ -1507,10 +1215,10 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
     
     # paste the name into name_short,time into time stamp, convert time to 24hr, remove pattern from body
     main <- main %>% mutate(name_short = ifelse(is.na(name_short) & str_detect(body, paste0("^", talk_start, collapse = "|")),
-                                                str_extract(body, "^.{1,30}(?= \\(.{1,250}\\)[[:space:]]{1,2}\\(\\d{1,2}\\.\\d\\d .{2,4}\\)—)"),
+                                                str_extract(body, "^.{1,30}(?= \\(.{1,250}\\) \\(\\d{1,2}\\.\\d\\d .{2,4}\\)—)"),
                                                 name_short),
                             time.stamp = ifelse(str_detect(body, paste0("^", talk_start, collapse = "|")),
-                                                str_extract(body, "(?<=^.{1,30} \\(.{1,250}\\)[[:space:]]{1,2}\\()\\d{1,2}\\.\\d\\d .{2,4}(?=\\)—)"),
+                                                str_extract(body, "(?<=^.{1,30} \\(.{1,250}\\) \\()\\d{1,2}\\.\\d\\d .{2,4}(?=\\)—)"),
                                                 time.stamp),
                             body = ifelse(str_detect(body, paste0("^", talk_start, collapse = "|")),
                                           str_remove(body, paste0("^", talk_start, collapse = "|")),
@@ -1536,8 +1244,8 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # if general interjection (but doesn't include interjecting—), remove name from body
   main <-  main %>% mutate(body = ifelse(str_detect(body, paste0("^", interject_general, collapse = "|")) & str_detect(body, paste0("^", name, "—")),
-                                str_remove(body, paste0("^", name, "—")),
-                                body))
+                                         str_remove(body, paste0("^", name, "—")),
+                                         body))
   
   # if body starts with "The Clerk—", extract that and paste "The Clerk" in as the name
   main <- main %>% mutate(name = ifelse(is.na(name) & str_detect(body,"^The Clerk—"),
@@ -1546,28 +1254,15 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                                         str_remove(body, "^The Clerk—"),
                                         body))
   
-  if (filename=="2005-12-08.xml"){
-    main <- main %>% mutate(name = ifelse(str_detect(body, "The ACTING SPEAKERMr Causley\\) then took the chair, and read prayers\\."),
-                                          "business start", name),
-                            body = ifelse(str_detect(body, "^The ACTING SPEAKERMr Causley\\) then took the chair, and read prayers\\.$"),
-                                          "The ACTING SPEAKER (Mr Causley) then took the chair, and read prayers.",
-                                          body))
-  }
-
   # remove rows where it's just a page number (result of pattern separation and pattern not entirely being captured)
   main <- main %>% filter(!str_detect(body, "^\\d+$"))
+  
+  # from 1998 04 08 - row where body is just debate title, remove this
+  main <- main %>% filter(!str_detect(body, "^SUSPENSION OF STANDING AND SESSSIONAL ORDERSMiscellaneous\\d{1,5}[[:space:]]{0,3}$"))
   
   # now that we've split all the rows, let's add an order column so we can keep track of exact order of things
   # need original speech_no column though to keep track of which interjections belong to which speech (will be useful to flag interjections later)
   main <- main %>% rowid_to_column("order") %>% select(-itemindex) %>% select(order, everything())
-  
-  # specific case - random \ in name ID, causing issues with pattern b/c we removed those from the pattern_text earlier to avoid regex issues, so need to manually fix that in patterns_data before we merge to fill things in
-  if (filename=="2001-02-26.xml"){
-    patterns_data <- patterns_data %>% mutate(name.id = ifelse(first_pattern=="\\8I4Martin, Stephen, MP", "8I4", name.id), 
-                                              first_pattern = ifelse(first_pattern=="\\8I4Martin, Stephen, MP", "8I4Martin, Stephen, MP", first_pattern))
-    
-    main <- main %>% mutate(body = ifelse(body=="Opposition members interjecting—\\", "Opposition members interjecting—", body))
-  }
   
   # grab first pattern again so we can fill things in
   # now, detect first pattern match so we can merge with pattern data tibbles allowing us to have the page number, electorate, etc
@@ -1583,7 +1278,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
            in.gov_use = in.gov,
            first.speech_use = first.speech) %>% 
     unique()
-
+  
   # grab first pattern and merge with pattern data table
   main <- main %>% mutate(first_pattern = ifelse(str_detect(body, paste0("^", patterns_text_esc, collapse = "|")),
                                                  str_match(body, paste0("^", patterns_text_esc, collapse = "|")),
@@ -1624,15 +1319,15 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # extract short name version of deputy speaker and remove it from body
   main <- main %>% mutate(name_short = ifelse(str_detect(name_short, "DEPUTY SPEAKER") & str_detect(body, "^\\(Ms.{1,35}\\)|^\\(Mrs.{1,35}\\)|^\\(Mr.{1,35}\\)|^\\(Dr.{1,35}\\)|^\\(Hon\\. .{1,35}\\)"),
-                                                        str_extract(body, "(?<=^\\()Ms.{1,35}(?=\\))|(?<=^\\()Mrs.{1,35}(?=\\))|(?<=^\\()Mr.{1,35}(?=\\))|(?<=^\\()Dr.{1,35}(?=\\))|(?<=^\\()Hon\\. .{1,35}(?=\\))"),
-                                                        name_short),
-                                    body = ifelse(str_detect(body, "^\\(Ms.{1,35}\\)|^\\(Mrs.{1,35}\\)|^\\(Mr.{1,35}\\)|^\\(Dr.{1,35}\\)|^\\(Hon\\. .{1,35}\\)"),
-                                                  str_remove(body, "^\\(Ms.{1,35}\\)|^\\(Mrs.{1,35}\\)|^\\(Mr.{1,35}\\)|^\\(Dr.{1,35}\\)|^\\(Hon\\. .{1,35}\\)"),
-                                                  body),
-                                    body = ifelse(str_detect(body, "^—|^-"),
-                                                  str_remove(body, "^—|^-"),
-                                                  body))
-
+                                              str_extract(body, "(?<=^\\()Ms.{1,35}(?=\\))|(?<=^\\()Mrs.{1,35}(?=\\))|(?<=^\\()Mr.{1,35}(?=\\))|(?<=^\\()Dr.{1,35}(?=\\))|(?<=^\\()Hon\\. .{1,35}(?=\\))"),
+                                              name_short),
+                          body = ifelse(str_detect(body, "^\\(Ms.{1,35}\\)|^\\(Mrs.{1,35}\\)|^\\(Mr.{1,35}\\)|^\\(Dr.{1,35}\\)|^\\(Hon\\. .{1,35}\\)"),
+                                        str_remove(body, "^\\(Ms.{1,35}\\)|^\\(Mrs.{1,35}\\)|^\\(Mr.{1,35}\\)|^\\(Dr.{1,35}\\)|^\\(Hon\\. .{1,35}\\)"),
+                                        body),
+                          body = ifelse(str_detect(body, "^—|^-"),
+                                        str_remove(body, "^—|^-"),
+                                        body))
+  
   # when people give notices, their name_short is usually preceded by the notice but removed in the steps above b/c it's detected as part of the pattern
   # so, let's paste that back in for clarity
   main <- main %>% mutate(body = ifelse(str_detect(body, "^ to present a Bill|^ to  present a Bill for|^ to move\\:"), paste0(name_short, body), body))
@@ -1640,15 +1335,15 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   # remove any leftover subdebate 1 or 2 patterns that we forgot to remove
   if (length(sub1_patterns_info)>0 & length(sub2_patterns_info)>0) {
     main <- main %>% mutate(sub1_pattern = ifelse(str_detect(body, paste0("(?<!the |our |so—called )", sub1_patterns_info, "(?!, | |\\?|\\. |\\.Th)", collapse = "|")),
-                                                             str_match(body, paste0("(?<!the |our |so—called )", sub1_patterns_info, "(?!, | |\\?|\\. |\\.Th)", collapse = "|")),
-                                                             NA),
-                                       sub2_pattern = ifelse(str_detect(body, paste0(sub2_patterns_info, collapse = "|")),
-                                                             str_match(body, paste0(sub2_patterns_info, collapse = "|")),
-                                                             NA),
-                                       sub2_pattern = ifelse(!is.na(sub1_pattern) & !is.na(sub2_pattern) 
-                                                             & str_detect(body, paste0(sub1_pattern, sub2_pattern)),
-                                                             str_match(body, paste0(sub1_pattern, sub2_pattern)),
-                                                             NA)) %>% 
+                                                  str_match(body, paste0("(?<!the |our |so—called )", sub1_patterns_info, "(?!, | |\\?|\\. |\\.Th)", collapse = "|")),
+                                                  NA),
+                            sub2_pattern = ifelse(str_detect(body, paste0(sub2_patterns_info, collapse = "|")),
+                                                  str_match(body, paste0(sub2_patterns_info, collapse = "|")),
+                                                  NA),
+                            sub2_pattern = ifelse(!is.na(sub1_pattern) & !is.na(sub2_pattern) 
+                                                  & str_detect(body, paste0(sub1_pattern, sub2_pattern)),
+                                                  str_match(body, paste0(sub1_pattern, sub2_pattern)),
+                                                  NA)) %>% 
       mutate(sub1_pattern = str_replace_all(sub1_pattern, "\\(","\\\\("),
              sub1_pattern = str_replace_all(sub1_pattern, "\\)","\\\\)"),
              sub1_pattern = str_replace_all(sub1_pattern, "\\:","\\\\:"),
@@ -1670,92 +1365,15 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
       select(-sub1_pattern, -sub2_pattern)
   } else if (length(sub1_patterns_info)>0 & length(sub2_patterns_info)==0) {
     main <- main %>% mutate(sub1_pattern = ifelse(str_detect(body, paste0("(?<!the |our |so—called )", sub1_patterns_info, "(?!, | |\\?|\\. |\\.Th)", collapse = "|")),
-                                                             str_match_all(body, paste0("(?<!the |our |so—called )", sub1_patterns_info, "(?!, | |\\?|\\. |\\.Th)", collapse = "|")),
-                                                             NA),
-                                       body = ifelse(!is.na(sub1_pattern) & str_detect(body, paste0(sub1_pattern, "(?!, | |\\?|\\. |\\.Th)")),
-                                                     str_remove(body, paste0(sub1_pattern)),
-                                                     body)) %>% 
+                                                  str_match_all(body, paste0("(?<!the |our |so—called )", sub1_patterns_info, "(?!, | |\\?|\\. |\\.Th)", collapse = "|")),
+                                                  NA),
+                            body = ifelse(!is.na(sub1_pattern) & str_detect(body, paste0(sub1_pattern, "(?!, | |\\?|\\. |\\.Th)")),
+                                          str_remove(body, paste0(sub1_pattern)),
+                                          body)) %>% 
       mutate(sub1_flag = ifelse(!is.na(sub1_pattern), 1, 0),
              sub2_flag = 0) %>% 
       select(-sub1_pattern)
   }
-  
-  # specific issues i need to deal with found from test3
-  if (filename=="2000-05-29.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\) Aboriginals: Reconciliation16436 "),
-                                          str_remove(body, "(?<=\\(Time expired\\)) Aboriginals: Reconciliation16436 "),
-                                          body))
-  }
-  
-  if (filename=="2000-06-22.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\) Goods and Services Tax: Caravan ParksRobertson Electorate: Gosford Under 17 Netball Team AESOP Business Volunteers Ltd18120Robertson Electorate: Gosford Under 17 Netball Team AESOP Business Volunteers Ltd"),
-                                          str_remove(body, "(?<=\\(Time expired\\)) Goods and Services Tax: Caravan ParksRobertson Electorate: Gosford Under 17 Netball Team AESOP Business Volunteers Ltd18120Robertson Electorate: Gosford Under 17 Netball Team AESOP Business Volunteers Ltd"),
-                                          body))
-  }
-  
-  if (filename=="2000-10-04.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\) Eden-Monaro Electorate: Lavender Industry20806"),
-                                          str_remove(body, "(?<=\\(Time expired\\)) Eden-Monaro Electorate: Lavender Industry20806"),
-                                          body))
-  }
-  
-  if (filename=="2000-10-09.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\) Groom Electorate: Toowoomba Range Crossing21131"),
-                                          str_remove(body, "(?<=\\(Time expired\\)) Groom Electorate: Toowoomba Range Crossing21131"),
-                                          body))
-  }
-  
-  if (filename=="2003-09-08.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\) Family Court19374"),
-                                          str_remove(body, "(?<=\\(Time expired\\)) Family Court19374"),
-                                          body))
-  }
-  
-  if (filename=="2003-10-15.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\) People Living With HIV/AIDS: 15th Anniversary21553"),
-                                          str_remove(body, "(?<=\\(Time expired\\)) People Living With HIV/AIDS: 15th Anniversary21553"),
-                                          body))
-  }
-  
-  if (filename=="2005-05-25.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\) Pontian Genocide"),
-                                          str_remove(body, "(?<=\\(Time expired\\)) Pontian Genocide"),
-                                          body))
-  }
-  
-  if (filename=="2008-09-04.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\) Cook Electorate: Shire 2020\\+ Youth Summit7263"),
-                                          str_remove(body, "(?<=\\(Time expired\\)) Cook Electorate: Shire 2020\\+ Youth Summit7263"),
-                                          body))
-  }
-  
-  if (filename=="2008-12-01.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\)\\n Universal Declaration of Human Rights"),
-                                          str_remove(body, "(?<=\\(Time expired\\))\\n Universal Declaration of Human Rights"),
-                                          body))
-  }
-  
-  if (filename=="2010-10-28.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\)\\n Griffith Electorate: Daniel Morcombe Foundation"),
-                                          str_remove(body, "(?<=\\(Time expired\\))\\n Griffith Electorate: Daniel Morcombe Foundation"),
-                                          body))
-  }
-  
-  if(filename=="2007-05-09.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\)\\n Flinders Electorate: Bitumen Plant"),
-                                          str_remove(body, "(?<=\\(Time expired\\))\\n Flinders Electorate: Bitumen Plant"),
-                                          body))
-
-  }
-  
-  if(filename=="2010-03-10.xml"){
-    main <- main %>% mutate(body = ifelse(str_detect(body, "\\(Time expired\\)\\n Werriwa Electorate: Hospitals"),
-                                          str_remove(body, "(?<=\\(Time expired\\))\\n Werriwa Electorate: Hospitals"),
-                                          body))
-    
-  }
-  
-  
   
   ######### BELOW IS COMMENTED OUT B/C CAUSING ISSUES — this is something to deal with later, look at 2002—09—26 row 17—18 for example
   # # sometimes new statements begin with the short name, followed by their electorate and role, and the time stamp
@@ -1784,67 +1402,99 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
     
     # debate info
     a_to_q_deb_info <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/debateinfo"),
-                              collectNames = F, homogeneous = T), .name_repair = "unique")
+                                             collectNames = F, homogeneous = T), .name_repair = "unique")
     
     # sometimes page number is written twice so multiple of the same column, just grab the first one
     if ("page.no...2" %in% names(a_to_q_deb_info)) {
       a_to_q_deb_info <- a_to_q_deb_info %>% rename(page.no = page.no...2) %>% 
         select(c(title, page.no, id.no)) %>% 
-        mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL})
+        mutate(page.no = as.numeric(page.no))
     }
     
-    # sub—debate info
+    # sub-debate info
     a_to_q_sub_info <- item_df(xml_df,"//answers.to.questions/debate/subdebate.1/subdebateinfo") %>% 
       unnest(everything())
-      
-      #tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/subdebate.1/subdebateinfo"), collectNames = F, homogeneous = T), .name_repair = "unique")
+    
+    #tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/subdebate.1/subdebateinfo"), collectNames = F, homogeneous = T), .name_repair = "unique")
     
     # sometimes page number is written twice so multiple of the same column, just grab the first one
     if ("page.no...2" %in% names(a_to_q_sub_info)) {
       a_to_q_sub_info <- a_to_q_sub_info %>% rename(page.no = page.no...2) %>% 
         select(c(title, page.no, id.no)) %>% 
-        mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL})
+        mutate(page.no = as.numeric(page.no))
     }
     
     # all question info, cleaning stuff up and fixing spacing issue as best as possible
-    a_to_q_speech_qs <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/subdebate.1/question/talk.start/para"), 
-                                              collectNames = F, homogeneous = T), .name_repair = "unique") %>% 
-      cbind(item_df(xml_df, "//answers.to.questions/debate/subdebate.1/question/talk.start/talker"), .) %>% 
-      mutate(name = map(name, c)) %>% 
-      unnest_wider(name, names_sep = "_") %>% rename(name = name_1,
-                                                name_short = name_2) %>% 
-       unnest(everything()) %>% 
-      mutate(first.speech = {if("first.speech" %in% names(.)) first.speech else NA},
-             role = {if("role" %in% names(.)) role else NA}) %>% 
-      select(-itemindex) %>% 
-      select(page.no, name, name.id, electorate, party, in.gov, first.speech, everything()) %>% 
-      unite("body", c(first.speech:last_col(), -first.speech), sep=" ", na.rm = T) %>% 
-      cbind(., tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/subdebate.1/question"), 
-                                     collectNames = F, homogeneous = T), .name_repair = "unique")) %>% 
-      select(-talk.start) %>% 
-      unite("body", c(body:last_col()), sep=" ", na.rm = T) %>% 
-      mutate(body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\.[[:upper:]]"), 
-                           str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\.(?=[[:upper:]])", ". "),
-                           body),
-             body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\:[[:upper:]]"), 
-                           str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\:(?=[[:upper:]])", ": "),
-                           body),
-             body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\;[[:upper:]]"), 
-                           str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\;(?=[[:upper:]])", "; "),
-                           body),
-             body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\?[[:upper:]]"), 
-                           str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\?(?=[[:upper:]])", "? "),
-                           body),
-             question = 1,
-             answer = 0) %>% 
-      mutate(question = ifelse(str_detect(body, "^.{1,20}The answer to the .{1,30} question is as follows\\:|^.{1,20}has provided the following answer to the honourable member's question\\:"), 0, 1),
-             answer = ifelse(str_detect(body, "^.{1,20}The answer to the .{1,30} question is as follows\\:|^.{1,20}has provided the following answer to the honourable member's question\\:"), 1, 0)) 
+    # need this if-else b/c one questions talk.start/para is nested wrong so the number of rows in what we're trying to cbind is one off
+    if (filename=="1998-05-14.xml") {
+      a_to_q_speech_qs <- item_df(xml_df, "//answers.to.questions/debate/subdebate.1/question/talk.start") %>% 
+        unnest(para) %>% 
+        select(itemindex, para) %>% 
+        add_row(itemindex=13, para="") %>% 
+        arrange(itemindex) %>% 
+        select(-itemindex) %>% 
+        cbind(item_df(xml_df, "//answers.to.questions/debate/subdebate.1/question/talk.start/talker"), .) %>% 
+        mutate(name = map(name, c)) %>% 
+        unnest_wider(name, names_sep = "_") %>% rename(name = name_1,
+                                                       name_short = name_2) %>% 
+        unnest(everything()) %>% 
+        mutate(first.speech = {if("first.speech" %in% names(.)) first.speech else NA},
+               role = {if("role" %in% names(.)) role else NA}) %>% 
+        select(-itemindex) %>% 
+        select(page.no, name, name.id, electorate, party, in.gov, first.speech, everything()) %>% 
+        unite("body", c(first.speech:last_col(), -first.speech), sep=" ", na.rm = T) %>% 
+        cbind(., tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/subdebate.1/question"), 
+                                       collectNames = F, homogeneous = T), .name_repair = "unique")) %>% 
+        select(-talk.start) %>% 
+        unite("body", c(body:last_col()), sep=" ", na.rm = T) %>% 
+        mutate(body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\.[[:upper:]]"), 
+                             str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\.(?=[[:upper:]])", ". "),
+                             body),
+               body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\:[[:upper:]]"), 
+                             str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\:(?=[[:upper:]])", ": "),
+                             body),
+               body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\;[[:upper:]]"), 
+                             str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\;(?=[[:upper:]])", "; "),
+                             body),
+               body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\?[[:upper:]]"), 
+                             str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\?(?=[[:upper:]])", "? "),
+                             body),
+               question = 1,
+               answer = 0)
+    } else {
+      a_to_q_speech_qs <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/subdebate.1/question/talk.start/para"), 
+                                                collectNames = F, homogeneous = T), .name_repair = "unique") %>% 
+        cbind(item_df(xml_df, "//answers.to.questions/debate/subdebate.1/question/talk.start/talker"), .) %>% 
+        mutate(name = map(name, c)) %>% 
+        unnest_wider(name, names_sep = "_") %>% rename(name = name_1,
+                                                       name_short = name_2) %>% 
+        unnest(everything()) %>% 
+        mutate(first.speech = {if("first.speech" %in% names(.)) first.speech else NA},
+               role = {if("role" %in% names(.)) role else NA}) %>% 
+        select(-itemindex) %>% 
+        select(page.no, name, name.id, electorate, party, in.gov, first.speech, everything()) %>% 
+        unite("body", c(first.speech:last_col(), -first.speech), sep=" ", na.rm = T) %>% 
+        cbind(., tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/subdebate.1/question"), 
+                                       collectNames = F, homogeneous = T), .name_repair = "unique")) %>% 
+        select(-talk.start) %>% 
+        unite("body", c(body:last_col()), sep=" ", na.rm = T) %>% 
+        mutate(body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\.[[:upper:]]"), 
+                             str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\.(?=[[:upper:]])", ". "),
+                             body),
+               body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\:[[:upper:]]"), 
+                             str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\:(?=[[:upper:]])", ": "),
+                             body),
+               body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\;[[:upper:]]"), 
+                             str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\;(?=[[:upper:]])", "; "),
+                             body),
+               body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\?[[:upper:]]"), 
+                             str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\?(?=[[:upper:]])", "? "),
+                             body),
+               question = 1,
+               answer = 0)
+      
+    }
     
-    # add any wrongly nested answers (in writing) into answer dataframe
-    a_to_q_speech_as <- a_to_q_speech_qs %>% filter(answer==1)
-    
-    # remove any wrongly nested answers from question in writing dataframe
-    a_to_q_speech_qs <- a_to_q_speech_qs %>% filter(answer!=1)
     
     # all answer info, cleaning stuff up and fixing spacing issue as best as possible
     a_to_q_speech_as <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//answers.to.questions/debate/subdebate.1/answer/talk.start/para"), 
@@ -1880,32 +1530,54 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                            str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\?(?=[[:upper:]])", "? "),
                            body),
              question = 0,
-             answer = 1) %>% 
-      bind_rows(., a_to_q_speech_as) %>% 
-      arrange(page.no)
+             answer = 1)
     
     # dealing with specific issue on this sitting day where answer is embedded with question text, need to separate and re-categorize manually
-    if (filename == "2007-03-21.xml") {
+    if (filename == "1998-03-05.xml") {
       a_to_q_speech_as <- a_to_q_speech_qs %>% 
         as_tibble() %>% 
-        slice(n()) %>% 
-        separate_rows(body, sep="(?=McGAURAN, Hon. Peter John, Gippsland238McGauran, Peter, MPXH4GippslandNATSMinister for Agriculture, Fisheries and Forestry1Mr McGauran—The answer to the honourable member’s question is as follows\\:)") %>% 
+        slice(1) %>% 
+        separate_rows(body, sep="(?=Mr Costello—The answer to the honourable member's question is as follows\\:)") %>% 
         slice(2) %>% 
         mutate(question = 0, 
                answer = 1,
-               name = "McGauran, Peter, MP",
-               name.id = "XH4",
-               electorate = "Gippsland",
-               party = "NATS",
+               name = "Costello, Peter, MP",
+               name.id = "CT4",
+               electorate = "Higgins",
+               party = "LP",
                in.gov = "1",
-               first.speech = NA,
-               body = str_remove(body, "^McGAURAN, Hon. Peter John, Gippsland238McGauran, Peter, MPXH4GippslandNATSMinister for Agriculture, Fisheries and Forestry1")) %>% 
-        bind_rows(a_to_q_speech_as, .)
+               first.speech = NA) %>% 
+        bind_rows(., a_to_q_speech_as)
       
       a_to_q_speech_qs <- a_to_q_speech_qs %>% 
         as_tibble() %>% 
-        separate_rows(body, sep="(?=Mr McGauran—The answer to the honourable member’s question is as follows\\:)") %>% 
-        filter(!str_detect(body, "^Mr McGauran—The answer to the honourable member’s question is as follows\\:"))
+        separate_rows(body, sep="(?=Mr Costello—The answer to the honourable member's question is as follows\\:)") %>% 
+        filter(!str_detect(body, "^Mr Costello—The answer to the honourable member's question is as follows\\:"))
+    }
+    
+    # same idea, specific issue, since there are two i need to bind them in the right order manually
+    if (filename == "1999-06-30.xml") {
+      a_to_q_speech_as <- a_to_q_speech_qs %>% 
+        as_tibble() %>% 
+        slice(7:8) %>% 
+        separate_rows(body, sep="(?=Miss Jackie Kelly —The answer to the honourable member's question is as follows\\:)") %>%
+        separate_rows(body, sep="(?=Mr Ruddock —The answer to the honourable member's question is as follows\\:)") %>% 
+        slice(2, 4) %>% 
+        mutate(question = 0, 
+               answer = 1,
+               name = ifelse(str_detect(body, "Miss Jackie Kelly"), "Kelly, Jackie, MP", "Ruddock, Philip, MP"),
+               name.id = ifelse(name=="Kelly, Jackie, MP", "GK6", "0J4"),
+               electorate = ifelse(name=="Kelly, Jackie, MP", "Lindsay", "Berowra"),
+               party = "LP",
+               in.gov = "1",
+               first.speech = NA) %>% 
+        bind_rows(a_to_q_speech_as[1:6,], ., a_to_q_speech_as[7:9,])
+      
+      a_to_q_speech_qs <- a_to_q_speech_qs %>% 
+        as_tibble() %>% 
+        separate_rows(body, sep="(?=Miss Jackie Kelly —The answer to the honourable member's question is as follows\\:)") %>%
+        separate_rows(body, sep="(?=Mr Ruddock —The answer to the honourable member's question is as follows\\:)") %>% 
+        filter(!str_detect(body, "The answer to the honourable member's question is as follows\\:"))
     }
     
     # combine them in the right order, add flags
@@ -1916,47 +1588,14 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
       select(-rowid, -role) %>% 
       mutate(fedchamb_flag = 0,
              q_in_writing = 1,
-             sub1_flag = 1,
-             sub2_flag = 0,
-             page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL})
+             page.no = as.numeric(page.no))
+    
+    
     
   } else {
     a_to_q_deb_info <- tibble()
     a_to_q_sub_info <- tibble()
     a_to_q_speech <- tibble()
-  }
-  
-  # special case where main committee content aren't nested in maincomm.xscript - its all in the chamber parent node
-  # we need to manually grab the bus start and flag the fedchamb proceedings
-  if (filename=="2006-02-16.xml"){
-    main <- main %>% separate_rows(body, sep="(?=The DEPUTY SPEAKER \\(Hon\\. IR Causley\\) took the chair at 9\\.30 am\\.)") %>% 
-      mutate(name = ifelse(str_detect(body, "The DEPUTY SPEAKER \\(Hon\\. IR Causley\\) took the chair at 9\\.30 am\\."), "business start", name),
-             name.id = ifelse(name=="business start", NA, name.id),
-             party = as.factor(ifelse(name=="business start", NA, as.character(party))),
-             electorate = ifelse(name=="business start", NA, electorate),
-             first.speech = ifelse(name=="business start", NA, first.speech),
-             in.gov = ifelse(name=="business start", NA, in.gov),
-             fedchamb_flag = ifelse(str_detect(body, "The DEPUTY SPEAKER \\(Hon\\. IR Causley\\) took the chair at 9\\.30 am\\."), 1, fedchamb_flag))
-    
-    # now flag fedchamb correctly
-    main <- main %>% select(-order) %>% rowid_to_column("order") %>% 
-      mutate(fedchamb_flag = ifelse(order > order[str_detect(body, "The DEPUTY SPEAKER \\(Hon\\. IR Causley\\) took the chair at 9\\.30 am\\.")], 1, fedchamb_flag))
-  }
-  
-    # same as above for different date
-    if (filename=="2006-02-14.xml"){
-      main <- main %>% separate_rows(body, sep="(?=The DEPUTY SPEAKER \\(Mr Jenkins\\) took the chair at 4\\.00 pm\\.)") %>% 
-        mutate(name = ifelse(str_detect(body, "The DEPUTY SPEAKER \\(Mr Jenkins\\) took the chair at 4\\.00 pm\\."), "business start", name),
-               name.id = ifelse(name=="business start", NA, name.id),
-               party = as.factor(ifelse(name=="business start", NA, as.character(party))),
-               electorate = ifelse(name=="business start", NA, electorate),
-               first.speech = ifelse(name=="business start", NA, first.speech),
-               in.gov = ifelse(name=="business start", NA, in.gov),
-               fedchamb_flag = ifelse(str_detect(body, "The DEPUTY SPEAKER \\(Mr Jenkins\\) took the chair at 4\\.00 pm\\."), 1, fedchamb_flag))
-    
-    # now flag fedchamb correctly
-    main <- main %>% select(-order) %>% rowid_to_column("order") %>% 
-      mutate(fedchamb_flag = ifelse(order > order[str_detect(body, "The DEPUTY SPEAKER \\(Mr Jenkins\\) took the chair at 4\\.00 pm\\.")], 1, fedchamb_flag))
   }
   
   # add business start to main
@@ -2066,7 +1705,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   # grab adjournment, add all flags, select things in right order to be added to main — FEDERATION CHAMBER
   if (nrow(tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/adjournment/adjournmentinfo"),collectNames = F, homogeneous = T), .name_repair = "unique"))>0){
     adjournment_fed <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/adjournment/adjournmentinfo"),
-                                               collectNames = F, homogeneous = T), .name_repair = "unique")
+                                             collectNames = F, homogeneous = T), .name_repair = "unique")
     
     # sometimes page number is written twice so multiple of the same column, just grab the first one
     if ("page.no...2" %in% names(adjournment_fed)) {
@@ -2130,29 +1769,6 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                                         str_remove(body, "^DANBY, Mr Michael, Melbourne Ports14812\\.31 pmDanby, Michael, MPWF6Melbourne PortsALP00Mr DANBY\\(Melbourne Ports\\)\\(12\\.31 pm\\)—"),
                                         body))
   
-  # have to grab names and clean body up manually, from 2002—09—26
-  if (filename=="2002—09—26.xml"){
-    main <- separate_rows(main, body, sep="(?=Mr WILLIAMS \\(Tangney—Attorney—General\\) \\(10\\.15 a\\.m\\.\\)—)") %>% 
-      mutate(name = ifelse(str_detect(body, "^Mr WILLIAMS \\(Tangney—Attorney—General\\) \\(10\\.1\\d a\\.m\\.\\)—"),
-                           "Mr WILLIAMS",
-                           name),
-             body = str_remove(body, "^Mr WILLIAMS \\(Tangney—Attorney—General\\) \\(10\\.1\\d a\\.m\\.\\)—")) %>% 
-      mutate(name = ifelse(str_detect(body, "^The SPEAKER  \\(4\\.14 p\\.m\\.\\)—"),
-                           "The SPEAKER",
-                           name),
-             body = ifelse(str_detect(body, "^The SPEAKER  \\(4\\.14 p\\.m\\.\\)—"),
-                           str_remove(body, "^The SPEAKER  \\(4\\.14 p\\.m\\.\\)—"),
-                           body)) %>% 
-      mutate(name = ifelse(str_detect(body, "^Mr ABBOTT \\(Warringah—Leader of the House\\) \\(4\\.1\\d p\\.m\\.\\)—"),
-                           "Mr ABBOTT", name),
-             body = str_remove(body, "^Mr ABBOTT \\(Warringah—Leader of the House\\) \\(4\\.1\\d p\\.m\\.\\)—")) %>% 
-      mutate(name = ifelse(str_detect(body, "Mr SLIPPER \\(Fisher—Parliamentary Secretary to the Minister for Finance and Administration\\) \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
-                           "Mr SLIPPER", name),
-             body = str_remove(body, "Mr SLIPPER \\(Fisher—Parliamentary Secretary to the Minister for Finance and Administration\\) \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—")) %>% 
-      mutate(name = ifelse(str_detect(body, "Ms JULIE BISHOP \\(Curtin\\) \\(12\\.06 p\\.m\\.\\)—"), "Ms JULIE BISHOP", name),
-             body = str_remove(body, "Ms JULIE BISHOP \\(Curtin\\) \\(12\\.06 p\\.m\\.\\)—"))
-  }
-
   
   # group by speech number and only keep timestamp associated with first statement in that speech - the others just follow with splitting rows and so are technically imputed
   main <- main %>% group_by(speech_no) %>% rowid_to_column("order") %>% 
@@ -2173,67 +1789,56 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # add order variable and select variables in the order we want
   main <- main %>% rowid_to_column("order") %>% 
-      select(order, speech_no, page.no, time.stamp, name, name.id, electorate, party, in.gov, first.speech, body, fedchamb_flag, sub1_flag, sub2_flag, question, answer, q_in_writing, name_short, role)
+    select(order, speech_no, page.no, time.stamp, name, name.id, electorate, party, in.gov, first.speech, body, fedchamb_flag, sub1_flag, sub2_flag, question, answer, q_in_writing, name_short, role)
   
   # add flag for divisions
   main <- main %>% mutate(div_flag = ifelse(str_detect(body, "The House divided\\."), 1, 0))
   
   # need to extract any short names which precede statement and weren't captured in the original pattern extraction process
   main <- main %>% mutate(name_short = ifelse(name_short=="", NA, name_short), 
-                  name_short = ifelse(str_detect(body, "^Mrs.{1,20}(?=—.{1,})|^Mr.{1,20}(?=—.{1,})|^Ms.{1,20}(?=—.{1,})|^Dr.{1,20}(?=—.{1,})") & 
-                                        is.na(name_short) & 
-                                        str_detect(name, str_to_title(str_extract(body, "(?<=^Mr ).{1,20}(?=—.{1,})"))),
-                                      str_extract(body, "^Mrs.{1,20}(?=—.{1,})|^Mr.{1,20}(?=—.{1,})|^Ms.{1,20}(?=—.{1,})|^Dr.{1,20}(?=—.{1,})"),
-                                      name_short),
-                  name_short = ifelse(str_detect(body, "^[[:space:]]{0,2}Mrs.{1,20}(?=\\(.{1,})|^[[:space:]]{0,2}Mr.{1,20}(?=\\(.{1,})|^[[:space:]]{0,2}Ms.{1,20}(?=\\(.{1,})|^[[:space:]]{0,2}Dr.{1,20}(?=\\(.{1,})") & 
-                                        is.na(name_short),
-                                        str_extract(body, "^[[:space:]]{0,2}Mrs.{1,20}(?=\\(.{1,})|^Mr.{1,20}(?=\\(.{1,})|^Ms.{1,20}(?=\\(.{1,})|^Dr.{1,20}(?=\\(.{1,})"),
-                                      name_short),
-                  name_short = ifelse(str_detect(body, "^[[:space:]]{0,3}\\(Mrs.{1,20}\\)|^[[:space:]]{0,3}\\(Mr.{1,20}\\)|^[[:space:]]{0,3}\\(Ms.{1,20}\\)|^[[:space:]]{0,3}\\(Dr.{1,20}\\)") &
-                                        is.na(name_short),
-                                      str_extract(body, "(?<=^[[:space:]]{0,3}\\()Mrs.{1,20}(?=\\))|(?<=^[[:space:]]{0,3}\\()Ms.{1,20}(?=\\))|(?<=^[[:space:]]{0,3}\\()Mr.{1,20}(?=\\))|(?<=^[[:space:]]{0,3}\\()Dr.{1,20}(?=\\))"),
+                          name_short = ifelse(str_detect(body, "^Mrs.{1,20}(?=—.{1,})|^Mr.{1,20}(?=—.{1,})|^Ms.{1,20}(?=—.{1,})|^Dr.{1,20}(?=—.{1,})") & 
+                                                is.na(name_short) & 
+                                                str_detect(name, str_to_title(str_extract(body, "(?<=^Mr ).{1,20}(?=—.{1,})"))),
+                                              str_extract(body, "^Mrs.{1,20}(?=—.{1,})|^Mr.{1,20}(?=—.{1,})|^Ms.{1,20}(?=—.{1,})|^Dr.{1,20}(?=—.{1,})"),
+                                              name_short),
+                          name_short = ifelse(str_detect(body, "^[[:space:]]{0,2}Mrs.{1,20}(?=\\(.{1,})|^[[:space:]]{0,2}Mr.{1,20}(?=\\(.{1,})|^[[:space:]]{0,2}Ms.{1,20}(?=\\(.{1,})|^[[:space:]]{0,2}Dr.{1,20}(?=\\(.{1,})") & 
+                                                is.na(name_short),
+                                              str_extract(body, "^[[:space:]]{0,2}Mrs.{1,20}(?=\\(.{1,})|^Mr.{1,20}(?=\\(.{1,})|^Ms.{1,20}(?=\\(.{1,})|^Dr.{1,20}(?=\\(.{1,})"),
+                                              name_short),
+                          name_short = ifelse(str_detect(body, "^[[:space:]]{0,3}\\(Mrs.{1,20}\\)|^[[:space:]]{0,3}\\(Mr.{1,20}\\)|^[[:space:]]{0,3}\\(Ms.{1,20}\\)|^[[:space:]]{0,3}\\(Dr.{1,20}\\)") &
+                                                is.na(name_short),
+                                              str_extract(body, "(?<=^[[:space:]]{0,3}\\()Mrs.{1,20}(?=\\))|(?<=^[[:space:]]{0,3}\\()Ms.{1,20}(?=\\))|(?<=^[[:space:]]{0,3}\\()Mr.{1,20}(?=\\))|(?<=^[[:space:]]{0,3}\\()Dr.{1,20}(?=\\))"),
+                                              name_short))
+  
+  # specific to 1998-03-03 - a question was transcribed in regular text, so the name is missing and isn't captured in code above b/c of lookbehinds not matching (prefix and name not followed by dash)
+  # rather, it says "Mr Kerr asked..." - so we need to deal with this type of thing manually
+  main <- main %>% mutate(name_short = ifelse(is.na(name_short) & is.na(name) & question==0 & str_detect(body, "^Mrs.{1,20}(?= asked)|^Mr.{1,20}(?= asked)|^Ms.{1,20}(?= asked)|^Dr.{1,20}(?= asked)"),
+                                      str_extract(body, "^Mrs.{1,20}(?= asked)|^Mr.{1,20}(?= asked)|^Ms.{1,20}(?= asked)|^Dr.{1,20}(?= asked)"),
                                       name_short))
   
   # if someones name is missing but we have a name_short, paste it in the name column
   main <- main %>% mutate(name = ifelse(is.na(name) & !is.na(name_short), name_short, name))
   
-  # if name is NA and body starts with "The SPEAKER-", extract that and paste it in
-  main <- main %>% mutate(name = ifelse(is.na(name) & str_detect(body, "^The SPEAKER—"), "The SPEAKER", name),
-                          body = ifelse(name=="The SPEAKER" & str_detect(body, "^The SPEAKER—"), str_remove(body, "^The SPEAKER—"), body))
-  
-  # if name is NA and body starts with "The DEPUTY SPEAKER (....)-", extract that and paste it in
-  main <- main %>% mutate(name = ifelse(is.na(name) & str_detect(body, "^The DEPUTY SPEAKER \\(.{1,35}\\)—"), str_extract(body, "^The DEPUTY SPEAKER \\(.{1,35}\\)(?=—)"), name),
-                          body = ifelse(str_detect(body, "^The DEPUTY SPEAKER \\(.{1,35}\\)—"), str_remove(body, "^The DEPUTY SPEAKER \\(.{1,35}\\)—"), body))
-  
   # saw this on 2010—03—17 — caused a lot of names to be left NA b/c they weren't picked up in the patterns we extracted earlier
   # have to grab names and clean body up manually
   main <- main %>% mutate(name = ifelse(is.na(name) & str_detect(body, "^Dr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mrs .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Ms .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—"),
-                                str_extract(body, "^Dr .{1,30}(?=\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—)|^Mrs .{1,30}(?=\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—)|^Mr .{1,30}(?=\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—)|^Ms .{1,30}(?=\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—)"),
-                                name),
-                  body = ifelse(str_detect(body, "^Dr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mrs .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Ms .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—"),
-                                str_remove(body, "^Dr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mrs .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Ms .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—"),
-                                body))
+                                        str_extract(body, "^Dr .{1,30}(?=\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—)|^Mrs .{1,30}(?=\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—)|^Mr .{1,30}(?=\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—)|^Ms .{1,30}(?=\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—)"),
+                                        name),
+                          body = ifelse(str_detect(body, "^Dr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mrs .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Ms .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—"),
+                                        str_remove(body, "^Dr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mrs .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Mr .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—|^Ms .{1,30}\\n\\(.{1,200}\\)\\d\\d\\:\\d\\d\\:\\d\\d—"),
+                                        body))
   
   # grab date of sitting day from filename so we can filter people who are alive in next step
   thisDate <- as.Date(str_remove(filename, "\\.xml$"))
   
   # on 2000—08—31 Zahra Christian was given Dr Nelson's name_short and name.id — we need to manually fix this
   main <- main %>% mutate(name_short = ifelse(name=="Zahra, Christian, MP" & name_short=="Dr NELSON" & name.id=="RW5",
-                                        "Mr Zahra", name_short),
-                    name.id = ifelse(name=="Zahra, Christian, MP" & name.id=="RW5", "84H", name.id))
+                                              "Mr Zahra", name_short),
+                          name.id = ifelse(name=="Zahra, Christian, MP" & name.id=="RW5", "84H", name.id))
   
-  # on 2000 08 17 Mr Howard was given Mr Costello's name and name ID - I checked the PDF and this should be attributed to Mr Howard, fix this manually
-  if (filename=="2000-08-17.xml"){
-    main <- main %>% mutate(name = ifelse(!is.na(name_short) & name_short=="Mr Howard" & name.id=="CT4" & name=="Costello, Peter, MP",
-                                          "Howard, John, MP",
-                                          name),
-                            name.id = ifelse(name_short=="Mr Howard" & name.id=="CT4" & name=="Howard, John, MP",
-                                             "ZD4",
-                                             name.id),
-                            electorate = ifelse(name_short=="Mr Howard" & name.id=="ZD4" & name=="Howard, John, MP",
-                                           "Bennelong",
-                                           electorate))
-  }
+  # on 2000 08 17 Ms Macklin was given Dr Wooldridge's name - I checked the PDF and this should be attributed to Ms Mackln fix this manually
+  main <- main %>% mutate(name = ifelse(name=="Wooldridge, Dr Michael, MP" & name_short=="Ms MACKLIN" & name.id=="PG6",
+                                        "Macklin, Jenny, MP", name))
   
   # 2000—12—04 same issue for Kelly Jackie
   main <- main %>% mutate(name_short = ifelse(name=="Kelly, Jackie, MP" & name_short=="Mr CREAN" & name.id=="DT4",
@@ -2242,7 +1847,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # 2000—04—13 mr slipper given mr speaker's name as name_short, need to fix
   main <- main %>% mutate(name = ifelse(name=="SPEAKER, Mr" & name_short=="Mr Slipper" & name.id=="0V5",
-                                              "Slipper, Peter, MP", name))
+                                        "Slipper, Peter, MP", name))
   
   # from 2002—09—18
   main <- main %>% mutate(name = ifelse(name=="Mr McMULLAN,MP" & name.id=="5I4",
@@ -2265,7 +1870,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # from 1999—02—08
   main <- main %>% mutate(name = ifelse(name=="Hoare, Kelly, MP" & name_short=="Mr SPEAKER" & name.id=="10000",
-                                              "Mr SPEAKER", name),
+                                        "Mr SPEAKER", name),
                           party = as.factor(ifelse(name=="Mr SPEAKER" & party=="ALP", NA, as.character(party))),
                           electorate = ifelse(name=="Mr SPEAKER" & electorate=="Charlton", NA, electorate))
   
@@ -2274,27 +1879,41 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                           party = as.factor(ifelse(name=="Mr SPEAKER" & party=="ALP", NA, as.character(party))),
                           electorate = ifelse(name=="Mr SPEAKER" & electorate=="Brand", NA, electorate))
   
+  # from 1998 03 04
+  main <- main %>% mutate(name = ifelse(name=="Fischer, Tim, MP" & name_short=="Mr SPEAKER" & name.id=="10000",
+                                        "Mr SPEAKER", name))
+  
+  # from 1998 04 07
+  main <- main %>% mutate(name.id = ifelse(name=="Worth, Trish, MP" & name_short=="Ms WORTH" & name.id=="10000",
+                                           "8V5", name.id))
+  main <- main %>% mutate(name.id = ifelse(name=="Ferguson, Martin, MP" & name_short=="Mr MARTIN FERGUSON" & name.id=="10000",
+                                           "LS4", name.id))
+  
+  # from 1998 06 01
+  main <- main %>% mutate(name.id = ifelse(name=="Howard, John, MP" & name_short=="Mr HOWARD" & name.id=="10000",
+                                           "ZD4", name.id))
+  
   # 2000—06—20 issue b/c sometimes name short and name ID are unique but other times they're just the general ones, and this will give us extra rows in the lookup table
   # let's just keep it general b/c it's easier to do and then just back out later
   main <- main %>% mutate(name.id = ifelse(name=="SPEAKER, The" & name.id!="10000", "10000", name.id),
-                  name_short = ifelse(name=="SPEAKER, The" & name_short!="The SPEAKER", "The SPEAKER", name_short))
+                          name_short = ifelse(name=="SPEAKER, The" & name_short!="The SPEAKER", "The SPEAKER", name_short))
   
   # 2008—06—23
   main <- main %>% mutate(name = ifelse(name ==", Bob, MP" & name.id=="8IS", "Debus, Bob, MP", name))
+  
+  if (filename=="1998-03-24.xml") {
+    main <- main %>% mutate(name.id = ifelse(name=="Howard, John, MP" & name_short=="Mr HOWARD",
+                                             "ZD4",
+                                             name.id))
+  }
+  
+  # 1998 03 24 Alan Griffin given wrong name id in one spot, fix manually
+  main <- main %>% mutate(name.id = ifelse(name=="Griffin, Alan, MP", "VU5", name.id))
   
   # trying to keep things general for the speaker so there aren't merging issues with the lookup table — ex 1999—02—08
   main <- main %>% mutate(name.id = ifelse(name_short=="Mr SPEAKER", "10000", name.id),
                           electorate = ifelse(name_short=="Mr SPEAKER", NA, electorate),
                           party = as.factor(ifelse(name_short=="Mr SPEAKER", NA, as.character(party))))
-  
-  # this is specific to 2009—02—04 — i had a lot of issues because the name of a sub—debate (Nation Building and Jobs Plan) was named a bunch in speeches
-  # so i tried to make sure everything was split in the right places, but there was one line that was separated that was actually still part of one speech body
-  # it was split b/c the sub—debate was named in the middle of the speech — let's put those two back together
-  if (filename=="2009—02—04.xml") {
-    main <- main %>% mutate(name = ifelse(str_detect(body, "^The Nation Building and Jobs Plan is based on the reality that now is not the time for half measures\\.It is a time to be bold and to get on with it\\.It is weighted towards productive investment\\."),
-                                  "Swan, Wayne, MP", 
-                                  name))
-  }
   
   # creating lookup table to fill name party electorate and name ID with
   # sometimes the full name given is just the short name, so
@@ -2332,8 +1951,8 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # if someone's prefix is included in the full name, remove that
   lookup <- lookup %>% mutate(name = ifelse(str_detect(name, "^Mrs |^Mr |^Ms |^Dr ") & !str_detect(name, "SPEAKER"),
-                                  str_remove(name, "^Mrs |^Mr |^Ms |^Dr "),
-                                  name))
+                                            str_remove(name, "^Mrs |^Mr |^Ms |^Dr "),
+                                            name))
   
   # special case — his last name is capitalized and it's causing issues b/c other times it's not in all caps
   # fix for consistency
@@ -2383,8 +2002,8 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # if last name is all caps, make it title style
   lookup <- lookup %>% mutate(last_name = ifelse(grepl("^[[:upper:]]+$", last_name),
-                                       str_to_title(last_name),
-                                       last_name))
+                                                 str_to_title(last_name),
+                                                 last_name))
   
   
   # in case full_name is equal to name_short but the actual full name exists, we want to use that
@@ -2491,11 +2110,17 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   #   filter(n()>1 & !str_detect(full_name, "\\)") & nchar(full_name)==max(nchar(full_name)) | n()==1 | n()>1 & str_detect(full_name, "\\)")) %>% 
   #   ungroup()
   
-  # 04—04—2000 Dr Wooldridge attributed two electorates (Chisholm and Casey) — this is wrong it should just be Casey — fix
-  if (thisDate=="2000-04-04") {
-    lookup <- lookup %>% mutate(electorate = ifelse(uniqueID=="Wooldridge1956", "Casey", electorate)) %>% 
-      unique()
-  }
+  # this is from 1998 march 2 where David Hawker was given the wrong name ID once
+  lookup <- lookup %>% mutate(name.id = ifelse(uniqueID=="Hawker1949", "8H4", name.id))
+  
+  # this is from 1998 march 4 where Kelvin Thomson was given the wrong name ID once
+  lookup <- lookup %>% mutate(name.id = ifelse(uniqueID=="Thomson1955", "UK6", name.id))
+  
+  # this is from 1998 dec 8 where Peter Reith was given the wrong name ID once
+  lookup <- lookup %>% mutate(name.id = ifelse(uniqueID=="Reith1950", "WT4", name.id))
+  
+  # this is from 1998 dec 10 where Simon Crean was given the wrong name ID once
+  lookup <- lookup %>% mutate(name.id = ifelse(uniqueID=="Crean1949", "DT4", name.id))
   
   # issue on 2000—09—04 where Anderson is Acting Speaker and "Acting" is being transcribed in his party like (NPActing) — let's fix this
   lookup <- lookup %>% mutate(party = as.factor(ifelse(str_detect(party, "Acting$"), str_remove(party, "Acting$"), as.character(party))))
@@ -2505,8 +2130,8 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   # individual where this is the case
   # TO DO — come back to this and make things more complete. just doing this now b/c of time crunch
   lookup <- lookup %>% group_by(full_name) %>% mutate(name.id = ifelse(duplicated(full_name) & str_detect(full_name, "DEPUTY SPEAKER") & name.id!="10000", 10000, name.id),
-                                            party = as.factor(ifelse(duplicated(full_name) & str_detect(full_name, "DEPUTY SPEAKER") & !is.na(party), NA, as.character(party))),
-                                            electorate = ifelse(duplicated(full_name) & str_detect(full_name, "DEPUTY SPEAKER") & !is.na(electorate), NA, electorate)) %>% 
+                                                      party = as.factor(ifelse(duplicated(full_name) & str_detect(full_name, "DEPUTY SPEAKER") & !is.na(party), NA, as.character(party))),
+                                                      electorate = ifelse(duplicated(full_name) & str_detect(full_name, "DEPUTY SPEAKER") & !is.na(electorate), NA, electorate)) %>% 
     ungroup() %>% 
     unique()
   
@@ -2597,6 +2222,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
     fill(interject, .direction = "down") %>% 
     ungroup() %>% 
     mutate(interject = ifelse(is.na(interject), 1, interject))
+
   
   # fix up full stop issue that came with parsing
   main <- main %>% mutate(body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\.[[:upper:]]"),
@@ -2617,7 +2243,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # trim any excess whitespace
   main <- main %>% mutate(body = str_trim(body, side="both"))
-
+  
   # add space between by leave—I move — for word count purposes
   # two different types of dashes
   main <- main %>% mutate(body = ifelse(str_detect(body, "by leave\\—[[:upper:]]"), str_replace(body, "(?<=by leave)—", "— "), body))
@@ -2653,7 +2279,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # case when name is followed by title then newline and spaces, then timestamp
   main$body <- str_remove(main$body, "^.{0,6}[:space:].{0,35}\\(.{0,250}\\)\n[:space:]{16,24}\\([:digit:]{2}:[:digit:]{2}\\)\\:[[:space:]]{0,5}")
-   
+  
   # case when name is followed by and then newline and spaces then timestamp
   main$body <- str_remove(main$body, "^.{0,6}[:space:].{0,35}\n                \\([:digit:]{2}:[:digit:]{2}\\)\\:[[:space:]]{0,5}")
   
@@ -2667,31 +2293,35 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   main$body <- str_remove(main$body, "^.{0,6}[:space:].{0,35}\\(.{0,250}\\)[[:space:]]{0,2}\\(\\d\\d\\.\\d\\d [[:alpha:]]\\.[[:alpha:]]\\.\\)—")
   
   # 2002—09—26 speaker title put at the beginning of body needed to be extracted, and put into the name variable b/c name was missing
-  # also grab time stamp
-  main <- main %>% mutate(name = ifelse(is.na(name) & str_detect(body, "^The SPEAKER[[:space:]]{0,2}\\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
-                                str_extract(body, "^The SPEAKER(?=[[:space:]]{0,2}\\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—)"),
-                                name),
-                          time.stamp = ifelse(str_detect(body, "^The SPEAKER[[:space:]]{0,2}\\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
-                                              str_extract(body, "(?<=^The SPEAKER[[:space:]]{0,2}\\()\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.(?=\\)—)"),
-                                              time.stamp),
-                  body = ifelse(str_detect(body, "^The SPEAKER[[:space:]]{0,2}\\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
-                                str_remove(body, "^The SPEAKER[[:space:]]{0,2}\\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
-                                body))
+  main <- main %>% mutate(name = ifelse(is.na(name) & str_detect(body, "^The SPEAKER  \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
+                                        str_extract(body, "^The SPEAKER(?=  \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—)"),
+                                        name),
+                          body = ifelse(str_detect(body, "^The SPEAKER  \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
+                                        str_remove(body, "^The SPEAKER  \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
+                                        body))
+  
+  # 2004—0309 speaker title put at the beginning of body needed to be extracted, and put into the name variable b/c name was missing
+  main <- main %>% mutate(name = ifelse(is.na(name) & str_detect(body, "^The SPEAKER \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
+                                        str_extract(body, "^The SPEAKER(?= \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—)"),
+                                        name),
+                          body = ifelse(str_detect(body, "^The SPEAKER \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
+                                        str_remove(body, "^The SPEAKER \\(\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.\\)—"),
+                                        body))
   
   # let's extract the time stamp from statements the state the current time, like debate adjourned at ___ or sitting suspended from ___
   # let's use these only if the time stamp isn't already there
   main <- main %>% mutate(time.stamp = ifelse(str_detect(body, "adjourned at \\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.$|^Sitting suspended from \\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.(?= to)|^Order\\! It being \\d{1,2}.\\d{2} [[:lower:]]\\.m\\., |took the chair at \\d{1,2}.\\d{2} [[:lower:]]\\.m\\.$|took the chair at \\d{1,2}.\\d{2} [[:lower:]]m\\.$") & is.na(time.stamp),
-                                      str_extract(body, "(?<=adjourned at )\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.$|(?<=^Sitting suspended from )\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.(?= to)|(?<=^Order\\! It being )\\d{1,2}.\\d{2} [[:lower:]]\\.m\\.(?=, )|(?<=took the chair at )\\d{1,2}.\\d{2} [[:lower:]]\\.m\\.$|(?<=took the chair at )\\d{1,2}.\\d{2} [[:lower:]]m\\.$"),
-                                      time.stamp),
+                                              str_extract(body, "(?<=adjourned at )\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.$|(?<=^Sitting suspended from )\\d{1,2}\\.\\d{2} [[:lower:]]\\.m\\.(?= to)|(?<=^Order\\! It being )\\d{1,2}.\\d{2} [[:lower:]]\\.m\\.(?=, )|(?<=took the chair at )\\d{1,2}.\\d{2} [[:lower:]]\\.m\\.$|(?<=took the chair at )\\d{1,2}.\\d{2} [[:lower:]]m\\.$"),
+                                              time.stamp),
                           time.stamp = ifelse(str_detect(body, "adjourned at \\d{1,2}\\.\\d{2} [[:lower:]]m$|^Sitting suspended from \\d{1,2}\\.\\d{2} [[:lower:]]m(?= to)|^Order\\! It being \\d{1,2}.\\d{2} [[:lower:]]m, |took the chair at \\d{1,2}.\\d{2} [[:lower:]]m$") & is.na(time.stamp),
                                               str_extract(body, "(?<=adjourned at )\\d{1,2}\\.\\d{2} [[:lower:]]m$|(?<=^Sitting suspended from )\\d{1,2}\\.\\d{2} [[:lower:]]m(?= to)|(?<=^Order\\! It being )\\d{1,2}.\\d{2} [[:lower:]]m(?=, )|(?<=took the chair at )\\d{1,2}.\\d{2} [[:lower:]]m$"),
                                               time.stamp),
-                  time.stamp = str_replace_all(time.stamp, "(?<=\\d)\\.", "\\:"))
+                          time.stamp = str_replace_all(time.stamp, "(?<=\\d)\\.", "\\:"))
   
   
   # need to convert the am/pm time to 24 hour time, for consistency
   main <- main %>% mutate(time.stamp = str_replace_all(time.stamp, "(?<=\\d)\\.", "\\:"),
-                       time.stamp = ifelse(str_detect(time.stamp, "^\\d\\d[[:space:]][[:alpha:]]"), paste0(time.stamp), time.stamp)) %>% 
+                          time.stamp = ifelse(str_detect(time.stamp, "^\\d\\d[[:space:]][[:alpha:]]"), paste0(time.stamp), time.stamp)) %>% 
     mutate(time.stamp = ifelse(str_detect(time.stamp, "a\\.m\\."), str_replace(time.stamp, "a.m.", "AM"),time.stamp),
            time.stamp = ifelse(str_detect(time.stamp, "p\\.m\\."), str_replace(time.stamp, "p.m.", "PM"),time.stamp),
            time.stamp = ifelse(str_detect(time.stamp, "am\\."), str_replace(time.stamp, "am.", "AM"),time.stamp),
@@ -2719,8 +2349,8 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
   
   # escape all characters
   name_forms <- name_forms %>% as_tibble() %>% mutate(value = str_replace_all(value, "\\.", "\\\\."),
-                                        value = str_replace_all(value, "\\)", "\\\\)"),
-                                        value = str_replace_all(value, "\\(", "\\\\(")) %>% 
+                                                      value = str_replace_all(value, "\\)", "\\\\)"),
+                                                      value = str_replace_all(value, "\\(", "\\\\(")) %>% 
     pull(value)
   
   # now, str_remove with lookahead for emdash
@@ -2734,7 +2364,7 @@ if (nrow(xmlToDataFrame(node=getNodeSet(hansard_xml, "//talk.start/talker"), hom
                           first.speech = ifelse(first.speech=="" | first.speech==" ", NA, first.speech))
   
   # export CSV
-  write.csv(main, paste0("/Volumes/Verbatim/output/main-2000-2011/", str_remove(filename, ".xml"), "-main.csv"), row.names = FALSE)
+  write.csv(main, paste0("/Volumes/Verbatim/output/main-1998-1999/", str_remove(filename, ".xml"), "-main.csv"), row.names = FALSE)
   
 }
 
@@ -2744,20 +2374,22 @@ files_all <- list.files("/Volumes/Verbatim/input/")
 # grab a couple years
 files_get <- files_all %>%
   as_tibble() %>%
-  filter(str_detect(value, "^2000-")) %>% 
-  filter(value <="2000-04-13.xml") %>% 
+  filter(str_detect(value, "^1998-|^1999-")) %>% 
+  #filter(value >="1999-09-30.xml") %>% 
   pull(value)
 
-#"^2000-|^2001-|^2002-|^2003-|^2004-|^2005-|^2006-|^2007-|^2008-|^2009-|^2010-|^2011-"
 
 
 for(i in 1:length(files_get)){
-  parse_hansard(files_get[i])
+  parse_hansard_1998(files_get[i])
 }
- 
-dates_now <- c("2005-06-23.xml", "2007-05-09.xml", "2007-09-19.xml", "2008-11-24.xml", "2008-12-01.xml", "2009-02-04.xml", "2010-03-10.xml", "2010-10-28.xml", "2011-03-21.xml")
-dates_now <- dates_now %>% separate_rows(value, sep=", ") %>% pull()
 
-for(i in 1:length(dates_now)){
-  parse_hansard(dates_now[i])
+
+dates_now <- as_tibble("1999-12-09, 1999-12-08, 1999-11-25, 1999-10-19, 1999-10-14, 1999-10-13, 1999-09-29, 1999-08-31, 1999-08-23, 1999-08-09, 1999-06-30, 1999-06-29, 1999-06-22, 1999-06-21, 1999-06-01, 1999-03-31, 1999-03-30, 1998-12-09, 1998-12-03, 1998-11-26, 1998-07-02, 1998-06-03, 1998-05-14, 1998-04-08, 1998-03-23, 1998-03-11, 1998-03-10, 1998-03-05, 1998-03-04") %>% 
+  separate_rows(value, sep=", ") %>% 
+  mutate(value = paste0(value, ".xml")) %>% 
+  pull
+
+for (i in 1:length(dates_now)){
+  parse_hansard_1998(dates_now[i])
 }

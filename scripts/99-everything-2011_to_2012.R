@@ -1,14 +1,18 @@
+# main committee
 # script to parse everything from Hansard
-# WORKS FOR 2012-08-14 TO PRESENT (that day is when the federation chamber was renamed)
+#### good for everything up to 2012-06-28 (last day before main committee was renamed to federation chamber)
 
 # read in necessary packages
 library(XML)
 library(here)
 library(tidyverse)
 
+# grab "all" dataset from AusPol package
+all <- AustralianPoliticians::get_auspol('all')
+
 # define function for splitting interjections, which will be referenced in parse_hansard function
 
-split_interjections <- function(main, interject, bus_start){
+split_interjections_maincomm <- function(main, interject, bus_start, sub1_q_a_writing, filename){
   
   #### step 1: add speech_no to make it easier to see where interjections happened 
   main <- rowid_to_column(main, "speech_no")
@@ -165,7 +169,7 @@ split_interjections <- function(main, interject, bus_start){
   interject_specific <- as_tibble(interject_names) %>% filter(!(value %in% interject_general)) %>% pull
   
   # now separate rows
-  main <- separate_rows(main, body, sep=paste0("(?=", interject_general, ")(?!", interject_general, "[[:space:]]on[[:space:]]my)(?!", interject_general, "[[:space:]]having)(?!", interject_general, "[[:space:]]standing)(?!", interject_general, "[[:space:]]will )(?!", interject_general, "[[:space:]]can )",
+  main <- separate_rows(main, body, sep=paste0("(?=", interject_general, ")(?!", interject_general, "[[:space:]]on[[:space:]]my)(?!", interject_general, "[[:space:]]having)(?!", interject_general, "[[:space:]]standing)(?!", interject_general, "[[:space:]]will )",
                                                collapse="|"))
   main <- separate_rows(main, body, sep=paste0("(?=", interject_specific, ")(?!", interject_specific, "[[:space:]]\\(.{1,30}\\)\\n[[:space:]]{11,22}\\()", collapse="|"))
   
@@ -216,6 +220,9 @@ split_interjections <- function(main, interject, bus_start){
     # some splits need to be made at places like -Mr Dutton: which aren't being captured already (b/c em dash hadn't been changed yet)
     main <- separate_rows(main, body, sep=paste0("(?<=\\-)(?<!SPEAKER[[:space:]]\\()(?=", names_use, "\\:)", collapse = "|"))
     
+    # same as above but with space after dash
+    main <- separate_rows(main, body, sep=paste0("(?<=\\-[[:space:]])(?<!SPEAKER[[:space:]]\\()(?=", names_use, "\\:)", collapse = "|"))
+    
     # split for places like -Ms Flint interjecting-
     main <- separate_rows(main, body, sep=paste0("(?<=\\-)(?<!SPEAKER[[:space:]]\\()(?=", names_use, " interjecting-)", collapse = "|"))
     
@@ -256,10 +263,10 @@ split_interjections <- function(main, interject, bus_start){
   
   # last split on other names that didn't get split on but should have - due to the fact that they didn't exist in main orig or interject dfs
   # don't want "Mr Speaker" (likely being referenced in another members statement and don't want to split on that)
-  other_names <- str_extract_all(main$body, paste0(c("(Dr|Mr|Mrs|Ms)[[:space:]][[:alpha:]]{1,35}(?=\\:)",
-                                                     "(Dr|Mr|Mrs|Ms)[[:space:]][[:alpha:]]{1,10}\\'[[:alpha:]]{0,35}(?=\\:)",
-                                                     "(Dr|Mr|Mrs|Ms)[[:space:]][[:alpha:]]{1,10}\\-[[:alpha:]]{0,35}(?=\\:)",
-                                                     "(Dr|Mr|Mrs|Ms)[[:space:]][[:alpha:]]{1,10}[[:space:]][[:upper:]][[:alpha:]]{1,10}(?=\\:)"), collapse="|")) %>%
+  other_names <- str_extract_all(main$body, paste0(c("(?<!, )(Dr|Mr|Mrs|Ms)[[:space:]][[:alpha:]]{1,35}(?=\\:)",
+                                                     "(?<!, )(Dr|Mr|Mrs|Ms)[[:space:]][[:alpha:]]{1,10}\\'[[:alpha:]]{0,35}(?=\\:)",
+                                                     "(?<!, )(Dr|Mr|Mrs|Ms)[[:space:]][[:alpha:]]{1,10}\\-[[:alpha:]]{0,35}(?=\\:)",
+                                                     "(?<!, )(Dr|Mr|Mrs|Ms)[[:space:]][[:alpha:]]{1,10}[[:space:]][[:upper:]][[:alpha:]]{1,10}(?=\\:)"), collapse="|")) %>%
     na.omit() %>%
     unlist() %>%
     unique() %>%
@@ -287,7 +294,7 @@ split_interjections <- function(main, interject, bus_start){
     filter(!str_detect(value, paste0(c("Speaker", "SPEAKER"), collapse="|"))) %>%
     filter(!str_detect(paste0(interject_general, collapse="|"), paste0(value, collapse = "|"))) %>% 
     pull() %>% c(., other_names)
-
+  
   # split on these other names
   if (length(other_names)>0){
     main <- separate_rows(main, body, sep=paste0("(?<!\\:|[[:alpha:]][[:space:]])(?=", other_names, "\\:|", other_names, " interjecting-)", collapse="|"))
@@ -303,14 +310,14 @@ split_interjections <- function(main, interject, bus_start){
     
     # extract who is interjecting and paste that into name column
     # clean up body by removing name of person interjecting from it as well as whitespace/punctuation at beginning (only keeping those where body is "___ interjecting-")
-    main <- main %>% mutate(name = ifelse(is.na(name) & !str_detect(body, "took the chair"), 
+    main <- main %>% mutate(name = ifelse(is.na(name) & !str_detect(body, "took the chair\\."), 
                                           str_extract(main$body, paste0("^", c(names_use, other_names, interject_names), collapse = "|")), 
                                           name),
                             body = ifelse(str_detect(body, paste0("^", names_use, collapse = "|")), 
                                           str_remove(body, paste0("^", names_use, "[[:punct:]]", collapse = "|")), 
                                           body),
                             body = ifelse(str_detect(body, paste0("^", str_subset(interject_names, pattern="interjecting", negate = TRUE), "(?![[:space:]]having)", collapse = "|"))
-                                          & !str_detect(body, "took the chair"), 
+                                          & !str_detect(body, "took the chair\\."), 
                                           str_remove(body, paste0("^", str_subset(interject_names, pattern="interjecting", negate = TRUE), "(?![[:space:]]interjecting)", collapse = "|")),  
                                           body),
                             body = ifelse(str_detect(body, paste0("^", other_names, collapse = "|")), 
@@ -368,6 +375,17 @@ split_interjections <- function(main, interject, bus_start){
   main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=House adjourned \\d\\d\\:\\d\\d)"))
   main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=House adjourned \\d\\d\\:\\d\\d)"))
   
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=House adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=House adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=House adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=House adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=House adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=House adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=House adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=House adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=House adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=House adjourned \\d\\d\\.\\d\\d)"))
+  
   # split fed. chamb adjournment statement
   main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Federation Chamber adjourned at \\d\\d\\:\\d\\d)"))
   main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=Federation Chamber adjourned at \\d\\d\\:\\d\\d)"))
@@ -384,14 +402,49 @@ split_interjections <- function(main, interject, bus_start){
   main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Federation adjourned \\d\\d\\:\\d\\d)"))
   main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=Federation adjourned \\d\\d\\:\\d\\d)"))
   
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Federation Chamber adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=Federation Chamber adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=Federation Chamber adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Federation Chamber adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=Federation Chamber adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Federation Chamber adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=Federation Chamber adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Federation Chamber adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=Federation Chamber adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Federation adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=Federation adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=Federation adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Federation adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=Federation adjourned \\d\\d\\.\\d\\d)"))
+  
+  # split main committee adjournment statement
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Main Committee adjourned at \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=Main Committee adjourned at \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=Main Committee adjourned at \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Main Committee adjourned at \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=Main Committee adjourned at \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Main Committee adjourned \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=Main Committee adjourned \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Main Committee adjourned \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=Main Committee adjourned at \\d\\d\\:\\d\\d)"))
+  
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Main Committee adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:space:]])(?=Main Committee adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=Main Committee adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Main Committee adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=Main Committee adjourned at \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]][[:space:]])(?=Main Committee adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:digit:]][[:digit:]]\\:[[:digit:]][[:digit:]])(?=Main Committee adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Main Committee adjourned \\d\\d\\.\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=[[:punct:]])(?=Main Committee adjourned at \\d\\d\\.\\d\\d)"))
+  
   # split stage notes
   main <- separate_rows(main, body, sep=paste0("(?<=\\-)(?=Debate interrupted\\.)"))
-  main <- separate_rows(main, body, sep=paste0("(?<=\\.)(?=Question agreed to\\.)"))
-  main <- separate_rows(main, body, sep=paste0("(?<=\\d\\d\\:\\d\\d)(?=Question agreed to\\.)"))
-  main <- separate_rows(main, body, sep=paste0("(?<=\\.[[:space:]]|\\.[[:space:]][[:space:]])(?=Question agreed to\\.)"))
-  main <- separate_rows(main, body, sep=paste0("(?<=\\.)(?=Question unresolved\\.)"))
   main <- separate_rows(main, body, sep=paste0("(?<=\\.|\\.[[:space:]])(?=Question put\\.)"))
   main <- separate_rows(main, body, sep=paste0("(?<=\\.|\\.[[:space:]])(?=The House divided\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\.)(?=Question agreed to\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\.[[:space:]]|\\.[[:space:]][[:space:]])(?=Question agreed to\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\.)(?=Question unresolved\\.)"))
   main <- separate_rows(main, body, sep=paste0("(?<=\\.[[:space:]]|\\.[[:space:]][[:space:]])(?=Question unresolved\\.)"))
   main <- separate_rows(main, body, sep=paste0("(?<=\\.)(?=Bill read a [[:alpha:]]{0,10}[[:space:]]time\\.)"))
   main <- separate_rows(main, body, sep=paste0("(?<=\\.[[:space:]]|\\.[[:space:]][[:space:]])(?=Bill read a [[:alpha:]]{0,10}[[:space:]]time\\.)"))
@@ -436,6 +489,76 @@ split_interjections <- function(main, interject, bus_start){
   main <- separate_rows(main, body, sep=paste0("(?<=\\!|\\.)(?=Members and senators rising and applauding,.{1,50}left the chamber\\.)"))
   main <- separate_rows(main, body, sep=paste0("(?<=\\! |\\. )(?=Members and senators rising and applauding,.{1,50}left the chamber\\.)"))
   
+  # special case only seen in 2011 so far, weird formatting of time and name
+  main <- separate_rows(main, body, sep=paste0("(?=\\[\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\))")) %>% 
+    mutate(name = ifelse(str_detect(body, "^\\[\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)"),
+                         "The SPEAKER",
+                         name),
+           party = as.factor(ifelse(str_detect(body, "^\\[\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)"),
+                          NA,
+                          as.character(party))),
+           electorate = ifelse(str_detect(body, "^\\[\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)"),
+                               NA,
+                               electorate),
+           name.id = ifelse(str_detect(body, "^\\[\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)"),
+                               NA,
+                               name.id),
+           body = ifelse(str_detect(body, "^\\[\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)"), 
+                         str_remove(body, "^\\[\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\:\\d\\d]\\(The Speaker\\-.{1,20}\\)"),
+                         body))
+  
+  # another variation of above
+  main <- separate_rows(main, body, sep=paste0("(?=\\[\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\))")) %>% 
+    mutate(name = ifelse(str_detect(body, "\\[\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)"),
+                         "The SPEAKER",
+                         name),
+           party = as.factor(ifelse(str_detect(body, "\\[\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)"),
+                                    NA,
+                                    as.character(party))),
+           electorate = ifelse(str_detect(body, "\\[\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)"),
+                               NA,
+                               electorate),
+           name.id = ifelse(str_detect(body, "\\[\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)"),
+                            NA,
+                            name.id),
+           body = ifelse(str_detect(body, "\\[\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)"), 
+                         str_remove(body, "\\[\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)|^\\[\\d\\d\\.\\d\\d[[:space:]]am]\\(The Speaker\\-.{1,20}\\)"),
+                         body))
+  
+  if (filename=="2012-05-31.xml"){
+    main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\) )(?=I seek leave to incorporate these documents in support of my speech\\.)"))
+  }
+  
+  if (filename=="2012-02-07.xml"){
+    main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=On indulgence, I table a petition by those who wish to save the Highett Grassy Woodland\\.)"))
+  }
+  
+  
+  
+  # separate more stage notes that were found in validation test 3 (After time expired)
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Question agreed to\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Proposed expenditure agreed to\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Expenditure agreed to\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=\\(Quorum formed\\))"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Report made a parliamentary paper in accordance with standing order \\d{1,2}\\([[:alpha:]]\\))"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=A division having been called in the House of Representatives-)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=A division having been called in the House-)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Bill, as amended, agreed to\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=An incident having occurred in the gallery-)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=In accordance with standing order \\d{1,2}\\([[:alpha:]]\\) the report was made a parliamentary paper\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=In accordance with standing order \\d{1,2}\\([[:alpha:]]\\), the report was made a parliamentary paper\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\)  )(?=\\(Quorum formed\\))"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Debate interrupted\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\) )(?=Debate interrupted\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Leave not granted\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Bill read a first time\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Leave granted\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Proceedings suspended from \\d\\d\\:\\d\\d to \\d\\d\\:\\d\\d)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Question put\\: That the motion \\(.{1,20}\\) be agreed to\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Question put\\: That the amendment \\(.{1,20}\\) be agreed to\\.)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=The petition read as follows-)"))
+  main <- separate_rows(main, body, sep=paste0("(?<=\\(Time expired\\))(?=Petition received\\.)"))
+
   # add space after "I move:" statements for tidiness - often no space between colon and statement
   main <- main %>% mutate(body = str_replace_all(body, "I move\\:(?=[[:alpha:]])", "I move\\: "))
   
@@ -444,6 +567,12 @@ split_interjections <- function(main, interject, bus_start){
   
   # if body starts with a colon, remove that
   main <- main %>% mutate(body = ifelse(str_detect(body, "^\\:"), str_remove(body, "^\\:"), body))
+  
+  # if body starts with timestamp, remove that
+  main <- main %>% mutate(body = ifelse(str_detect(body, "^\\(\\d\\d\\:\\d\\d\\)\\:[[:space:]]"), str_remove(body, "^\\(\\d\\d\\:\\d\\d\\)\\:[[:space:]]"), body))
+  
+  # if  body starts with whitespace, remove that
+  main <- main %>% mutate(body = ifelse(str_detect(body, "^[:space:]{1,8}"), str_remove(body, "^[:space:]{1,8}"), body))
   
   stage_notes <- c("Bill read a [[:alpha:]]{0,10}[[:space:]]time\\.",
                    "Debate interrupted\\.",
@@ -455,11 +584,17 @@ split_interjections <- function(main, interject, bus_start){
                    "Question put\\.",
                    "House adjourned at \\d\\d\\:\\d\\d",
                    "Federation Chamber adjourned at \\d\\d\\:\\d\\d",
+                   "Main Committee adjourned at \\d\\d\\:\\d\\d",
+                   "Federation Chamber adjourned at \\d\\d\\.\\d\\d",
+                   "Main Committee adjourned at \\d\\d\\.\\d\\d",
                    "House adjourned \\d\\d\\:\\d\\d",
+                   "House adjourned \\d\\d\\.\\d\\d",
                    "Federation Chamber adjourned \\d\\d\\:\\d\\d",
+                   "Main Committee adjourned \\d\\d\\:\\d\\d",
                    "Leave not granted\\.",
                    "Leave granted\\.",
                    "A division having been called in the House of Representatives\\-",
+                   "A division having been called in the House-",
                    "Honourable members having stood in their places-",
                    "Honourable members standing in their places-",
                    "The Speaker having seated himself in the chair-",
@@ -469,7 +604,19 @@ split_interjections <- function(main, interject, bus_start){
                    "The member for [[:alpha:]]{0,50} then left the chamber.",
                    "More than the number of members required by the standing orders having risen in their places-",
                    "Members and senators rising and applauding,.{1,50}left the chamber\\.",
-                   "Proposed expenditure agreed to\\.")
+                   "Proposed expenditure agreed to\\.",
+                   "Expenditure agreed to\\.",
+                   "\\(Quorum formed\\)",
+                   "Proceedings suspended from \\d\\d\\:\\d\\d to \\d\\d\\:\\d\\d",
+                   "Question put\\: That the motion \\(.{1,20}\\) be agreed to\\.",
+                   "Question put\\: That the amendment \\(.{1,20}\\) be agreed to\\.",
+                   "Report made a parliamentary paper in accordance with standing order \\d{1,2}\\([[:alpha:]]\\)",
+                   "Bill, as amended, agreed to\\.",
+                   "An incident having occurred in the gallery-",
+                   "In accordance with standing order \\d{1,2}\\([[:alpha:]]\\) the report was made a parliamentary paper\\.",
+                   "In accordance with standing order \\d{1,2}\\([[:alpha:]]\\), the report was made a parliamentary paper\\.",
+                   "The petition read as follows-",
+                   "Petition received\\.")
   
   # remove name and other info from rows with stage notes / stage directions
   main <- main %>% mutate(name = ifelse(str_detect(body, paste0("^", stage_notes, collapse = "|")), 
@@ -490,10 +637,10 @@ split_interjections <- function(main, interject, bus_start){
   # we don't have to have it twice, so only extract these if we don't have the business start already (about to bind it on in next bit of code)
   if (nrow(bus_start)==0){
     main <- main %>% mutate(body = str_remove(body, "^[[:space:]]{0,30}"),
-                            body = ifelse(str_detect(body, "took the chair at \\d\\d:\\d\\d"), paste0(name, " ", body), body),
-                            name = ifelse(str_detect(body, "took the chair at \\d\\d:\\d\\d"), "business start", name))
+                            body = ifelse(str_detect(body, "took the chair at \\d\\d:\\d\\d|took the chair at \\d:\\d\\d"), paste0(name, " ", body), body),
+                            name = ifelse(str_detect(body, "took the chair at \\d\\d:\\d\\d|took the chair at \\d:\\d\\d"), "business start", name))
   } else {
-    main <- main %>% filter(!str_detect(body, "took the chair at \\d\\d:\\d\\d"))
+    main <- main %>% filter(!str_detect(body, "took the chair at \\d\\d:\\d\\d|took the chair at \\d:\\d\\d"))
   }
   
   ########## add business start to main
@@ -513,11 +660,33 @@ split_interjections <- function(main, interject, bus_start){
       arrange(fedchamb_flag)
   }
   
+  # first statmenet by deputy speaker was categorized under business start which caused issues so fixing manually (2011-08-24)
+  # using statement directly b/c we don't pass filename to this function
+  if (any(str_detect(main$body, "The DEPUTY SPEAKER \\(Hon\\. Peter Slipper\\) took the chair at 9:31 am\\.The DEPUTY SPEAKER:  Order\\! There being no quorum present, the sitting of the Main Committee will be suspended until a quorum is present\\.Proceedings suspended from 9\\.31 to 10\\.01"))){
+    
+    # this statement is captured in two places. the one where it's the entire body, the fedchamb flag is wrong, and we want to use the other one instead (to avoid having two and having the right flag)
+    # so, drop this one row
+    main <- main %>% filter(body!="Order! There being no quorum present, the sitting of the Main Committee will be suspended until a quorum is present. Proceedings suspended from 9.31 to 10.01")
+    
+    main <- separate_rows(main, body, sep="(?=The DEPUTY SPEAKER:  Order\\! There being no quorum present, the sitting of the Main Committee will be suspended until a quorum is present\\.Proceedings suspended from 9\\.31 to 10\\.01)")
+    
+    main <- main %>% mutate(name = ifelse(str_detect(body, "^The DEPUTY SPEAKER:  Order\\! "), "The DEPUTY SPEAKER", name),
+                    body = str_remove(body, "^The DEPUTY SPEAKER:  (?=Order\\! )"))
+  }
+  
+  # now add questions in writing - we do this after the business start b/c it has a fedchamb flag of 0, and arranging to get the business start in the right spot as we did above causes the q in writing to be put above the fedchamb proceedings
+  # even though the page number is after - and arranging by page number is risky (don't wanna mess up the order) - so let's just bind it to the bottom after
+  main <- bind_rows(main, sub1_q_a_writing)
+  
   #### step 7: add order column
   
   # now that we've split all the rows, let's add an order column so we can keep track of exact order of things
   # need original speech_no column though to keep track of which interjections belong to which speech (will be useful to flag interjections later)
-  main <- rowid_to_column(main, "order")
+  # let's also remove imputed time stamps that follow with splitting rows - adding this to scripts Dec. 7 2022
+  # group by speech number and only keep timestamp associated with first statement in that speech - the others just follow with splitting rows and so are technically imputed
+  main <- main %>% group_by(speech_no) %>% rowid_to_column("order") %>% 
+    mutate(time.stamp = ifelse(n()>1 & order!=min(order), NA, time.stamp)) %>% 
+    ungroup()
   
   #### step 8: create a look-up table with everyone's name, name ID, electorate and party
   # we will use this to fill in the information for interjection rows
@@ -650,9 +819,6 @@ split_interjections <- function(main, interject, bus_start){
   ######## beginning of NEW STUFF ########
   # keep nrow of name forms at this point so we can do a check after we've merged stuff from the AusPol database that the number of rows hasn't changed
   nrow_name_forms <- nrow(name_forms)
-  
-  # grab "all" dataset from AusPol package
-  all <- AustralianPoliticians::get_auspol('all')
   
   # this will be the master list of names for Hansard 2011-2022. filter out anyone that has died before 2011
   master_list <- all %>% filter(deathDate > "2010-12-31" | is.na(deathDate)) %>% 
@@ -922,7 +1088,6 @@ split_interjections <- function(main, interject, bus_start){
     filter(name!=name_use | str_detect(name, "SPEAKER$|^The")) %>% 
     distinct()
   
-  
   # fill stuff in 
   name_lookup<- name_lookup %>% 
     group_by(name_use) %>% 
@@ -955,7 +1120,7 @@ split_interjections <- function(main, interject, bus_start){
   
   # create gender and unique ID list to fill main with
   gender_uniqueID_list <- main %>% filter(is.na(gender) & is.na(uniqueID) & name!="business start" & name!="stage direction" 
-                                          & name!="The SPEAKER" & name!="The DEPUTY SPEAKER" & !str_detect(name, "member")) %>% 
+                  & name!="The SPEAKER" & name!="The DEPUTY SPEAKER" & !str_detect(name, "member")) %>% 
     select(c(name, name.id, party, electorate)) %>% 
     unique() %>% 
     mutate(displayName = ifelse(str_detect(name, "[[:lower:]]\\, MP$|[[:lower:]] MP$"), str_extract(name, ".{1,35}(?=\\, MP$| MP$)"), NA),
@@ -999,9 +1164,11 @@ split_interjections <- function(main, interject, bus_start){
   
   #### step 10: flag for interjections
   # group by speech_no, and if the name is not equal to the first name w/ that speech_no, or the speaker, it is an interjection
+  # had to add "is.na(speech_no)" condition b/c q in writing stuff doesn't have speech numbers and b/c we group by speech no and they're all NA, they're all getting flagged 
   main_final <- main %>% group_by(speech_no) %>% arrange(order) %>% 
     mutate(interject = case_when(order == min(order) ~ 0,
-                                 str_detect(name, "The SPEAKER|The DEPUTY SPEAKER|stage direction") ~ 0)) %>% 
+                                 str_detect(name, "The SPEAKER|The DEPUTY SPEAKER|stage direction") ~ 0,
+                                 is.na(speech_no) ~ 0)) %>% 
     ungroup() %>% 
     group_by(name, speech_no) %>%
     fill(interject, .direction = "down") %>% 
@@ -1012,9 +1179,14 @@ split_interjections <- function(main, interject, bus_start){
   return(main_final)
 }
 
-# define script as function with filename argument
-parse_hansard <- function(filename){
+###### temp filename
+#filename <- "2012-02-07.xml"
 
+
+
+# define script as function with filename argument
+parse_hansard_maincomm <- function(filename){
+  
   # parse XML
   hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/", filename))
   
@@ -1032,7 +1204,8 @@ parse_hansard <- function(filename){
         mutate(day_of_week = str_extract(body, "^[:alpha:]{0,6}day"),
                date = as.Date(str_extract(body, "^[:alpha:]{0,6}day,[:space:][:digit:]{0,2}[:space:][:alpha:]{0,9}[:space:][:digit:]{0,4}"), "%A, %d %B %Y"),
                body = str_remove(body, "^[:alpha:]{0,6}day,[:space:][:digit:]{0,2}[:space:][:alpha:]{0,9}[:space:][:digit:]{4}(?=.{1,})"),
-               start_time = str_extract(body, "[:digit:]{0,2}[:punct:][:digit:][:digit:]"))
+               start_time = str_extract(body, "[:digit:]{0,2}[:punct:][:digit:][:digit:]")) %>% 
+        mutate(body = ifelse(str_detect(body, "SPEAKER\\("), str_replace(body, "(?<=SPEAKER)\\(", " ("), body))
     } else if ("para" %in% names(bus_start_chamb)) {
       bus_start_chamb <- bus_start_chamb %>% 
         rename(date = day.start,
@@ -1040,7 +1213,8 @@ parse_hansard <- function(filename){
         mutate(date = as.Date(date),
                day_of_week = strftime(date, "%A"),
                start_time = str_extract(body, "[:digit:]{1,2}[:space:][:lower:][:lower:]")) %>% 
-        select(-separator)
+        select(-separator) %>% 
+        mutate(body = ifelse(str_detect(body, "SPEAKER\\("), str_replace(body, "(?<=SPEAKER)\\(", " ("), body))
     }
     
   } else {
@@ -1239,9 +1413,19 @@ parse_hansard <- function(filename){
                  question = 0,
                  answer = 1,
                  time.stamp = str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d")) %>% 
+          mutate(question = ifelse(str_detect(body, "asked the Minister for .{1,300}, in writing,"), 1, 0),
+                 answer = ifelse(str_detect(body, "asked the Minister for .{1,300}, in writing,"), 0, 1)) %>% 
           mutate(time.stamp = ifelse(str_detect(time.stamp, "^\\d:\\d\\d"), paste0("0", time.stamp), time.stamp)) %>% 
           rbind(., sub1_a_writing) %>% 
           arrange(page.no)
+        
+        # add wrongly nested questions into questions in writing data frame
+        sub1_q_writing <- sub1_a_writing %>% filter(question==1) %>%
+          bind_rows(., sub1_q_writing) %>% 
+          arrange(page.no)
+        
+        # filter out wrongly nested questions from answers dataframe
+        sub1_a_writing <- sub1_a_writing %>% filter(question!=1)
       } 
     } else {
       sub1_q_writing <- tibble()
@@ -1405,12 +1589,12 @@ parse_hansard <- function(filename){
   # use if-else statement to ensure code works for Hansard with and without federation chamber
   # check that there is a business start to know if federation chamber exists
   
-  if (nrow(tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/business.start")))) > 0) {
+  if (nrow(tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/business.start")))) > 0) {
     
     ######### BUSINESS START #########
     # store business start in tibble, add flag for federation chamber, extract date and start time
     # in rare cases (ex. 2016-08-30, there is no business start, so add if-else in case of this)
-    bus_start_fed <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/business.start")), 
+    bus_start_fed <- tibble(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/business.start")), 
                             fedchamb_flag = 1)
     
     if ("body" %in% names(bus_start_fed)){
@@ -1418,14 +1602,16 @@ parse_hansard <- function(filename){
         mutate(day_of_week = str_extract(body, "^[:alpha:]{0,6}day"),
                date = as.Date(str_extract(body, "^[:alpha:]{0,6}day,[:space:][:digit:]{0,2}[:space:][:alpha:]{0,9}[:space:][:digit:]{0,4}"), "%A, %d %B %Y"),
                body = str_remove(body, "^[:alpha:]{0,6}day,[:space:][:digit:]{0,2}[:space:][:alpha:]{0,9}[:space:][:digit:]{0,4}"),
-               start_time = str_extract(body, "[:digit:]{0,2}[:punct:][:digit:][:digit:]"))
+               start_time = str_extract(body, "[:digit:]{0,2}[:punct:][:digit:][:digit:]")) %>% 
+        mutate(body = ifelse(str_detect(body, "SPEAKER\\("), str_replace(body, "(?<=SPEAKER)\\(", " ("), body))
     } else if ("para" %in% names(bus_start_fed)) {
       bus_start_fed <- bus_start_fed %>% 
         rename(date = day.start,
                body = para) %>% 
         mutate(date = as.Date(date),
                day_of_week = strftime(date, "%A"),
-               start_time = str_extract(body, "[:digit:]{1,2}[:space:][:lower:][:lower:]"))
+               start_time = str_extract(body, "[:digit:]{1,2}[:space:][:lower:][:lower:]")) %>% 
+        mutate(body = ifelse(str_detect(body, "SPEAKER\\("), str_replace(body, "(?<=SPEAKER)\\(", " ("), body))
     }
     
     # merge into single business start tibble
@@ -1436,8 +1622,8 @@ parse_hansard <- function(filename){
     ##### ALSO MIGHT WANT TO SORT OUT THE -INTERJECTING THING TAKING OUT NAME (not an issue for general interjections)
     ######### DEBATE INFORMATION #########
     # store debate information in tibble, correct variable class, add flags for sub-debate 1 and 2, and federation chamber
-    debate_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/debateinfo")),
-                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/debate.text"))) %>% 
+    debate_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/debateinfo")),
+                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/debate.text"))) %>% 
       as_tibble() %>% 
       mutate(page.no = as.numeric(page.no),
              fedchamb_flag = 1,
@@ -1449,8 +1635,8 @@ parse_hansard <- function(filename){
     
     ######### DEBATE SPEECH #########
     # store debate speech that aren't part of sub-debates
-    debate_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/speech/talk.start/talker")),
-                               xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/speech/talk.text"))) %>% 
+    debate_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/speech/talk.start/talker")),
+                               xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/speech/talk.text"))) %>% 
       as_tibble() %>% 
       mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
              time.stamp = {if ("body" %in% names(.)) str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d") else NULL},
@@ -1479,15 +1665,15 @@ parse_hansard <- function(filename){
     
     ######### SUB-DEBATE 1 #########
     # store sub-debate 1 information & text in tibble, correct variable class, add flag for federation chamber
-    sub1_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebateinfo")),
-                           xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.text"))) %>%
+    sub1_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/subdebateinfo")),
+                           xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/subdebate.text"))) %>%
       as_tibble() %>% 
       mutate(page.no = as.numeric(page.no),
              fedchamb_flag = 1)
     
     # store sub-debate 1 talker info & speech in tibble, correct variable class, add flag for federation chamber, extract time
-    sub1_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/speech/talk.start/talker")),
-                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/speech/talk.text"))) %>% 
+    sub1_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/speech/talk.start/talker")),
+                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/speech/talk.text"))) %>% 
       as_tibble() %>% 
       mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
              time.stamp = {if("time.stamp" %in% names(.)) str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d") else NULL},
@@ -1495,11 +1681,11 @@ parse_hansard <- function(filename){
              fedchamb_flag = {if("page.no" %in% names(.)) 1 else NULL}) %>% 
       mutate(time.stamp = {if("time.stamp" %in% names(.)) ifelse(str_detect(time.stamp, "^\\d:\\d\\d"), paste0("0", time.stamp), time.stamp) else NULL}) %>% 
       mutate(body = {if("body" %in% names(.)) ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\.[[:upper:]]"),
-                                                      str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\.(?=[[:upper:]])", ". "),
-                                                      body) else NULL},
+                                                     str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\.(?=[[:upper:]])", ". "),
+                                                     body) else NULL},
              body = {if("body" %in% names(.)) ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\:[[:upper:]]"),
-                                                       str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\:(?=[[:upper:]])", ": "),
-                                                      body) else NULL})
+                                                     str_replace_all(body, "(?<=[[:lower:]][[:lower:]])\\:(?=[[:upper:]])", ": "),
+                                                     body) else NULL})
     
     # merge chamber and federation tibbles together, flag for which sub-debate, arrange by fedchamb flag, and page
     sub1_info <- rbind(sub1_info_chamb, sub1_info_fed) %>% 
@@ -1518,18 +1704,18 @@ parse_hansard <- function(filename){
     ######### SUB-DEBATE 2 #########
     # if-else statements are included because sub-debate 2 is not always present in federation chamber
     # store sub-debate 2 information & text in tibble, correct variable class, add flag for federation chamber
-    sub2_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/subdebateinfo")),
-                           xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/subdebate.text"))) %>% 
+    sub2_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/subdebate.2/subdebateinfo")),
+                           xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/subdebate.2/subdebate.text"))) %>% 
       as_tibble() %>% 
       mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
              fedchamb_flag = {if("page.no" %in% names(.)) 1 else NULL})
     
     # same idea as for chamber, nesting changes, want to account for this so we don't miss anything
-    if (nrow(as_tibble(cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.2/subdebateinfo")),
-                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.2/subdebate.text"))))) > 0) {
+    if (nrow(as_tibble(cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.2/subdebateinfo")),
+                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.2/subdebate.text"))))) > 0) {
       
-      sub2_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.2/subdebateinfo")),
-                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.2/subdebate.text"))) %>% 
+      sub2_info_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.2/subdebateinfo")),
+                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.2/subdebate.text"))) %>% 
         as_tibble() %>% 
         mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
                fedchamb_flag = {if("page.no" %in% names(.)) 1 else NULL}) %>% 
@@ -1537,8 +1723,8 @@ parse_hansard <- function(filename){
     }
     
     # store sub-debate 2 talker info & speech in tibble, correct variable class, add flag for federation chamber, extract time
-    sub2_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/speech/talk.start/talker")),
-                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/speech/talk.text"))) %>% 
+    sub2_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/subdebate.2/speech/talk.start/talker")),
+                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/subdebate.2/speech/talk.text"))) %>% 
       as_tibble() %>% 
       mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
              time.stamp = {if ("body" %in% names(.)) str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d") else NULL},
@@ -1553,11 +1739,11 @@ parse_hansard <- function(filename){
                                                       body) else NULL})
     
     # same idea as for chamber, nesting changes, want to account for this so we don't miss anything
-    if (nrow(as_tibble(cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.2/speech/talk.start/talker")),
-                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.2/speech/talk.text"))))) > 0) {
+    if (nrow(as_tibble(cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.2/speech/talk.start/talker")),
+                             xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.2/speech/talk.text"))))) > 0) {
       
-      sub2_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.2/speech/talk.start/talker")),
-                               xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.2/speech/talk.text"))) %>% 
+      sub2_speech_fed <- cbind(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.2/speech/talk.start/talker")),
+                               xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.2/speech/talk.text"))) %>% 
         as_tibble() %>% 
         mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
                time.stamp = {if ("body" %in% names(.)) str_extract(body, "\\d\\d:\\d\\d|\\d:\\d\\d") else NULL},
@@ -1598,16 +1784,16 @@ parse_hansard <- function(filename){
     ######### SPEECH INTERJECTIONS #########
     # store sub-debate 1 speech interjections in tibble, correct variable class, add flag for federation chamber
     # use if-else statements in case there are no interjections
-    sub1_interject_fed <- c(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/speech/interjection/talk.start/talker")),
-                            xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/speech/interjection/talk.text"))) %>% 
+    sub1_interject_fed <- c(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/speech/interjection/talk.start/talker")),
+                            xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/speech/interjection/talk.text"))) %>% 
       as_tibble() %>% 
       mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
              fedchamb_flag = {if("page.no" %in% names(.)) 1 else NULL})
     
     # store sub-debate 2 speech interjections in tibble, correct variable class, add flag for federation chamber
     # use if-else statements in case there are no interjections, or there is no sub-debate 2
-    sub2_interject_fed <- c(xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/speech/interjection/talk.start/talker")),
-                            xmlToDataFrame(node=getNodeSet(hansard_xml, "//fedchamb.xscript/debate/subdebate.1/subdebate.2/speech/interjection/talk.text"))) %>% 
+    sub2_interject_fed <- c(xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/subdebate.2/speech/interjection/talk.start/talker")),
+                            xmlToDataFrame(node=getNodeSet(hansard_xml, "//maincomm.xscript/debate/subdebate.1/subdebate.2/speech/interjection/talk.text"))) %>% 
       as_tibble() %>% 
       mutate(page.no = {if("page.no" %in% names(.)) as.numeric(page.no) else NULL},
              fedchamb_flag = {if("page.no" %in% names(.)) 1 else NULL})
@@ -1709,7 +1895,7 @@ parse_hansard <- function(filename){
     }
   }
   
-
+  
   
   ######### PREPARING BUSINESS START TO BE ADDED TO MAIN DATA FRAME #########
   if (nrow(bus_start) > 0) {
@@ -1764,7 +1950,6 @@ parse_hansard <- function(filename){
   main <- rbind(debate_speech, sub1_speech, sub2_speech, sub1_q_a) %>% 
     arrange(fedchamb_flag, page.no, time.stamp) %>% 
     mutate(q_in_writing = 0) %>% 
-    rbind(., sub1_q_a_writing) %>% 
     arrange(page.no)
   
   # if the name preceding the debate text is "The SPEAKER" and the name doesn't contain "The SPEAKER", paste it in, in brackets
@@ -1805,9 +1990,6 @@ parse_hansard <- function(filename){
   # same as above but in case time stamp has single digit to begin (e.g. 9:01 instead of 09:01)
   main$body <- str_remove(main$body, "^.{0,6}[:space:].{0,35}[:space:]\\(.{0,250}\\)[:space:]\\([:digit:]{1}:[:digit:]{2}\\)\\:[:space:]{0,5}")
   
-  # case when no colon, just two spaces then text
-  main$body <- str_remove(main$body, "^.{0,6}[:space:].{0,35}[:space:]\\(.{0,250}\\)[:space:]\\([:digit:]{2}:[:digit:]{2}\\)[:space:]{2}")
-  
   # case when there is no title, just name and time stamp to be removed from body
   main$body <- str_remove(main$body, "^.{0,6}[:space:].{0,35}[:space:]\\([:digit:]{2}:[:digit:]{2}\\)\\:[:space:]{0,5}")
   
@@ -1832,29 +2014,79 @@ parse_hansard <- function(filename){
   # case when name is followed by newline then title then newline then time
   main$body <- str_remove(main$body, "^.{0,6}[:space:].{0,35}\n                  \\(.{0,250}\\)\n                  \\([:digit:]{2}:[:digit:]{2}\\)\\:[[:space:]]{0,5}")
   
+  # case when name and title has time but no punctuation after
+  main$body <- str_remove(main$body, "^.{0,6}[:space:].{0,35}[:space:]\\(.{0,250}\\)[:space:]\\([:digit:]{2}:[:digit:]{2}\\)  (?=by leave)")
+  
   ######### SPLITTING INTERJECTIONS #########
-  main <- split_interjections(main, interject, bus_start)
+  main <- split_interjections_maincomm(main, interject, bus_start, sub1_q_a_writing, filename)
+  
+  # add flag for divisions
+  main <- main %>% mutate(div_flag = ifelse(str_detect(body, "The House divided\\."), 1, 0))
+  
+  # fix interjection and comments within question and answers that are flagged as questions and answers - these shouldn't be flagged as such
+  # this is to ensure we have an equal number of questions and answers
+  main <- main %>% group_by(speech_no) %>% 
+    mutate(question = case_when(order == min(order) & question==1 ~ 1,
+                                order != min(order) & question==1 ~ 0,
+                                question==0 ~ 0),
+           answer = case_when(order == min(order) & answer==1 ~ 1,
+                              order != min(order) & answer==1 ~ 0,
+                              answer==0 ~ 0)) %>% 
+    ungroup()
+  
+  # trim any whitespace on either end of the body
+  main <- main %>% mutate(body = str_trim(body, side="both"))
+  
+  # extract times from stage directions like adjournment, where time stamp is missing
+  main <- main %>% mutate(time.stamp = ifelse(str_detect(body, "adjourned at \\d{1,2}:\\d\\d$|adjourned at \\d{1,2}\\.\\d\\d$|^Sitting suspended from \\d\\d:\\d\\d") & is.na(time.stamp),
+                                              str_extract(body, "(?<=adjourned at )\\d{1,2}:\\d\\d$|(?<=adjourned at )\\d{1,2}\\.\\d\\d$|(?<=Sitting suspended from )\\d\\d:\\d\\d"),
+                                              time.stamp)) %>% 
+    mutate(time.stamp = ifelse(str_detect(time.stamp, "(?<=\\d)\\.(?=\\d)"),
+                               str_replace(time.stamp, "(?<=\\d)\\.", ":"),
+                               time.stamp))
+  
+  # same idea as above, extract times from business start, where time stamp is missing
+  main <- main %>% mutate(time.stamp = ifelse(is.na(time.stamp) & name=="business start", 
+                                              str_extract(body, "\\d{1,2}\\:\\d\\d [[:lower:]]\\.m\\.|\\d{1,2}\\:\\d\\d [[:lower:]]m|\\d{1,2} [[:lower:]]\\.m\\.|\\d{1,2} [[:lower:]]m|\\d\\d\\:\\d\\d"),
+                                              time.stamp)) %>% 
+    mutate(time.stamp = str_replace_all(time.stamp, "(?<=\\d)\\.", "\\:"),
+                    time.stamp = ifelse(str_detect(time.stamp, "^\\d\\d[[:space:]][[:alpha:]]"), paste0(time.stamp), time.stamp)) %>% 
+    mutate(time.stamp = ifelse(str_detect(time.stamp, "a\\.m\\."), str_replace(time.stamp, "a.m.", "AM"),time.stamp),
+           time.stamp = ifelse(str_detect(time.stamp, "p\\.m\\."), str_replace(time.stamp, "p.m.", "PM"),time.stamp),
+           time.stamp = ifelse(str_detect(time.stamp, "am\\."), str_replace(time.stamp, "am.", "AM"),time.stamp),
+           time.stamp = ifelse(str_detect(time.stamp, "pm\\."), str_replace(time.stamp, "pm.", "PM"),time.stamp),
+           time.stamp = ifelse(str_detect(time.stamp, "am"), str_replace(time.stamp, "am", "AM"),time.stamp),
+           time.stamp = ifelse(str_detect(time.stamp, "pm"), str_replace(time.stamp, "pm", "PM"),time.stamp),
+           time.stamp = ifelse(str_detect(time.stamp, "(?<=\\d\\d)(?=[[:alpha:]]{2})"), str_replace(time.stamp, "(?<=\\d\\d)(?=[[:alpha:]]{2})", " "), time.stamp)) %>% 
+    mutate(time.stamp = ifelse(str_detect(time.stamp, "^\\d{1,2}\\:\\d{2} [[:upper:]]M"), format(strptime(time.stamp, "%I:%M %p"), format="%H:%M:%S"), time.stamp),
+           time.stamp = ifelse(str_detect(time.stamp, "^\\d{1,2}[[:space:]][[:alpha:]]"), format(strptime(time.stamp, "%I %p"), format="%H:%M:%S"), time.stamp))
   
   ######### EXPORT FINAL OUTPUT #########
   # export data-sets to CSV files
   #write.csv(toc, paste0("/Volumes/Verbatim/output/toc/", str_remove(filename, ".xml"), "-toc.csv"), row.names = FALSE)
-  write.csv(main, paste0("/Volumes/Verbatim/output/main/", str_remove(filename, ".xml"), "-main.csv"), row.names = FALSE)
+  write.csv(main, paste0("/Volumes/Verbatim/output/main-2011-2022/", str_remove(filename, ".xml"), "-main.csv"), row.names = FALSE)
 }
 
 # grab list of all file names
 files_all <- list.files("/Volumes/Verbatim/input/")
 
 # grab a couple years
-files_get <- files_all %>%
+files_get_maincomm <- files_all %>%
   as_tibble() %>%
-  filter(str_detect(value, "^2013|^2014-|^2015-|^2016-|^2017-|^2018-|^2019-|^2020-|^2021-|^2022-")) %>%
-  #filter(value > "2020-03-05.xml") %>%
+  filter(str_detect(value, "^2011-|^2012-")) %>%
+  filter(value >= "2011-05-10.xml" & value <= "2012-06-28.xml") %>% 
   pull(value)
 
-#"^2014-|^2015-|^2016-|^2017-|^2018-|^2019-|^2020-|^2021-|^2022-"
+files_now <- c("2012-06-20", "2012-06-19", "2012-05-31", "2012-05-21", "2012-03-19", "2012-02-28", "2012-02-16", "2012-02-13", 
+  "2012-02-07", "2011-10-11", "2011-09-20", "2011-09-19", "2011-08-24", "2011-08-22", "2011-08-18", "2011-07-05", "2011-06-23", "2011-06-16",
+  "2011-06-14", "2011-06-02")
 
+files_now <-files_now %>% as_tibble() %>% mutate(value = paste0(value, ".xml")) %>% pull()
 
-for(i in 1:length(files_get)){
-  parse_hansard(files_get[i])
+for(i in 1:length(files_get_maincomm)){
+  parse_hansard_maincomm(files_get_maincomm[i])
 }
-  
+
+for(i in 1:length(files_now)){
+  parse_hansard_maincomm(files_now[i])
+}
