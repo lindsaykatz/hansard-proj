@@ -71,7 +71,7 @@ The outer-most node, also known as the parent node, is denoted `<hansard>` and s
 
 **does this feel a bit repetitive? do you think it's worth keeping?**
 
-![Snapshot of beginning of XML file for Hansard on 25 February 2020](xml1.png){#fig-xml1}
+![Snapshot of beginning of XML file for Hansard on 25 February 2020](images/xml1.png){#fig-xml1}
 
 Evidently, the nature of XML formatting means that different pieces of information are categorized under a series of uniquely named and nested nodes. As a result, to parse each piece of information, one must specify the unique hierarchy of nodes in which it is structured. This is known as an XPath expression, and tells the parser how to navigate the XML document to obtain the desired information. For example, the session header date in @fig-xml1 can be accessed using the XPath expression "`hansard/session.header/date`". We began our first script by parsing every piece of information contained in the XML document, using these unique XPath expressions to do so.
 
@@ -97,7 +97,7 @@ The challenge with parsing through the `<debate>` element is that every piece of
 
 > `09:31:0010261Costello, Peter, MPMr COSTELLOCT4HigginsLPTreasurer10`
 
-![Portion of XML file for Hansard on 12 December 2002](patternEX.png){#fig-patternEX width="315"}
+![Portion of XML file for Hansard on 12 December 2002](images/patternEX.png){#fig-patternEX width="315"}
 
 This was not isolated to just the beginning of speeches --- details on individuals interjecting or commenting during speeches were also captured this way. To separate statements out correctly, we collected all of these patterns using the `<talk.start>` node, and used them to split statements wherever one of these patterns was found. After separating statements, we were later able remove these patterns from the body of text. We also used this method of extracting and later removing unwanted patterns for other pieces of data which did not belong to the debate proceedings, such as sub-debate titles.
 
@@ -149,7 +149,7 @@ As mentioned in @sec-diff, more recent years of Hansard XMLs contain a series of
 
 [^1]: We decided not to include this data in our final database, as it is all embedded in our resulting datasets which have a flag for interjections.
 
-![Snapshot of XML structure with interjection and continuation from 03 February 2021 Hansard](xml3.png){#fig-xml3 width="345"}
+![Snapshot of XML structure with interjection and continuation from 03 February 2021 Hansard](images/xml3.png){#fig-xml3 width="345"}
 
 We then created lists using both the `interject` and `main` dataframes to capture all the names of individuals who spoke that day. We added the names of all Members in a number of unique formats, due to the frequent variation in how names are transcribed in Hansard. When a Member interjects or continues a speech, the usual form of their name is a title followed by their first name or first initial and/or last name. There is also variation in the capitalization of these names.[^2] Another source of variation is in individuals with more than one first name, as sometimes only their first first name is written, while other times their entire first name is written. Additionally, some surnames have punctuation, and some surnames have specific capitalization such as "McCormack", where even in full capitalization, the first "c" remains lower case. This variation demands careful consideration when writing regular expression patterns to search for in the text. In these lists we also accounted for any general interjection statements transcribed that were not attributed to an individual, such as "An opposition member interjecting-".
 
@@ -161,11 +161,11 @@ Once all interjections, comments and continuations were successfully split onto 
 
 We then added an order variable to the dataset based on row number, to keep track of the order in which everything was said. The next step was to fill the name, name ID, electorate and party variables with the correct data for each row. We also wanted to add the gender and unique identifier for each individual as found in the `AustralianPoliticians` package. To do so, we created a lookup table, which contained the unique incomplete form in which the name was transcribed, and the corresponding full name, name ID, electorate, party, gender and unique ID for that individual. @fig-lookup provides an example of this. We used the main dataset from the `AustralianPoliticians` package in the creation of each lookup table [@auspol].
 
-![First 10 rows of lookup table from 19 October 2017 Hansard processing](lookup_ex.png){#fig-lookup width="448"}
+![First 10 rows of lookup table from 19 October 2017 Hansard processing](images/lookup_ex.png){#fig-lookup width="448"}
 
 Next, we merged our main dataframe with the lookup table to replace any incomplete names with their full names, and to fill in any gaps with available name ID, electorate, party, gender and unique ID information. Finally, we were able to add a flag for interjections. Grouping our data by the speech number, we defined an interjection as a statement made by anyone who is not The Speaker, The Deputy Speaker, or the Member whose turn it was to speak. @fig-interject provides an example of a Federation Chamber proceeding with interjections. Evidently, statements made by the original speaker Stuart Robert or by The Deputy Speaker Maria Vamvakinou are not flagged as interjections.
 
-![Example of speech with interjections from 21 November 2016 Hansard](interject_ex.png){#fig-interject}
+![Example of speech with interjections from 21 November 2016 Hansard](images/interject_ex.png){#fig-interject}
 
 Having developed a successful methodology for splitting interjections, we used this to inform our general approach in the third and fourth scripts. However, the difference in data cleaning used in these scripts necessitated some departure from the original methodology. As discussed in @sec-diff, we used string patterns extracted from `<talk.start>` nodes to separate speeches. As evident in @fig-xml3, `<talk.start>` nodes are nested within `<interjection>` nodes, meaning that the patterns of data from interjection statements were separated out in the process. In other words, our approach to data cleaning in the third and fourth scripts separated out interjections in the process. This meant that we did not need to create lists of names and titles to search for in the text as we did before. However, we used the same list of general interjection statements to separate on that was used in the first two scripts. We then did an additional check for statements that may have not been separated due to how they were embedded in the XML, and separated those out where needed.[^3]
 
@@ -173,7 +173,7 @@ Having developed a successful methodology for splitting interjections, we used t
 
 We then proceeded to clean up speeches and fill in correct speaker details. While we used the same lookup table approach as before, we did so in combination with another means of filling in speaker details. The patterns parsed from `<talk.start>` nodes contain important data on the speaker of each statement. As such, we could extract those data associated with each pattern by parsing one element inward, using the XPath expression `<talk.start/talker>`. We created a pattern lookup table with these data, and merged it with the main Hansard dataframe by the first pattern detected in each statement. @fig-patterns provides an example of that lookup table. This approach enabled us to fill in missing data on each speaker using data extracted directly from the XML. Finally, we then used the `AustralianPoliticians` dataset to fill in other missing data, and flagged for interjections in the same manner as before.
 
-![10 rows of pattern lookup table from 12 December 2012 Hansard processing](pattern_lookup.png){#fig-patterns}
+![10 rows of pattern lookup table from 12 December 2012 Hansard processing](images/pattern_lookup.png){#fig-patterns}
 
 ## Stage Directions {#sec-stage}
 
