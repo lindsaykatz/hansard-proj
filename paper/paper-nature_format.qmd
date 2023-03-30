@@ -183,7 +183,7 @@ While we did our best to maximize the completeness of the files in our database 
 
 # Data Records
 
-Our database contains 1517 CSV files, covering all sitting days of the House of Representatives from 02 March 1998 to 08 September 2022. All data records are available on the general-purpose repository Zenodo, at https://doi.org/10.5281/zenodo.7336076 [@katz_2022]. For each CSV file, each row contains an individual statement, with details on the individual speaking. Of course, for general statements transcribed as made by "Honourable members" for example, these variables cannot be specified. @tbl-vars provides an overview of each variable found in the database.
+Our database contains 1517 CSV files, covering all sitting days of the House of Representatives from 02 March 1998 to 08 September 2022. All data records are available on the general-purpose repository Zenodo, at https://doi.org/10.5281/zenodo.7785767 [@katz_2023]. For each CSV file, each row contains an individual statement, with details on the individual speaking. Of course, for general statements transcribed as made by "Honourable members" for example, these variables cannot be specified. @tbl-vars provides an overview of each variable found in the database.
 
 ```{r}
 #| warning: false
