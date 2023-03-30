@@ -3,7 +3,7 @@
 ## urls folder
 
 -   this folder has CSV files which contain the links for each sitting day's XML file, and the name it should be assigned when downloaded
--   these files cover all sitting days from 2000 to 2022
+-   these files cover all sitting days from 1998 to 2022
 
 ## scripts folder
 
@@ -47,19 +47,61 @@
         -   tibble is arranged by time stamp
     -   next, the details corresponding to all interjections that occur within questions and answers are stored in a tibble called `sub1_q_a_interject`
         -   includes `fedchamb_flag` and `question`
--   99-everything.R
-    -   this script incorporates code from all the above scripts, to parse and process all the data at once
-    -   this script also combines many of the individual tibbles together to produce a final dataset with additional flags for simplicity
-    -   this also contains code to split all interjections apart, match the correct name to the speaker, and fill in their unique name ID, electorate and party information
-    -   parses hansard from 2012-08-14 to 2022-09-08
--   99-everything-maincomm.R
-    -   this script produces the same output as 99-everything.R, just for dates of Hansard when the Federation Chamber was referred to as the Main Committee
-    -   this works for everything up to 2012-06-28, which is the last day before the Main Committee was renamed to Federation Chamber
+- 07-divisions_data.R
+    -   this script loops over all Hansard XML files from 1998 to 2022, extracts any divisions data present in each file, and produces a single tibble with everything, including the time stamp, date, number of votes, names of voters, and result of each division
+- 99-everything-1998_to_1999-FINAL.R
+    -   this script parses and cleans all Hansard records from 1998 and 1999
+    -   output from this script can be found in version 2 of our database
+- 99-everything-2000_to_2011-FINAL.R
+    -   this script parses and cleans all Hansard records from 2000 to 24 March 2011
+    -   output from this script can be found in version 2 of our database
+- 99-everything-2011_to_2012-FINAL.R
+    -   this script parses and cleans all Hansard records from 10 May 2011 to 28 June 2012
+    -   output from this script can be found in version 2 of our database
+- 99-everything-2012_to_2022-FINAL.R
+    -   this script parses and cleans all Hansard records from 14 August 2012 to 2022
+    -   output from this script can be found in version 2 of our database
+- auspol_lookup.R
+    -   this script combines data from the [`AustralianPoliticians`](https://github.com/RohanAlexander/AustralianPoliticians) and [`ausPH`](https://github.com/palesl/ausPH) R packages to create lookup tables on Members of Parliament which were later used to fill details in our database
+- check_names.R
+    - when changing our methodology to develop the second version of our database, we wrote this script to catch rows with missing names so we could go back into our scripts and fix them accordingly so that no remaining rows were missing a name
+- fill_details.R
+    - this script was written to fill in missing speaker details in each file in our database, such as gender, unique ID or electorate details
+    - it identifies short-form names belonging to people with common surnames in each CSV, looks for the full version of that individuals name if available in that same CSV file, and replaces the short-form name with the full name, and fills the rest of the speaker details in accordingly with data from the `AustralianPoliticians` package
+    - it also does this for anyone with a unique surname but is missing details
+    - each file in our database was filled using this script after being parsed, and before being validated in the `data_validation.R` script
+- data_validation.R
+    -   this script contains code to run 7 automated validation tests on each file in our database
+    -   we validated all filled in CSV files with this script before publishing the second version of our database
+- csv_to_parquet.R
+    -   this script converts all filled and validated CSV files in our database to Parquet format
+- descriptive_stats.R
+    - this script is unfinished and was created to produce descriptive statistics on our database
+- row-checks.R
+    -   when changing our methodology to develop the second version of our database, we wrote this script to compare the number of rows in the newly parsed data to that of the data parsed using the original methodology. This allowed us to catch any issues associated with the new methodology, and modify our new scripts accordingly
+- old-versions
+    -   this folder contains old versions of our main scripts
 
 ## paper folder
 
--   contains all datasets and images used to create the paper in quarto, including the resulting PDF and tex files
--   `fedchamb_rows.csv` contains data on the number of rows in each Hansard disaggregated by proceedings in the House of Representatives and proceedings in the Federation Chamber
--   `interject_data.csv` contains data on the number of interjections on each sitting day, and `interject_gender_data.csv` contains this data disaggregated by the gender of those making the interjections, and by House vs. Federation Chamber
--   `unique_data.csv` contains data on the number of unique names, name IDs, electorates, and parties found in each CSV, disaggregated by House vs. Federation Chamber proceeding
--   `word_counts.csv` contains data on the word count of the Hansard CSV for each sitting day, also disaggregated by House vs. Federation Chamber proceeding
+-   `first-draft` contains contents from the first draft of our paper
+      -   contains all datasets and images used to create the paper in quarto, including the resulting PDF and tex files
+      -   `fedchamb_rows.csv` contains data on the number of rows in each Hansard disaggregated by proceedings in the House of Representatives and proceedings in the Federation Chamber
+      -   `interject_data.csv` contains data on the number of interjections on each sitting day, and `interject_gender_data.csv` contains this data disaggregated by the gender of those making the interjections, and by House vs. Federation Chamber
+      -   `unique_data.csv` contains data on the number of unique names, name IDs, electorates, and parties found in each CSV, disaggregated by House vs. Federation Chamber proceeding
+      -   `word_counts.csv` contains data on the word count of the Hansard CSV for each sitting day, also disaggregated by House vs. Federation Chamber proceeding
+-   `images` contains images used in our paper
+-    the remaining files in this folder are associated with the current version of our paper
+
+
+
+
+
+## input folder
+
+- contains some Hansard records from 2021 and 2022 in XML form, downloaded from the Australian Parliament [website](https://www.aph.gov.au/Parliamentary_Business/Hansard/Hansreps_2011)
+
+## output folder
+
+- contains old CSV files with some XML content which was parsed at the beginning of this work
+- contains an rda file with data on divisions which took place in parliament, including the date, time stamp, number of votes and names of members who voted. This was created using the script `07-divisions_data.R`
