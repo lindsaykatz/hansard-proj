@@ -4,20 +4,23 @@ library(tidyverse)
 # read in ausPH and auspol dataset
 ausPH <- ausPH::getIndividuals()
 
+# for some reason ausPH wasn't working so i got data myself
+#ausPH <-rjson::fromJSON(file="/Volumes/Verbatim/lookup_tables/individuals.json")[["value"]]|>dplyr::bind_rows()
+
 all <- AustralianPoliticians::get_auspol('all')
 party <- AustralianPoliticians::get_auspol('allbyparty')
 mps <- AustralianPoliticians::get_auspol('mps')
 
 # read in my lookup table
-lookup <- read_csv("/Volumes/Verbatim/member_lookup.csv", show_col_types = F)
+lookup <- read_csv("/Volumes/Verbatim/lookup_tables/member_lookup.csv", show_col_types = F)
 
 # grab list of file names
-files_all <- list.files("/Volumes/Verbatim/output/main-filled-csv")
+files_all <- list.files("/Volumes/Verbatim/output/main-filled-csv-v2")
 
 ##### test 1 - date in filename must match one date in our list of dates from all session headers
 
 # grab session header csv - code to make this is in 01-session_info.R script
-session_headers <- read_csv("/Volumes/Verbatim/output/session_info/session_info_all.csv", show_col_types = F) %>% pull(date)
+session_headers <- read_csv("/Volumes/Verbatim/output/old-data/session_info/session_info_all.csv", show_col_types = F) %>% pull(date)
 
 # extract dates from file names, convert to date
 dates_all <- files_all %>% as_tibble() %>% mutate(value = as.Date(str_remove(value, "-main-v2.csv"))) %>% pull(value)
@@ -28,26 +31,20 @@ setdiff(as.character(dates_all), as.character(session_headers))
 # one difference - 2009-06-03
 # our filename is right, there is an error in the session header - it was transcribed as 2009-06-04, I checked official release to confirm we're right
 
-##### test 2 - equal number of flagged questions and answers
-# define empty tibble
+##### test 2 - checks whether two lines that immediately follow each other have the same "body" - NEW
 test2 <- tibble()
 
-# loop over all files
-for (i in 1:length(files_all)) {
+for(i in 1:length(files_all)) {
   # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", files_all[i]), show_col_types = F)
-  
-  # grab total qs and as, check if equal, add date
-  test2 <- thisFile %>% summarise(total_q = sum(question),
-                                  total_a = sum(answer),
-                                  equal = total_q==total_a) %>% 
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", files_all[i]), show_col_types = F)
+
+  test2 <-thisFile %>% filter(body == lead(body) | body == lag(body)) %>% 
+    select(name, order, body) %>% 
+    filter(body!="interjecting") %>% 
     mutate(date = str_remove(files_all[i], "-main-v2.csv")) %>% 
-    bind_rows(test2)
+    bind_rows(test2, .)
   
 }
-
-# filter for days where test failed
-test2 <- test2 %>% filter(equal==FALSE) %>% select(-equal)
 
 ##### test 3 - time expired at end of body
 # define empty tibble
@@ -56,7 +53,7 @@ test3 <- tibble()
 # loop over all files
 for (i in 1:length(files_all)) {
   # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", files_all[i]), show_col_types = F)
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", files_all[i]), show_col_types = F)
   
   # check that file has rows where time expired is followed by something in body
   if (thisFile %>% filter(str_detect(body, "\\(Time (E|e)xpired\\)[[:space:]]{0,2}\\..{1,}|\\(Time (E|e)xpired\\)[[:space:]]{0,2}(?!\\.)([[:alpha:]]|\\()")) %>% nrow()>0)
@@ -79,7 +76,7 @@ test3_dates<- test3 %>% filter(is.na(body)) %>% select(date) %>% mutate(date = p
 # change regex to capture the entire body so we can look manually
 for (i in 1:length(test3_dates)) {
   # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", test3_dates[i]), show_col_types = F)
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-2/", test3_dates[i]), show_col_types = F)
   
   # check that file has rows where time expired is followed by something in body
   if (thisFile %>% filter(str_detect(body, "\\(Time (E|e)xpired\\)[[:space:]]{0,2}\\..{1,}|\\(Time (E|e)xpired\\)[[:space:]]{0,2}(?!\\.)([[:alpha:]]|\\()")) %>% nrow()>0)
@@ -100,7 +97,7 @@ test4 <- tibble()
 # loop over all files
 for (i in 1:length(files_all)) {
   # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", files_all[i]), show_col_types = F)
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", files_all[i]), show_col_types = F)
   
   # select name ids where individual has more than one unique electorate or party on a sitting day
   test4 <- thisFile %>% select(name.id, party, electorate) %>% 
@@ -119,44 +116,50 @@ test4 <- test4 %>% filter(!is.na(name.id) & name.id!="UNKNOWN" & name.id!="10000
 # this is likely due to my own filling in with the lookup table that doesn't account for the date (these things can change)
 # using newly created party and electorate lookup tables with dates
 
-party_lookup <- read_csv("/Volumes/Verbatim/party_lookup.csv", show_col_types = F)
-electorate_lookup <- read_csv("/Volumes/Verbatim/electorate_lookup.csv", show_col_types = F)
+party_lookup <- read_csv("/Volumes/Verbatim/lookup_tables/party_lookup.csv", show_col_types = F)
+electorate_lookup <- read_csv("/Volumes/Verbatim/lookup_tables/electorate_lookup.csv", show_col_types = F)
 
 # grab dates that failed test 4 so we can fix them
 test4_dates <- test4 %>% ungroup() %>% select(date) %>% unique() %>% mutate(date = paste0(date, "-main-v2.csv")) %>% pull()
 
 # grab list of all file names
-files_all <- list.files("/Volumes/Verbatim/output/main-filled-csv")
+files_all <- list.files("/Volumes/Verbatim/output/main-filled-csv-v2")
 
 # subset for ones we need to fix
 test4_dates <- files_all[files_all %in% test4_dates]
 
 for (i in 1:length(test4_dates)) {
   
+  # define filename
   filename <- test4_dates[i]
   
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", filename), show_col_types = F)
+  # read in fike
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", filename), show_col_types = F)
   
+  # grab the name ids that were caught in test above
   nameIDs <- test4 %>% filter(date == str_remove(filename, "-main-v2.csv")) %>% select(name.id) %>% unique() %>% ungroup()
   
   #electorates <- test4 %>% filter(date == str_remove(filename, "-main-v2.csv")) %>% select(name.id, electorate) %>% unique() %>% ungroup()
   
+  # join those we caught with our party lookup table, filter date range to match date of current file, and select the party associated with each name id
   party_toFix <- left_join(nameIDs, party_lookup %>% rename(name.id = phid), by="name.id") %>% 
     filter(partyFrom <= str_remove(filename, "-main-v2.csv") | is.na(partyFrom)) %>% 
     filter(partyTo > str_remove(filename, "-main-v2.csv") | is.na(partyTo)) %>% 
     rename(party_use=partyAbbrev) %>% 
     select(name.id, party_use)
   
+  # same as above but for electorates and using mp membership date range
   electorate_toFix <- left_join(nameIDs, electorate_lookup %>% rename(name.id = phid), by="name.id") %>% 
     filter(mpFrom <= str_remove(filename, "-main-v2.csv") | is.na(mpFrom)) %>% 
     filter(mpTo > str_remove(filename, "-main-v2.csv") | is.na(mpTo)) %>% 
     rename(electorate_use = division) %>% 
     select(name.id, electorate_use)
   
-  # check that there is 
+  # check that there is one party/electorate associated with each unique name ID we need to fix
   stopifnot(nrow(nameIDs) == nrow(party_toFix))
   stopifnot(nrow(nameIDs) == nrow(electorate_toFix))
   
+  # grab the correct name id party and electorate combos to fill the data file with
   toFix <- left_join(party_toFix, electorate_toFix, by="name.id")
   
   # fix electorates and parties
@@ -169,7 +172,7 @@ for (i in 1:length(test4_dates)) {
   stopifnot(dim(thisFile) == dim(thisFile_fixed))
   
   # export file
-  write.csv(thisFile_fixed, paste0("/Volumes/Verbatim/output/main-filled-csv/", test4_dates[i]), row.names = F) 
+  write.csv(thisFile_fixed, paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", test4_dates[i]), row.names = F) 
   
 }
 
@@ -182,7 +185,7 @@ test5 <- tibble()
 # loop over all files
 for (i in 1:length(files_all)) {
   # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", files_all[i]), show_col_types = F)
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", files_all[i]), show_col_types = F)
   
   # grab name IDs where 
   test5 <- thisFile %>% select(name, name.id) %>% 
@@ -226,7 +229,7 @@ test5_dates <- test5 %>% select(date) %>% unique() %>% mutate(date = paste0(date
 # loop over those dates we just grabbed to fix name ID issues
 for (i in 1:length(test5_dates)){
   # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", test5_dates[i]), show_col_types = F) 
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", test5_dates[i]), show_col_types = F) 
   
   # grab dim of file to check after merge
   dim_now <- dim(thisFile)
@@ -240,11 +243,11 @@ for (i in 1:length(test5_dates)){
   stopifnot(dim_now==dim(thisFile))
   
   # export file
-  write.csv(thisFile, paste0("/Volumes/Verbatim/output/main-filled-csv/", test5_dates[i]), row.names = F) 
+  write.csv(thisFile, paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", test5_dates[i]), row.names = F) 
   
 }
 
-# I re-ran the test after fixing the files and all we're left with are people who aren't actually MPs - visiting politicians from other countries
+ # I re-ran the test after fixing the files and all we're left with are people who aren't actually MPs - visiting politicians from other countries
 # In this test I have ignored the general name IDs given to speakers/deputy speakers. we can loop through and make them all the same if we want.
 
 ##### test 6 - all individuals from sitting day have been born and are not dead
@@ -254,7 +257,7 @@ test6 <- tibble()
 # loop over all files
 for (i in 1:length(files_all)) {
   # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", files_all[i]), show_col_types = F)
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", files_all[i]), show_col_types = F)
   
   # grab name IDs where 
   test6 <- thisFile %>% 
@@ -279,7 +282,7 @@ test7 <- tibble()
 # loop over all files
 for (i in 1:length(files_all)) {
   # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", files_all[i]), show_col_types = F)
+  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", files_all[i]), show_col_types = F)
   
   # check that all MPs who spoke that day are actually in parliament on that sitting day
   # idea: if they're still an mp mpTo is NA, so pass test, if they served more than one term and they're in parliament for at least one, pass test
@@ -313,38 +316,26 @@ for (i in 1:length(files_all)) {
 # filter out people who we manually confirmed are not an error on our end
 test7 <- test7 %>% filter(!(uniqueID %in% c("Alexander1951", "Moore1936", "Feeney1970", "Scott1977", "Lawrence1948")))
 
-##### test 8 - where role is available, there is one unique role per person per sitting day
-test8 <- tibble()
-test8_roles <- tibble()
-test8_names <- tibble()
 
-for (i in 1:length(files_all)) {
-  # read in file
-  thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-2/", files_all[i]), show_col_types = F)
-  
-  if ("role" %in% names(thisFile)) {
-    # check that all MPs who spoke that day are actually in parliament on that sitting day
-    # idea: if they're still an mp mpTo is NA, so pass test, if they served more than one term and they're in parliament for at least one, pass test
-    test8 <- thisFile %>% select(name.id, role) %>% 
-      unique() %>% 
-      filter(!is.na(role))
-    
-    # grab name IDs with more than one unique role
-    if (nrow(test8 %>% group_by(name.id) %>% summarise(n=n()) %>% filter(n!=1))>0) {
-      test8_names <- test8 %>% group_by(name.id) %>% 
-        summarise(n=n()) %>% 
-        filter(n!=1) %>% 
-        mutate(date = as.Date(str_remove(files_all[i], "-main-v2.csv"))) %>% 
-        rbind(., test8_names)
-    }
-    
-    # grab roles with more than one unique name ID
-    if (nrow(test8 %>% group_by(role) %>% summarise(n=n()) %>% filter(n!=1))>0) {
-      test8_roles <- test8 %>% group_by(role) %>% 
-        summarise(n=n()) %>% 
-        filter(n!=1) %>% 
-        mutate(date = as.Date(str_remove(files_all[i], "-main-v2.csv"))) %>% 
-        rbind(., test8_roles)
-    }
-  }
-}
+
+###### old code that we're not using
+##### test 2 - equal number of flagged questions and answers - THIS ASSUMPTION WAS WRONG- test not being used
+# define empty tibble
+# test2 <- tibble()
+# 
+# # loop over all files
+# for (i in 1:length(files_all)) {
+#   # read in file
+#   thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv/", files_all[i]), show_col_types = F)
+#   
+#   # grab total qs and as, check if equal, add date
+#   test2 <- thisFile %>% summarise(total_q = sum(question),
+#                                   total_a = sum(answer),
+#                                   equal = total_q==total_a) %>% 
+#     mutate(date = str_remove(files_all[i], "-main-v2.csv")) %>% 
+#     bind_rows(test2)
+#   
+# }
+# 
+# # filter for days where test failed
+# test2 <- test2 %>% filter(equal==FALSE) %>% select(-equal)

@@ -1,4 +1,4 @@
-# works from 15 February 2000 10 May 2011
+# works from 15 February 2000 to 10 May 2011
 library(here)
 library(tidyverse)
 library(xml2)
