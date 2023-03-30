@@ -11,7 +11,7 @@ date-format: long
 author:
   - Lindsay Katz^[University of Toronto, lindsay.katz@mail.utoronto.ca]
   - Rohan Alexander^[University of Toronto, rohan.alexander@utoronto.ca]
-abstract: "Public knowledge of what is said in parliament is a tenet of democracy, and a critical resource for political science research. In Australia, following the British tradition, the written record of what is said in parliament is known as Hansard. While the Australian Hansard has always been publicly available, it has been difficult to use for the purpose of large-scale macro and micro-level text analysis because it has only been available as PDFs or XMLs. Following the lead of the Linked Parliamentary Data project which achieved this for Canada, we provide a new, comprehensive, high-quality, rectangular, database that captures all proceedings of the Australian parliamentary debates from 1998 to the present using Hansard. The database is publicly available and can be linked to other datasets such as election results. The creation and accessibility of this database enables the exploration of questions that have not been possible to explore, serving as a valuable resource for both researchers and policymakers."
+abstract: "Public knowledge of what is said in parliament is a tenet of democracy, and a critical resource for political science research. In Australia, following the British tradition, the written record of what is said in parliament is known as Hansard. While the Australian Hansard has always been publicly available, it has been difficult to use for the purpose of large-scale macro and micro-level text analysis because it has only been available as PDFs or XMLs. Following the lead of the Linked Parliamentary Data project which achieved this for Canada, we provide a new, comprehensive, high-quality, rectangular database that captures all proceedings of the Australian parliamentary debates from 1998 to the present using Hansard. The database is publicly available and can be linked to other datasets such as election results. The creation and accessibility of this database enables the exploration of questions that have not been possible to explore, serving as a valuable resource for both researchers and policymakers."
 ---
 
 ```{r, echo=F, message=F}
@@ -38,44 +38,44 @@ While there is evidently a growing body of literature on this topic, there is st
 
 Our database contains one comma-separated value (CSV) file for each sitting day of the House of Representatives from 02 March 1998 to 08 September 2022. We developed four scripts to produce all of these files, where each script is designed to parse Hansard documents from a specific portion of the 1998 to 2022 time frame.
 
-This section will be structured as follows. First, we will provide an overview of our approach to understanding and parsing an individual Hansard XML document, which informed all four scripts used to create our database. This will be supplemented with an excerpt from a Hansard XML to provide a visual example of its structure. Next we will explain the specific differences between the four scripts, and outline what structural changes necessitated their separate development. We will then provide details on the methodological intricacies of three core components of Hansard proceedings: Question Time, interjections, and stage directions.
+This section will be structured as follows. First, we will provide an overview of our approach to understanding and parsing an individual Hansard XML document, which informed all four scripts used to create our database. This will be supplemented with an excerpt from a Hansard XML to provide a visual example of its structure. Next we will explain the specific differences between the four scripts, and outline what structural changes necessitated their separate development. We will then provide details on the methodological intricacies of three core components of Hansard proceedings: Question Time, interjections, and stage directions. Finally, we will discuss the script we developed to fill in remaining missing speaker details, which each file in our database was passed to after being parsed and cleaned.
 
 ## Overview {#sec-overview}
 
 The approach to parsing contents of an XML document is heavily dependent on its tree structure. As such, to create this database, we started by looking at a single Hansard XML transcript from 2019. Doing so enabled us to identify the various components of interest in the document, and how each one can be parsed according to its corresponding structural form. Parsing was performed in `R` using the `XML` and `xml2` packages [@XML_pkg; @xml2_pkg]. Focusing on one transcript also allowed us to ensure that all key components of the transcript were being parsed and captured with as much detail as possible. The typical form of a Hansard XML transcript is summarized in the nested list below. Note that this provides a broad overview of the structure, and does not contain every possible nested element that may be found in a Hansard XML.
 
-> ```         
->      <hansard>
->        1. <session.header>
->        2. <chamber.xscript>
->           a)  <business.start>
->           b)  <debate>
->               i.  <debateinfo>
->               ii. <debate.text>
->               iii. <speech>
->               iv. <subdebate.1>
->                   (1) <subdebateinfo>
->                   (2) <subdebate.text>
->                   (3) <speech>
->                   (4) <subdebate.2>
->                       (a) <subdebateinfo>
->                       (b) <subdebate.text>
->                       (c) <speech>
->       3. <fedchamb.xscript>
->       4. <answers.to.questions>
->           a)  <question>
->           b)  <answer>
-> ```
+>          <hansard>
+>            1. <session.header>
+>            2. <chamber.xscript>
+>               a)  <business.start>
+>               b)  <debate>
+>                   i.  <debateinfo>
+>                   ii. <debate.text>
+>                   iii. <speech>
+>                   iv. <subdebate.1>
+>                       (1) <subdebateinfo>
+>                       (2) <subdebate.text>
+>                       (3) <speech>
+>                       (4) <subdebate.2>
+>                           (a) <subdebateinfo>
+>                           (b) <subdebate.text>
+>                           (c) <speech>
+>           3. <fedchamb.xscript>
+>           4. <answers.to.questions>
+>               a)  <question>
+>               b)  <answer>
 
 The outer-most node, also known as the parent node, is denoted `<hansard>` and serves as a container for the entire document. This parent node may have up to four child-nodes, where the first child-node contains details on the specific sitting day. Next, `<chamber.xscript>` contains all proceedings of the Chamber, `<fedchamb.xscript>` contains all proceedings of the Federation Chamber, and `<answers.to.questions>` contains Question Time proceedings. Note that the Federation Chamber does not meet on every sitting day, so this child element is not present in every XML file. The use of separate child nodes allows for the distinction of proceedings of the Chamber and Federation Chamber. The structure of the `<chamber.xscript>` and `<fedchamb.xscript>` nodes are generally the same, where the proceeding begins with a business start which is followed by a series of debates. Debate nodes can contain a `<subdebate.1>` child-node which has a `<subdebate.2>` child-node nested within it. That said, sometimes `<subdebate.2>` is not nested within `<subdebate.1>`. Each of these three elements (i.e. `<debate>`, `<subdebate.1>`, and `<subdebate.2>`) as well as their respective sub-elements contain important information on the topic of discussion, who is speaking, and what is being said. The `<speech>` node within each one contains the bulk of the text associated with that debate or sub-debate. A typical `<speech>` node begins with a `<talk.start>` sub-node, providing information on the speaker and the time of their first statement. Unsurprisingly, speeches rarely go uninterrupted in parliamentary debate settings --- they are often composed of a series of interjections and continuations. These statements are categorized under different sub-nodes depending on their nature, such as `<interjection>` or `<continuation>`. The final key component of Hansard is Question Time, in which questions and answers are classified as unique elements. More detail on the purpose and processing of Question Time will follow in @sec-qa.
 
-@fig-xml1 provides an example of the beginning of an XML file for Hansard, which illustrates the structure outlined in the nested list above. As stated, the XML structure begins with a parent element `"hansard"` (highlighted in blue), followed by a child element `"session.header"` (highlighted in yellow) with sub-child elements such as the date and parliament number, which are all highlighted in pink. Next there is the child element containing everything that takes place in the Chamber, `"chamber.xscript"`, which is also highlighted in yellow in @fig-xml1. As previously mentioned, the first sub-node of `"chamber.xscript"` is the business start. The structure of the business start can be seen between the nodes highlighted in green in @fig-xml1, where the content we parse from the business start are highlighted in orange.
+@fig-xml1 provides an example of the beginning of an XML file for Hansard, which illustrates the structure outlined in the nested list above. As stated, the XML structure begins with a parent element `<hansard>` (highlighted in blue), followed by a child element `<session.header>` (highlighted in yellow) with sub-child elements such as the date and parliament number, which are all highlighted in pink. Next there is the child element containing everything that takes place in the Chamber, `<chamber.xscript>`, which is also highlighted in yellow in @fig-xml1. As previously mentioned, the first sub-node of `<chamber.xscript>` is the business start. The structure of the business start can be seen between the nodes highlighted in green in @fig-xml1, where the content we parse from the business start is highlighted in orange.
 
 ![Snapshot of the beginning of the XML file for Hansard on 25 February 2020](images/xml1.png){#fig-xml1}
 
-Evidently, the nature of XML formatting means that different pieces of information are categorized under a series of uniquely named and nested nodes. As a result, to parse each piece of information, one must specify the unique hierarchy of nodes in which it is structured. This is known as an XPath expression, and tells the parser how to navigate the XML document to obtain the desired information. For example, the session header date in @fig-xml1 can be accessed using the XPath expression "`hansard/session.header/date`". We began our first script by parsing every piece of information contained in the XML document, using these unique XPath expressions to do so.
+Evidently, the nature of XML formatting means that different pieces of information are categorized under a series of uniquely named and nested nodes. As a result, to parse each piece of information, one must specify the unique hierarchy of nodes in which it is structured. This is known as an XPath expression, and tells the parser how to navigate the XML document to obtain the desired information. For example, the session header date in @fig-xml1 can be accessed using the XPath expression "`hansard/session.header/date`". When specifying an XPath expression, one can use an "or" operator to obtain elements from multiple node paths at once, in the order that they appear in the document. We did so throughout our script as we parsed uniquely nested speech content, as it allows for the correct ordering of elements to be maintained. We began our first script by parsing all the business start, speech text, and Question Time contents contained in the XML document, using these unique XPath expressions to do so. Hansard records contain a number of statements throughout that were not explicitly spoken in parliament. For example, the text in @fig-content_ex beneath the bold subtitle "Report from Federation Chamber" is not attributed to a particular member and was not spoken aloud during the parliamentary proceedings. In contrast, the text which comes afterward was spoken aloud in parliament by The Speaker at 14:01. Generally, unspoken text is nested under `<debate.text>` or `<subdebate.text>` nodes, while spoken text is categorized under `<speech>`. Importantly, in our work we focus primarily on parsing spoken speech content (i.e. what is nested within `<speech>` nodes), such as what is stated by The Speaker in @fig-content_ex. For this reason, many Hansard transcriptions which are not spoken text may not be captured in our database. In future work, capturing this unspoken content in our database would be a priority.
 
-The next step was to further develop our script to produce tidy data sets containing each parsed element, where each statement is separated onto its own row with details about the speaker, and rows are placed in chronological order. This first involved correcting the variable classes and adding serveral indicator variables to differentiate where statements came from, such as Chamber versus Federation Chamber or sub-debate 1 versus sub-debate 2. The next key task stemmed from the fact that the raw text data were not separated by each statement when parsed. In other words, any interjections, comments made by The Speaker or Deputy Speaker and continuations within an individual speech were all parsed together as a single string. As such, the name, name ID, electorate and party details were only provided for the person whose turn it was to speak. Splitting up these speeches in a way which would be generalizable across sitting days required much thought and effort. @sec-interject will provide further details on the intricacies of this task.
+![Snapshot from page 7129 of the PDF file for Hansard on 26 March 2013](images/content_ex.png){#fig-content_ex width="181"}
+
+The next step was to further develop our script to produce tidy data sets containing all parsed text elements, where each statement is separated onto its own row with details about the speaker, and rows are maintained in chronological order. This first involved correcting the variable classes and adding several indicator variables to differentiate where statements came from, such as Chamber versus Federation Chamber or sub-debate 1 versus sub-debate 2. The next key task stemmed from the fact that the raw text data were not separated by each statement when parsed. In other words, any interjections, comments made by The Speaker or Deputy Speaker and continuations within an individual speech were all parsed together as a single string. As such, the name, name ID, electorate and party details were only provided for the person whose turn it was to speak. Splitting up these speeches in a way which would be generalizable across sitting days required much thought and effort. @sec-interject will provide further details on the intricacies of this task.
 
 Since we are looking at a wide time span of documents, there are many changes in the way they are formatted over time. These became apparent as we ran our script on XML files from earlier sitting days. Some changes are as subtle as a differently named child-node, while others are as extensive as a completely different nesting structure. Smaller changes were accounted for as we became aware of them, and embedded into the code in a way that would not cause issues for parsing more current Hansards with subtle differences in formatting. However, as mentioned, more significant changes in the XML structure of Hansard are what necessitated the development of separate scripts as we worked backwards in time. Further, while working backward in time, it became clear that not every sitting day contains every possible XML element. For example, some days did not have sub-debate 2 content, and some days did not have a Federation Chamber proceeding. To improve the generalizability of these scripts, if-else statements were embedded within the code wherever an error might arise due to a missing element. For example, the entire Federation Chamber block of code is wrapped in an if-else statement for each script, so that it only executes if what the code attempts to parse exists in the file.
 
@@ -89,11 +89,9 @@ The need for a second script stems from the fact that when established in 1994, 
 
 While the modifications needed to develop the second script were quite straightforward, this was not the case for our next script. The typical tree structure of Hansard XMLs spanning from 1998 to March 2011 has an important difference from that of XMLs released after March 2011, necessitating many changes to be made in our methodology. In XMLs after March 2011, which our first two scripts successfully parse, the first two child-nodes of `<speech>` are typically `<talk.start>`, and `<talk.text>`. The first child-node contains data on the person whose turn it is to speak, and the second contains the entire contents of that speech --- including all interjections, comments, and continuations. After the `<talk.text>` element closes, there are typically a series of other child-nodes which provide a skeleton structure for how the speech proceedings went in chronological order. For example, if the speech began, was interrupted by one member, and then continued uninterrupted until the end, there would be one `<interjection>` node and one `<continuation>` node following the `<talk.text>` node. These would contain details on the person who made each statement such as their party and electorate.
 
-In contrast, the speech contents in XMLs from 1998 up to and including 24 March 2011 are nested differently --- there is no `<talk.text>` node. Rather than this single child-node that contains all speech content, statements are categorized in individual child-nodes. This means that unlike our code for parsing more current Hansards, we cannot specify a single XPath expression such as "`debate/speech/talk.text`" or "`debate/subdebate.1/speech/talk.text`" to extract all speeches, in their entirety, at once. This difference in nesting structure made our second script unusable for parsing transcripts preceding 10 May 2011, and required us to change our data processing approach considerably.
+In contrast, the speech contents in XMLs from 1998 up to and including 24 March 2011 are nested differently --- there is no `<talk.text>` node. Rather than this single child-node that contains all speech content, statements are categorized in individual child-nodes. This means that unlike our code for parsing more current Hansards, we cannot specify a single XPath expression such as "`chamber.xscript//debate//speech/talk.text`" to extract all speeches, in their entirety, at once. This difference in nesting structure made many components of our second script unusable for processing transcripts preceding 10 May 2011, and required us to change our data processing approach considerably.
 
-Since there are numerous speeches in a typical Hansard, each having multiple child-nodes with the same names (i.e. `<continuation>`, `<interjection>`), it is difficult to parse everything while maintaining the correct ordering of statements. We found that the most straightforward way to preserve the ordering of statements and to parse all speech contents at once was to parse from the `<debate>` element directly. The reason we did not use its `<speech>` child-node is because every speech has a unique structure of node children, and this makes it difficult to write code for data cleaning which is generalizable across all speeches and sitting days.
-
-The challenge with parsing through the `<debate>` element is that every piece of data stored in that element is parsed as a single string, including all `<talk.start>` data, and all nested sub-debate data. For example, the data shown in @fig-patternEX would be parsed as a single string preceding the speech content, like so:
+Since the earlier Hansard XMLs do not have a `<talk.text>` node, we found that the most straightforward way to preserve the ordering of statements and to parse all speech contents at once was to parse from the `<debate>` element directly. The reason we did not use its `<speech>` child-node is because every speech has a unique structure of node children, and this makes it difficult to write code for data cleaning which is generalizable across all speeches and sitting days. The challenge with parsing through the `<debate>` element is that every piece of data stored in that element is parsed as a single string, including all `<talk.start>` data, and all nested sub-debate data. For example, the data shown in @fig-patternEX would be parsed as a single string preceding the speech content, like so:
 
 > `09:31:0010261Costello, Peter, MPMr COSTELLOCT4HigginsLPTreasurer10`
 
@@ -105,13 +103,13 @@ Once we finalized this new method of processing the data, we proceeded with data
 
 ## Question Time {#sec-qa}
 
-A key characteristic of the Australian parliamentary system is the ability for the executive government to be held accountable for their decisions. One core mechanism by which this is achieved is called Question Time. This is a period of each sitting day in the Chamber where members of the House can ask ministers two types of questions: questions in writing which are written in advance, or questions without notice which are asked verbally in the Chamber and are responded to in real time [@house2021]. Parsing the components of Question Time required a slightly different approach than that of the debate speech, because of its unique structure in the XML document. Questions without notice are included directly in the `"chamber.xscript"` child node, with sub-child nodes called `"question"` and `"answer"` to differentiate the two. Questions in writing, however, are embedded in their own child node called `"answers.to.questions"` at the end of the XML file.
+A key characteristic of the Australian parliamentary system is the ability for the executive government to be held accountable for their decisions. One core mechanism by which this is achieved is called Question Time. This is a period of each sitting day in the Chamber where members of the House can ask ministers two types of questions: questions in writing which are written in advance, or questions without notice which are asked verbally in the Chamber and are responded to in real time [@house2021]. Questions without notice are included directly in the `"chamber.xscript"` child node, with sub-child nodes called `"question"` and `"answer"` to differentiate the two. Questions in writing, however, are embedded in their own child node called `"answers.to.questions"` at the end of the XML file.  
 
-To parse questions without notice and questions in writing in the first two scripts, we extracted all question and answer elements from the `"chamber.xscript"` and `"answers.to.questions"` child nodes. For the third and fourth scripts, our method of parsing the `"chamber.xscript"` speeches meant that all questions without notice content was already parsed in order. Like the rest of the speech content, we used those patterns of data preceding the text to separate questions and answers. Finally, since questions in writing exist in their own child node we were able to use the same parsing method for the third and fourth scripts as we did for the first and second scripts.
+Our approach to parse the `"chamber.xscript"` speeches used in all four scripts meant that all questions without notice content was already parsed in order. For the first two scripts, questions and answers were already separated onto their own rows. For the third and fourth scripts, just as we did with the rest of the speech content, we used those patterns of data preceding the text to separate questions and answers. Finally, since questions in writing exist in their own child node we were able to use the same parsing method for all scripts, which was simply to extract all question and answer elements from the `"answers.to.questions"` child node.
 
-We then added binary flags to differentiate between questions and answers, determined by which sub-child node the statement was extracted from, that is, whether it came from a `<question>` node, or an `<answer>` node. Sometimes, questions were incorrectly transcribed under an answer node and vice-versa, in which cases we manually corrected the question and answer flags using the `str_detect` function from the `stringr` package. For instance, our code for parsing questions searches for any statements which include "has provided the following answer to the honourable member's question", in which case we re-code that statement as an answer. Once all questions and answers were correctly classified as such, we could then merge all the content back together such that each question was followed by its associated answer. This was straightforward due to the fact that by nature of XML parsing, all questions and answers were parsed in the order in which they appeared in the transcript.
+We then added binary flags to differentiate between questions and answers. To do this in the first and second scripts, we separately re-parsed question and answer content using the XPath expressions `"chamber.xscript//question"` and `"chamber.xscript//answer"`, added the correct question and answer flags accordingly, and then added those flags back to the main dataframe based on exact text matches. For the third and fourth scripts, we made use of the fact that the patterns preceding text transcribed under a question node were stored separately from those transcribed under an answer node. As a result, we could readily use those patterns to flag questions and answers correctly based on which list of patterns it belonged to. Sometimes, questions were incorrectly transcribed under an answer node and vice-versa, in which cases we manually corrected the question and answer flags using the `str_detect` function from the `stringr` package. For instance, we check for any statements flagged as questions which include the phrase "has provided the following answer to the honourable member's question", in which case we re-code that statement as an answer.
 
-The next step was to merge Question Time contents with all the debate speech. Doing so with the questions without notice content was straightforward. For the first and second scripts, we used the time stamp and page number associated with each question to maintain the correct order of statements. For the third and fourth scripts, our method of parsing meant that everything was already parsed together in order, so we did not have to perform any additional merging. While questions in writing do not contain time stamps, merging this content was also straightforward due to the fact that it is always at the very end of Hansard. This means that we could simply bind question in writing rows to the bottom of the main dataframe. This approach was used for all four scripts.
+The next step was to merge Question Time contents with all the debate speech. Doing so with the questions without notice content was straightforward. As mentioned, our method of parsing meant that everything was already parsed together in order, so we did not have to perform any additional merging. For questions in writing, merging this content was also straightforward due to the fact that it is always at the very end of Hansard. This means that we could simply bind question in writing rows to the bottom of the main dataframe. This approach was used for all four scripts.
 
 ## Interjections {#sec-interject}
 
@@ -126,7 +124,7 @@ Below is an example of part of a speech we would need to split, extracted from H
 > #| results: asis
 > >
 > # read in XML file
-> raw_ex <-  xmlParse(here("/Volumes/Verbatim/input/", "2021-11-30.xml"))
+> raw_ex <-  xmlParse(here("input/2021-11-30.xml"))
 > >
 > # extract example of text (chose this one b/c it's short and has an interruption by The Speaker)
 > interject_text_ex <- cbind(xmlToDataFrame(node=getNodeSet(raw_ex, "//chamber.xscript/debate/subdebate.1/speech/talk.start/talker")),
@@ -179,6 +177,10 @@ We then proceeded to clean up speeches and fill in correct speaker details. Whil
 
 When building our first scripts, one of the final components needed was to separate general stage directions out from statements made by members. Stage directions are general statements included in the transcript to document happenings in parliament. Examples of stage directions are "Bill read a second time", "Question agreed to" or "Debate adjourned". It was unclear to us from the XML and PDF who exactly these statements were attributed to. For further clarification, we watched portions of the video recording for some sitting days, and noticed that where these statements are documented in Hansard, they are not explicitly stated in parliament. For example, when The Deputy Speaker says "The question is that the bill be now read a second time", members of the House take a vote, and if the majority is in favour, they proceed reading the bill the second time. This vote and second reading is not explicitly transcribed, rather what is written is: "Question agreed to. Bill read a second time". For this reason, we filled the name variable for these statements with "stage direction". Note that stage directions were not flagged as interjections. These stage directions are not defined differently from the regular debate speech in the XML, meaning we had to manually create a list of stage directions to separate out of the speeches. We have built this list of stage directions as we worked backwards in parsing Hansard, and took the same approach across all four scripts.
 
+## Filling Missing Details
+
+While we did our best to maximize the completeness of the files in our database as they were processed in the initial four scripts, there were still a number of rows in which details on the person speaking were missing, or the name transcribed for that individual was in a short form (i.e. "Mr Abbott" instead of "Abbott, Tony, MP"). This was a particularly frequent occurrence for sitting days where a member spoke whose surname was shared by any other past or present member of parliament, and automated filling of their details using data from the `AustralianPoliticians` package was avoided to prevent any incorrect detail attribution. In an effort to improve as many of these as possible, we developed a script which identifies short-form names belonging to people with common surnames in each CSV, looks for the full version of that individuals name if available in that same CSV file, and replaces the short-form name with the full name, and fills the rest of the speaker details in accordingly with data from the `AustralianPoliticians` package. This script does the same for anyone who does have a unique surname but is still missing the full name form or any gender, unique ID, name ID, party or electorate details. Each file in our database passed through this script after being created, to ensure it is as complete as possible.
+
 # Data Records
 
 Our database contains 1517 CSV files, covering all sitting days of the House of Representatives from 02 March 1998 to 08 September 2022. All data records are available on the general-purpose repository Zenodo, at https://doi.org/10.5281/zenodo.7336076 [@katz_2022]. For each CSV file, each row contains an individual statement, with details on the individual speaking. Of course, for general statements transcribed as made by "Honourable members" for example, these variables cannot be specified. @tbl-vars provides an overview of each variable found in the database.
@@ -198,11 +200,28 @@ library(XML)
 library(lubridate)
 library(kableExtra)
 
-# read in example csv
-main_ex <- read_csv("/Volumes/Verbatim/output/main-2000-2011/2003-08-14-main.csv", show_col_types = F)
-
 # create tibble with var names and descriptions
-main_ex_vars <- tibble("Variable" = names(main_ex),
+main_ex_vars <- tibble("Variable" = c("name",
+                                      "order",
+                                      "speech_no",
+                                      "page.no",
+                                      "time.stamp",
+                                      "name.id",
+                                      "electorate",
+                                      "party",
+                                      "in.gov",
+                                      "first.speech",
+                                      "body",
+                                      "fedchamb_flag",
+                                      "sub1_flag",
+                                      "sub2_flag",
+                                      "question",
+                                      "answer",
+                                      "q_in_writing",
+                                      "div_flag",
+                                      "gender",
+                                      "uniqueID",
+                                      "interject"),
        "Description" = c("Name of speaker",
                          "Row number",
                          "Speech number",
@@ -232,17 +251,13 @@ knitr::kable(main_ex_vars, booktabs=T) %>%
 
 The `name`, `page.no`, `time.stamp`, `name.id`, `electorate`, `party`, `in.gov`, `first,speech`, and `body` variables all came directly from the XML contents. In addition to these variables, we added a number of flags to enable easy filtering of statements. For example, adding the `fedchamb_flag` provides a clear distinction between the proceedings of the Chamber with those of the Federation Chamber. As well, the `sub1_flag` and `sub2_flag` variables allow us to keep track of where various statements are being parsed from in the XML document. The `question`, `answer`, and `q_in_writing` flags were added to identify statements belonging to Question Time, and the nature of these statements. We also flagged for interjections (`interject`), and the `div_flag` variable was added to flag when a division is called for. The `gender` and `uniqueID` variables were added based on the main dataset from the `AustralianPoliticians` package. Details on the usage of `uniqueID` will be provided in @sec-usage. Further, the `speech_no` variable allows us to keep track of the speech number that each statement and interjection belongs to. Having the speech number variable offers an easy way to group statements by speech or isolate specific speeches of interest. Finally, the `order` variable was added to maintain the order of proceedings.
 
-**this paragraph is a bit repetitive and states everything found in the table, but i also feel like it's valuable to specify which ones we added and elaborate on their meaning. thoughts?**
-
-## Descriptive Statistics {#sec-stats}
-
 # Technical Validation
 
 We developed a script to perform seven automated tests on each file in our database, in an effort to enhance its quality and consistency. Our first test validates that the date specified in each file name matches the date specified in its corresponding XML session header.[^4] Every file passed this test, and we detected one discrepancy in an XML file from 03 June 2009, where its session header contained the wrong date. We validated that our file name and date was correct by checking the official PDF release from that sitting day.
 
 [^4]: As seen in @fig-xml1, the first child node of the `<session.header>` element is the date.
 
-The second test checks that in each file, there is an equal number of flagged questions and answers. This test was motivated by the discrepancies in correct categorization of questions and answers we found when parsing Question Time, and allows us to check for the presence of any of these discrepancies which we have missed.
+The second test is designed to test for duplication errors in the data, by checking whether two lines that immediately follow each other have the same body (i.e. spoken content). This test detected 129 dates on which duplicate statements were made, and one immediately follows the other. Note that this test does not account for who is making each statement, meaning one member repeating the words of another member would be picked up in this test as well. We checked a sample of 40% of these duplicates, and manually validated that they are all repeated statements that do exist and are transcribed closely together in that day's XML file, and by our method should be parsed such that one of these statements is immediately followed by the other.
 
 When a member runs out of allotted time for their speech, Hansard editors transcribe "(Time expired)" after their final word. As a means of checking that we have separated speeches out correctly, our third test checks that when the phrase "(Time expired)" exists in a body of text, it exists at the very end. When this is not the case, we know that we have missed the separation of the next statement onto its own row, and could fix this accordingly.
 
@@ -266,7 +281,11 @@ The code written to build this database is available on the GitHub repository as
 
 # Acknowledgements
 
+We thank Kristine Villaluna, Monica Alexander, and Jack Stephenson for helpful comments.
+
 # Author Contributions
+
+LK developed and implemented the code to obtain, create, and test, the datasets and wrote the first draft of the paper. RA conceptualized and designed the study, and contributed writing. Both authors approved the final version.
 
 # Competing Interests
 
