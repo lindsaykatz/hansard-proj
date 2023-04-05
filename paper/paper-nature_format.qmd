@@ -269,9 +269,11 @@ Finally, our seventh test validates that all individuals speaking are active mem
 
 While our database makes a substantial contribution to the field, there are a few areas for future development.
 
-One important contribution would be to take advantage of similar records that exist for the Senate over this same period and add them to our database. The main challenge of this would be accounting for different parliamentarians, but the broad structures would be similar.
+One important contribution would be to take advantage of similar records that exist for the Senate over this same period and add them to our database. The main challenge of this would be accounting for different parliamentarians, but the broad structures would be similar, making many elements of our code and methodology applicable to this work.
 
-Earlier House of Representatives records also exist. In some cases it is difficult to get XML records for certain dates, and the earlier decades would require more cleaning.
+Earlier House of Representatives records also exist, and would be valuable to include in future versions of our database. In some cases however it is difficult to get XML records for certain dates, and the earlier decades would require more cleaning and likely additional script development to account for changes in structural formatting.
+
+Having completed this work, we recognize components of our scripts which could be developed in a more computationally efficient manner such as our approach to splitting interjections and filling in MP details. In future, it would be beneficial to review our methodological approach to these steps, and consider approaches which are more concise where appropriate.
 
 Finally, Hansard records contain a number of statements throughout that were not explicitly spoken in parliament. For example, the text in @fig-content_ex beneath the bold subtitle "Report from Federation Chamber" is not attributed to a particular member and was not spoken aloud during the parliamentary proceedings. In contrast, the text which comes afterward was spoken aloud in parliament by The Speaker at 14:01. Generally, unspoken text is nested under `<debate.text>` or `<subdebate.text>` nodes, while spoken text is categorized under `<speech>`. Importantly, in our work we focus primarily on parsing spoken speech content (i.e. what is nested within `<speech>` nodes), such as what is stated by The Speaker in @fig-content_ex. For this reason, many Hansard transcriptions which are not spoken text may not be captured in our database. In future work, capturing this unspoken content in our database would be a priority.
 
