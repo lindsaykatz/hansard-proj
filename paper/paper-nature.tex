@@ -184,7 +184,7 @@
 \author{Lindsay Katz\footnote{University of Toronto,
   lindsay.katz@mail.utoronto.ca} \and Rohan Alexander\footnote{University
   of Toronto, rohan.alexander@utoronto.ca}}
-\date{April 6, 2023}
+\date{April 27, 2023}
 
 \begin{document}
 \maketitle
@@ -204,7 +204,7 @@ such as election results. The creation and accessibility of this
 database enables the exploration of new questions and serves as a
 valuable resource for both researchers and policymakers.
 \end{abstract}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[breakable, borderline west={3pt}{0pt}{shadecolor}, boxrule=0pt, interior hidden, sharp corners, enhanced, frame hidden]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[enhanced, boxrule=0pt, borderline west={3pt}{0pt}{shadecolor}, sharp corners, frame hidden, interior hidden, breakable]}{\end{tcolorbox}}\fi
 
 \hypertarget{sec-intro}{%
 \section{Background \& Summary}\label{sec-intro}}
@@ -1081,60 +1081,6 @@ MPs on that particular day. We use the \texttt{mps} dataset from the
 \texttt{AustralianPoliticians} package which has the dates when each MP
 was in parliament. Using these dates, we check that each person speaking
 on each sitting day is in fact an MP on that day.
-
-\hypertarget{next-steps}{%
-\section{Next Steps}\label{next-steps}}
-
-While our database makes a substantial contribution to the field, there
-are a few areas for future development.
-
-One important contribution would be to take advantage of similar records
-that exist for the Senate over this same period and add them to our
-database. The main challenge of this would be accounting for different
-parliamentarians, but the broad structures would be similar, making many
-elements of our code and methodology applicable to this work.
-
-Earlier House of Representatives records also exist, and would be
-valuable to include in future versions of our database. In some cases
-however it is difficult to get XML records for certain dates, and the
-earlier decades would require more cleaning and likely additional script
-development to account for changes in structural formatting.
-
-Having completed this work, we recognize components of our scripts which
-could be developed in a more computationally efficient manner such as
-our approach to splitting interjections and filling in MP details. In
-future, it would be beneficial to review our methodological approach to
-these steps, and consider approaches which are more concise where
-appropriate.
-
-Finally, Hansard records contain a number of statements throughout that
-were not explicitly spoken in parliament. For example, the text in
-Figure~\ref{fig-content_ex} beneath the bold subtitle ``Report from
-Federation Chamber'' is not attributed to a particular MP and was not
-spoken aloud during the parliamentary proceedings. In contrast, the text
-which comes afterward was spoken aloud in parliament by the Speaker at
-14:01. Generally, unspoken text is nested under
-\texttt{\textless{}debate.text\textgreater{}} or
-\texttt{\textless{}subdebate.text\textgreater{}} nodes, while spoken
-text is categorized under \texttt{\textless{}speech\textgreater{}}.
-Importantly, in our work we focus primarily on parsing spoken speech
-content (i.e.~what is nested within
-\texttt{\textless{}speech\textgreater{}} nodes), such as what is stated
-by the Speaker in Figure~\ref{fig-content_ex}. For this reason, many
-Hansard transcriptions which are not spoken text may not be captured in
-our database. In future work, capturing this unspoken content in our
-database would be a priority.
-
-\begin{figure}
-
-{\centering \includegraphics[width=1.88542in,height=\textheight]{images/content_ex.png}
-
-}
-
-\caption{\label{fig-content_ex}Snapshot from page 7129 of the PDF file
-for Hansard on 26 March 2013}
-
-\end{figure}
 
 \hypertarget{sec-usage}{%
 \section{Usage Notes}\label{sec-usage}}

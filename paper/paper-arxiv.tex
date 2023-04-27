@@ -1,0 +1,1297 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  letterpaper,
+  DIV=11,
+  numbers=noendperiod]{scrartcl}
+
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{5}
+% Make \paragraph and \subparagraph free-standing
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newlength{\cslentryspacingunit} % times entry-spacing
+\setlength{\cslentryspacingunit}{\parskip}
+\newenvironment{CSLReferences}[2] % #1 hanging-ident, #2 entry spacing
+ {% don't indent paragraphs
+  \setlength{\parindent}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+  \let\oldpar\par
+  \def\par{\hangindent=\cslhangindent\oldpar}
+  \fi
+  % set entry spacing
+  \setlength{\parskip}{#2\cslentryspacingunit}
+ }%
+ {}
+\usepackage{calc}
+\newcommand{\CSLBlock}[1]{#1\hfill\break}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{#1}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{#1}\break}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\KOMAoption{captions}{tableheading}
+\makeatletter
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+\makeatletter
+\@ifpackageloaded{tcolorbox}{}{\usepackage[many]{tcolorbox}}
+\makeatother
+\makeatletter
+\@ifundefined{shadecolor}{\definecolor{shadecolor}{rgb}{.97, .97, .97}}
+\makeatother
+\makeatletter
+\makeatother
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Digitization of the Australian Parliamentary Debates, 1998-2022},
+  pdfauthor={Lindsay Katz; Rohan Alexander},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Digitization of the Australian Parliamentary Debates, 1998-2022}
+\author{Lindsay Katz\footnote{University of Toronto,
+  lindsay.katz@mail.utoronto.ca} \and Rohan Alexander\footnote{University
+  of Toronto, rohan.alexander@utoronto.ca}}
+\date{April 27, 2023}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Public knowledge of what is said in parliament is a tenet of democracy,
+and a critical resource for political science research. In Australia,
+following the British tradition, the written record of what is said in
+parliament is known as Hansard. While the Australian Hansard has always
+been publicly available, it has been difficult to use for the purpose of
+large-scale macro- and micro-level text analysis because it has only
+been available as PDFs or XMLs. Following the lead of the Linked
+Parliamentary Data project which achieved this for Canada, we provide a
+new, comprehensive, high-quality, rectangular database that captures
+proceedings of the Australian parliamentary debates from 1998 to 2022.
+The database is publicly available and can be linked to other datasets
+such as election results. The creation and accessibility of this
+database enables the exploration of new questions and serves as a
+valuable resource for both researchers and policymakers.
+\end{abstract}
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, enhanced, interior hidden, boxrule=0pt, sharp corners, frame hidden, breakable]}{\end{tcolorbox}}\fi
+
+\hypertarget{sec-intro}{%
+\section{Background \& Summary}\label{sec-intro}}
+
+The official written record of parliamentary debates, formally known as
+Hansard, plays a fundamental role in capturing the history of political
+proceedings and facilitating the exploration of valuable research
+questions. Originating in the British parliament, the production of
+Hansard became tradition in many other Commonwealth countries, such as
+Canada and Australia (Vice and Farrell 2017). Given the content and
+magnitude of these records, they have significance, particularly in the
+context of political science research. In the case of Canada, the
+Hansard has been digitized for 1901 to 2019 (Beelen et al. 2017). Having
+a digitized version of Hansard enables researchers to conduct text
+analysis and statistical modelling. Following the lead of that project,
+in this paper we introduce a similar database for Australia. This is
+composed of individual datasets for each sitting day in the House of
+Representatives from 1998 to 2022, containing details on everything said
+in parliament in a form that can be readily used by researchers. With
+the development of tools for large-scale text analysis, this database
+will serve as a resource for understanding political behaviour in
+Australia over time.
+
+The Australian House of Representatives `the House' performs a number of
+crucial governmental functions, such as creating new laws and overseeing
+government expenditure (House of Representatives 2018, ch.~1).
+Politicians in the House are referred to as Members of Parliament (MPs).
+The House operates under a parallel chamber setup, meaning there are two
+debate venues where proceedings take place: the Chamber, and the
+Federation Chamber. Sittings of the House follow a predefined order of
+business, regulated by procedural rules called standing orders (House of
+Representatives 2018, ch.~8). A typical sitting day in the Chamber has a
+number of scheduled proceedings including debates on government
+business, 90 second member statements, and Question Time (House of
+Representatives 2018, ch.~8). The Federation Chamber was created in 1994
+as a subordinate debate venue of the Chamber. This allows for better
+time management of House business as its proceedings occur
+simultaneously with those of the Chamber (House of Representatives 2018,
+ch.~21). Sittings in the Federation Chamber are different to those of
+the Chamber in terms of their order of business and scope of discussion.
+Business matters discussed in the Federation Chamber are limited largely
+to intermediate stages of bill development, and the business of private
+Members (House of Representatives 2018, ch.~21). It is the recording and
+compilation of these proceedings on which Hansard is based, and it is
+essentially, but not entirely, verbatim.
+
+A week or so after each sitting day, a transcript is available for
+download from the official Parliament of Australia website in both PDF
+and extensible markup language (XML) form. The PDF is the official
+release. The PDF imposes formatting designed for humans to read with
+ease, whereas XML is designed for consistency and machine legibility.
+The nature of XML enables us to more easily use code to manipulate these
+records at scale, motivating our choice to develop our database solely
+using the XML formatted files. In cases where we were unsure on how to
+proceed with processing the XML, we defer first to the PDF, and then to
+the video recording of the proceeding, if available.
+
+At present, the Hansard format that is available on the Parliament of
+Australia website is not accessible for large scale analysis. To this
+point, various researchers have had to create their own databases of
+usable, complete data based on content from the Australian Parliament
+website. For instance, Sherratt (2016) created an online, easy to read
+database of Hansard from 1901 to 1980 using the XML files. These data
+can be navigated by year, parliament, people, and bills (Sherratt 2016).
+To make the Australian Parliamentary Handbook more accessible, Leslie
+(2021) has released an \texttt{R} package which includes data on all MPs
+from 1945 to 2019. Further, Alexander and Hodgetts (2021) created the
+\texttt{AustralianPoliticians} \texttt{R} package, which contains
+several datasets related to the political and biographical information
+of Australian federal politicians who were active between 1901 and 2021.
+
+Many papers exist which use components of Australian Hansard to explore
+various research topics. For example, Salisbury (2011) used the Hansard
+to investigate occurrences of unparliamentary comments by MPs, where the
+Speaker tells that MP to withdraw their remark. Rasiah (2010) worked
+with Question Time data from Hansard transcripts during February and
+March of 2003, to investigate resistance of politicians in answering
+questions about Iraq. Fraussen, Graham, and Halpin (2018) use Hansard to
+quantify political prominence by investigating strategic mentions of
+interest groups by elected officials. Finally, Alexander and Alexander
+(2021) construct a dataset of the Australian Hansard, along with an
+analysis of the effect of elections and changes in Prime Ministers upon
+topics mentioned in parliament. Alexander and Alexander (2021) created
+this database with the static PDF versions of Hansard, using OCR to
+digitize these files into text which is suitable for analysis. This
+means there are considerable digitization errors especially in the first
+half of the dataset.
+
+While there is evidently a growing body of literature on this topic,
+there is still no comprehensive database for Australian Hansard based on
+XML that spans from 1901 to the present day. Our work begins to bridge
+this gap.
+
+\hypertarget{methods}{%
+\section{Methods}\label{methods}}
+
+Our database contains one comma-separated value (CSV) file and one
+parquet file for each sitting day of the House of Representatives from
+02 March 1998 to 08 September 2022. We developed four scripts to produce
+these files. Each script parses Hansard documents from a specific
+portion of the 1998 to 2022 time frame.
+
+This section is structured as follows. First, we provide an overview of
+our approach to understanding and parsing an individual Hansard XML
+document, which informed the scripts used to create our database. This
+will be supplemented with an excerpt from a Hansard XML to provide a
+visual example of its structure. Next we will explain the specific
+differences between the scripts, and outline what structural changes
+necessitated their separate development. We then provide details on the
+methodological intricacies of three core components of Hansard
+proceedings: Question Time, interjections, and stage directions.
+Finally, we discuss the script we developed to fill in remaining missing
+details on the MP speaking, which each file in our database was passed
+to after being parsed and cleaned.
+
+\hypertarget{sec-overview}{%
+\subsection{Overview}\label{sec-overview}}
+
+The approach to parsing contents of an XML document depends on its tree
+structure. As such, to create this database, we started by looking at a
+single Hansard XML transcript from 2019. Doing so enabled us to identify
+the various components of interest in the document, and how each one can
+be parsed according to its corresponding structural form. Parsing was
+performed in \texttt{R} using the \texttt{XML} and \texttt{xml2}
+packages (Temple Lang 2022; Wickham, Hester, and Ooms 2021). Focusing on
+one transcript also allowed us to ensure that all key components of the
+transcript were parsed and captured in as much detail as possible. The
+typical form of a Hansard XML transcript is summarized in the nested
+list below. This provides an overview, but does not contain every
+possible nested element that may be found in a Hansard XML.
+
+\begin{quote}
+\begin{verbatim}
+     <hansard>
+       1. <session.header>
+       2. <chamber.xscript>
+          a)  <business.start>
+          b)  <debate>
+              i.  <debateinfo>
+              ii. <debate.text>
+              iii. <speech>
+              iv. <subdebate.1>
+                  (1) <subdebateinfo>
+                  (2) <subdebate.text>
+                  (3) <speech>
+                  (4) <subdebate.2>
+                      (a) <subdebateinfo>
+                      (b) <subdebate.text>
+                      (c) <speech>
+      3. <fedchamb.xscript>
+      4. <answers.to.questions>
+          a)  <question>
+          b)  <answer>
+\end{verbatim}
+\end{quote}
+
+The outer-most node, also known as the parent node, is denoted
+\texttt{\textless{}hansard\textgreater{}} and serves as a container for
+the entire document. This parent node may have up to four child nodes,
+where the first child node contains details on the specific sitting day.
+Next, \texttt{\textless{}chamber.xscript\textgreater{}} contains all
+proceedings of the Chamber,
+\texttt{\textless{}fedchamb.xscript\textgreater{}} contains all
+proceedings of the Federation Chamber, and
+\texttt{\textless{}answers.to.questions\textgreater{}} contains Question
+Time proceedings. The Federation Chamber does not meet on every sitting
+day, so this child element is not present in every XML file. The use of
+separate child nodes allows for the distinction of proceedings between
+the Chamber and Federation Chamber. The structure of the
+\texttt{\textless{}chamber.xscript\textgreater{}} and
+\texttt{\textless{}fedchamb.xscript\textgreater{}} nodes are generally
+the same, where the proceeding begins with
+\texttt{\textless{}business.start\textgreater{}} which is followed by a
+series of debates. Debate nodes can contain a
+\texttt{\textless{}subdebate.1\textgreater{}} child node which has a
+\texttt{\textless{}subdebate.2\textgreater{}} child node nested within
+it. That said, sometimes \texttt{\textless{}subdebate.2\textgreater{}}
+is not nested within \texttt{\textless{}subdebate.1\textgreater{}}. Each
+of these three elements (i.e.~\texttt{\textless{}debate\textgreater{}},
+\texttt{\textless{}subdebate.1\textgreater{}}, and
+\texttt{\textless{}subdebate.2\textgreater{}}) as well as their
+respective sub-elements contain important information on the topic of
+discussion, who is speaking, and what is being said. The
+\texttt{\textless{}speech\textgreater{}} node within each one contains
+the bulk of the text associated with that debate or sub-debate. A
+typical \texttt{\textless{}speech\textgreater{}} node begins with a
+\texttt{\textless{}talk.start\textgreater{}} sub-node, providing
+information on the MP whose turn it is to speak and the time of their
+first statement. Unsurprisingly, speeches rarely go uninterrupted in
+parliamentary debate settings --- they are often composed of a series of
+interjections and continuations. These statements are categorized under
+different sub-nodes depending on their nature, such as
+\texttt{\textless{}interjection\textgreater{}} or
+\texttt{\textless{}continuation\textgreater{}}. The final key component
+of Hansard is Question Time, in which questions and answers are
+classified as unique elements. More detail on the purpose and processing
+of Question Time will follow in Section~\ref{sec-qa}.
+
+Figure~\ref{fig-xml1} provides an example of the beginning of an XML
+file for Hansard, which illustrates the structure outlined in the nested
+list above. As stated, the XML structure begins with a parent element
+\texttt{\textless{}hansard\textgreater{}} (highlighted in blue),
+followed by a child element
+\texttt{\textless{}session.header\textgreater{}} (highlighted in yellow)
+with sub-child elements such as the date and parliament number, which
+are all highlighted in pink. Next, there is the child element containing
+everything that takes place in the Chamber,
+\texttt{\textless{}chamber.xscript\textgreater{}}, which is also
+highlighted in yellow in Figure~\ref{fig-xml1}. As previously mentioned,
+the first sub-node of \texttt{\textless{}chamber.xscript\textgreater{}}
+is \texttt{\textless{}business.start\textgreater{}}. The structure of
+this can be seen between the nodes highlighted in green in
+Figure~\ref{fig-xml1}, where the content we parse from the business
+start is highlighted in orange.
+
+\begin{figure}
+
+{\centering \includegraphics{images/xml1.png}
+
+}
+
+\caption{\label{fig-xml1}Snapshot of the beginning of the XML file for
+Hansard on 25 February 2020}
+
+\end{figure}
+
+Evidently, the nature of XML formatting means that different pieces of
+information are categorized under a series of uniquely named and nested
+nodes. As a result, to parse each piece of information, one must specify
+the unique hierarchy of the nodes in which it is structured. This is
+known as an XPath expression, and tells the parser how to navigate the
+XML document to obtain the desired information. For example, the session
+header date in Figure~\ref{fig-xml1} can be accessed using the XPath
+expression ``\texttt{hansard/session.header/date}''. When specifying an
+XPath expression, one can use an ``or'' operator to obtain elements from
+multiple node paths at once, in the order that they appear in the
+document. We did so throughout our script as we parsed uniquely nested
+speech content. This allows the correct ordering of elements to be
+maintained. We began our first script by parsing all the business start,
+speech text, and Question Time contents contained in the XML document,
+using these unique XPath expressions to do so.
+
+The next step was to further develop our script to produce tidy data
+sets, as defined and introduced by Wickham (2014). These contain all
+parsed text elements, where each statement is separated onto its own row
+with details about the MP who is speaking, and rows are maintained in
+chronological order. This first involved correcting the variable classes
+and adding several indicator variables to differentiate where statements
+came from, such as Chamber versus Federation Chamber or
+\texttt{\textless{}subdebate.1\textgreater{}} versus
+\texttt{\textless{}subdebate.2\textgreater{}}. The next key task stemmed
+from the fact that the raw text data were not separated by each
+statement when parsed. In other words, any interjections, comments made
+by the Speaker or Deputy Speaker and continuations within an individual
+speech were all parsed together as a single string. As such, the name,
+name ID, electorate and party details were only provided for the person
+whose turn it was to speak. There were many intricacies in the task of
+splitting these speeches in a way that would be generalizable across
+sitting days. Details on these are provided in
+Section~\ref{sec-interject}.
+
+Since we are looking at a wide time span of documents, there are many
+changes in the way they are formatted. These became apparent as we ran
+our script on XML files from earlier sitting days. Some changes are as
+subtle as a differently named child node, while others are as extensive
+as a completely different nesting structure. Smaller changes were
+accounted for as we became aware of them, and embedded into the code in
+a way that would not cause issues for parsing more current Hansards with
+subtle differences in formatting. However, as mentioned, more
+significant changes in the XML structure of Hansard are what
+necessitated the development of separate scripts as we worked backwards.
+Further not every sitting day contains every possible XML element. For
+example, some days did not have
+\texttt{\textless{}subdebate.2\textgreater{}} content, and some days did
+not have a Federation Chamber proceeding. To improve the
+generalizability of these scripts, if-else statements were embedded
+within the code wherever an error might arise due to a missing element.
+For example, the entire Federation Chamber block of code is wrapped in
+an if-else statement for each script, so that it only executes if what
+the code attempts to parse exists in the file.
+
+Once the script ran without error for a few recent years of Hansard, we
+continued to work backwards until extensive changes in tree structure
+made our script incompatible with parsing earlier XML files. The
+earliest sitting day this first script can successfully parse is 14
+August 2012. Before developing new scripts to parse earlier Hansard
+documents, we prioritized cleaning and finalizing what we had been able
+to parse. As such we continued building our script, fixing any problems
+we noticed in the resulting datasets such as excess whitespace or
+spacing issues, and splitting up any additional sections of the parsed
+text onto separate rows where necessary. Specifically, we added a
+section of our script to separate out general stage directions. More
+information on this separation will be provided in
+Section~\ref{sec-stage}. After completing our first script, it was
+formatted as a function which takes a single file name argument and
+produces one CSV file containing data on all proceedings from the given
+sitting day.
+
+\hypertarget{sec-diff}{%
+\subsection{Script Differences}\label{sec-diff}}
+
+As mentioned, we developed a total of four scripts to parse the
+1998-2022 time frame of Hansard documents. Two main factors motivated us
+to create four scripts as opposed to just one, the first being
+structural variation in XML over time, and the second being improved
+computational efficiency with separate scripts. While all four scripts
+use the same general approach to parsing described in
+Section~\ref{sec-overview} and produce the same CSV structure, the first
+and second scripts use a different method of data processing than the
+third and fourth scripts.
+
+The need for a second script stems from the fact that when established
+in 1994, the Federation Chamber was originally named the Main Committee.
+The Main Committee was renamed to the Federation Chamber in mid-2012
+(House of Representatives 2018, ch.~21). As a result, the child node
+under which Federation Chamber proceedings are nested is named
+\texttt{\textless{}maincomm.xscript\textgreater{}} in all XML files
+prior to 14 August 2012. Having developed our first script based on
+Hansard from recent years, all XPath expressions contain the
+\texttt{\textless{}fedchamb.xscript\textgreater{}} specification. To
+avoid causing issues in our first script which successfully parses about
+10 years of Hansard, we created a second script where we replaced all
+occurrences of \texttt{\textless{}fedchamb.xscript\textgreater{}} with
+\texttt{\textless{}maincomm.xscript\textgreater{}}. After making this
+modification and accounting for other small changes such as time stamp
+formatting, this second script successfully parses all Hansard sitting
+days from 10 May 2011 to 28 June 2012 (inclusive).
+
+While the modifications needed to develop the second script were
+straightforward, this was not the case for our next script. The typical
+tree structure of Hansard XMLs spanning from 1998 to March 2011 has an
+important difference from that of XMLs released after March 2011,
+necessitating many changes to be made in our methodology. In XMLs after
+March 2011, which our first two scripts successfully parse, the first
+two child nodes of \texttt{\textless{}speech\textgreater{}} are
+typically \texttt{\textless{}talk.start\textgreater{}}, and
+\texttt{\textless{}talk.text\textgreater{}}. The first child node
+contains data on the person whose turn it is to speak, and the second
+contains the entire contents of that speech --- including all
+interjections, comments, and continuations. After the
+\texttt{\textless{}talk.text\textgreater{}} element closes, there are
+typically a series of other child nodes which provide a skeleton
+structure for how the speech proceedings went in chronological order.
+For example, if the speech began, was interrupted by an MP, and then
+continued uninterrupted until the end, there would be one
+\texttt{\textless{}interjection\textgreater{}} node and one
+\texttt{\textless{}continuation\textgreater{}} node following the
+\texttt{\textless{}talk.text\textgreater{}} node. These would contain
+details on the MP who made each statement, such as their party and
+electorate.
+
+In contrast, the speech contents in XMLs from 1998 up to and including
+24 March 2011 are nested differently --- there is no
+\texttt{\textless{}talk.text\textgreater{}} node. Rather than this
+single child node that contains all speech content, statements are
+categorized in individual child nodes. This means that unlike our code
+for parsing more current Hansards, we cannot specify a single XPath
+expression such as
+``\texttt{chamber.xscript//debate//speech/talk.text}'' to extract all
+speeches, in their entirety, at once. This difference in nesting
+structure made many components of our second script unusable for
+processing transcripts preceding 10 May 2011, and required us to change
+our data processing approach considerably.
+
+Since the earlier Hansard XMLs do not have a
+\texttt{\textless{}talk.text\textgreater{}} node, we found that the most
+straightforward way to preserve the ordering of statements and to parse
+all speech contents at once was to parse from the
+\texttt{\textless{}debate\textgreater{}} element directly. The reason we
+did not use its \texttt{\textless{}speech\textgreater{}} child node is
+because every speech has a unique structure of node children, and this
+makes it difficult to write code for data cleaning which is
+generalizable across all speeches and sitting days. The challenge with
+parsing through the \texttt{\textless{}debate\textgreater{}} element is
+that every piece of data stored in that element is parsed as a single
+string, including all \texttt{\textless{}talk.start\textgreater{}} data,
+and all nested sub-debate data. For example, the data shown in
+Figure~\ref{fig-patternEX} would be parsed as a single string preceding
+the speech content, like so:
+
+\begin{quote}
+\texttt{09:31:0010261Costello,\ Peter,\ MPMr\ COSTELLOCT4HigginsLPTreasurer10}
+\end{quote}
+
+\begin{figure}
+
+{\centering \includegraphics[width=3.28125in,height=\textheight]{images/patternEX.png}
+
+}
+
+\caption{\label{fig-patternEX}Portion of XML file for Hansard on 12
+December 2002}
+
+\end{figure}
+
+This was not isolated to just the beginning of speeches --- details on
+individuals interjecting or commenting during speeches were also
+captured this way. To separate statements correctly, we collected all of
+these patterns using the \texttt{\textless{}talk.start\textgreater{}}
+node, and used them to split statements wherever one of these patterns
+was found. After separating the statements, we were able to remove these
+patterns from the body of text. We also used this method of extracting
+and later removing unwanted patterns for other pieces of data which did
+not belong to the debate proceedings, such as sub-debate titles.
+
+Once we finalized this new method of processing the data, we proceeded
+with data cleaning using the same general approach as in the first two
+scripts to produce the same structure of CSV output. We then worked
+backwards in time and modified the code as needed for generalizability.
+Throughout this process we found many transcription errors present in
+the XMLs from earlier years. We fixed these manually, deferring to the
+official release to ensure the correct information was filled in. Since
+there were a number of transcription errors specific to the 2000s, we
+chose to create a fourth script for parsing 1998 and 1999. This allowed
+us to remove all the code which was needed to resolve specific
+transcription errors of the 2000s, to avoid an overly long script and in
+turn improving computational efficiency. As such, our fourth script is
+essentially the same as the third, with the only difference being that
+it has code specific to fixing transcription errors from 1998 and 1999.
+
+\hypertarget{sec-qa}{%
+\subsection{Question Time}\label{sec-qa}}
+
+A key characteristic of the Australian parliamentary system is the
+ability for the executive government to be held accountable for their
+decisions. One core mechanism by which this is achieved is called
+Question Time. This is a period of each sitting day in the Chamber where
+MPs can ask ministers two types of questions: questions in writing which
+are written in advance, or questions without notice which are asked
+verbally in the Chamber and are responded to in real time (House of
+Representatives 2021). Questions without notice are included directly in
+the \texttt{"chamber.xscript"} child node, with sub-child nodes called
+\texttt{"question"} and \texttt{"answer"} to differentiate the two.
+Questions in writing, however, are embedded in their own child node
+called \texttt{"answers.to.questions"} at the end of the XML file.
+
+Our approach to parse the \texttt{"chamber.xscript"} speeches used in
+all four scripts meant that all questions without notice content was
+already parsed in order. For the first two scripts, questions and
+answers were already separated onto their own rows. For the third and
+fourth scripts, just as we did with the rest of the speech content, we
+used those patterns of data preceding the text to separate questions and
+answers. Finally, since questions in writing exist in their own child
+node we were able to use the same parsing method for all scripts, which
+was to extract all question and answer elements from the
+\texttt{"answers.to.questions"} child node.
+
+We then added binary flags to differentiate between questions and
+answers. To do this in the first and second scripts, we separately
+re-parsed question and answer content using the XPath expressions
+\texttt{"chamber.xscript//question"} and
+\texttt{"chamber.xscript//answer"}, added the correct question and
+answer flags accordingly, and then added those flags back to the main
+dataframe based on exact text matches. For the third and fourth scripts,
+we made use of the fact that the patterns preceding text transcribed
+under a question node were stored separately from those transcribed
+under an answer node. As a result, we could readily use those patterns
+to flag questions and answers correctly based on which list of patterns
+it belonged to. Sometimes, questions were incorrectly transcribed under
+an answer node and vice-versa, in which cases we manually corrected the
+question and answer flags. For instance, we check for any statements
+flagged as questions which include the phrase ``has provided the
+following answer to the honourable member's question'', in which case we
+re-code that statement as an answer.
+
+The next step was to merge Question Time contents with all the debate
+speech. Our method of parsing meant that everything was already in
+order, so we did not have to perform any additional merging. For
+questions in writing, merging this content was also straightforward due
+to the fact that it is always at the end of Hansard. This means that we
+could bind question in writing rows to the bottom of the main dataframe.
+This approach was used for all four scripts.
+
+\hypertarget{sec-interject}{%
+\subsection{Interjections}\label{sec-interject}}
+
+As mentioned, the text was structured and parsed in such a way that
+various interjections and comments which happened during a speech were
+not separated onto individual rows. This was the case across the entire
+time frame of documents. We will first discuss the methodology employed
+to split interjections in the first and second scripts, as it informed
+our approach for the third and fourth scripts.
+
+Below is an example of part of a speech we would need to split,
+extracted from Hansard on 30 November 2021, where Bert van Manen is
+interrupted by the Speaker who states that the time for members'
+statements has concluded.
+
+\begin{quote}
+``Mr VAN MANEN (Forde---Chief Government Whip) (13:59): It's a great
+pleasure to share with the House that Windaroo Valley State High School
+has qualified for the finals of the Australian Space Design Competition,
+to begin in January next year. The competition is regarded as the
+premier STEM competition for high school students and is recognised by
+universities around the country. The students are required to respond to
+industry-level engineering and requests for tender for design and---The
+SPEAKER: Order! In accordance with standing order 43, the time for
+members' statements has concluded.''
+\end{quote}
+
+We want each statement on its own row with the correct name, name ID,
+electorate and party information on the individual speaking. We
+approached this task in a number of steps.
+
+Once all parsed text from the XML was merged into one dataframe called
+\texttt{main}, our first step was to add a \texttt{"speech\_no"}
+variable. This was done to keep track of which speech each interjection,
+comment, or continuation belonged to as we separated these components
+onto their own rows.
+
+The next step was to extract all the names and titles preceding these
+interjections, comments and continuations. This would enable us to then
+separate the speeches in the correct places using these names and titles
+in combination with regular expressions, which are patterns of
+characters that can be used to search bodies of text. We completed this
+extraction process with a few intermediate steps, due to the large
+number of name styles and interjection types that had to be accounted
+for, each requiring their own unique regular expression format.
+
+As mentioned in Section~\ref{sec-diff}, more recent years of Hansard
+XMLs contain a series of child nodes which exist to capture the
+structure of interruptions in that speech. Figure~\ref{fig-xml3}
+provides an example of this, where the speech was interrupted by a
+comment from the Deputy Speaker, and then the MP continued their speech.
+Looking at the element names highlighted in blue, these child nodes do
+not contain the actual text for the interjection or continuation ---
+this text is embedded within the speech above it. However, as shown by
+the content highlighted in pink in Figure~\ref{fig-xml3}, we were able
+to extract useful details on the individual interjecting which we could
+use later. Making use of this structure, we extracted names and
+information of all individuals that were categorized within the XML as
+interjections. We stored this as a dataframe called
+\texttt{"interject"}. We decided not to include this data in our final
+database, as it is embedded in our resulting datasets which have a flag
+for interjections.
+
+\begin{figure}
+
+{\centering \includegraphics[width=3.59375in,height=\textheight]{images/xml3.png}
+
+}
+
+\caption{\label{fig-xml3}Snapshot of XML structure with interjection and
+continuation from 03 February 2021 Hansard}
+
+\end{figure}
+
+We then created lists using both the \texttt{interject} and
+\texttt{main} dataframes to capture all the names of individuals who
+spoke that day. We added the names of all MPs in a number of unique
+formats, due to the frequent variation in how names are transcribed in
+Hansard. When an MP interjects or continues a speech, the usual form of
+their name is a title followed by their first name or first initial
+and/or last name. There is also variation in the capitalization of these
+names.\footnote{Sometimes when someone's first name is included, only
+  their last name is capitalized, while sometimes their full name is
+  capitalized, or other times neither are capitalized.} Another source
+of variation is in individuals with more than one first name, as
+sometimes only their initial first name is written, while other times
+their entire first name is written. Additionally, some surnames have
+punctuation, and some surnames have specific capitalization such as
+``McCormack'', where even in full capitalization, the first ``c''
+remains lower case. This variation demands careful consideration when
+writing regular expression patterns. In these lists we also accounted
+for any general interjection statements that were not attributed to an
+individual, such as ``An opposition member interjecting-''.
+
+Having these lists enabled us to extract the names of MPs and their
+associated titles as they exist in the text, by searching for exact
+matches with regular expression patterns. We then used these extracted
+names to split all the speeches, using regular expressions with
+lookarounds. A lookaround can be added to a regular expression pattern
+to enhance the specificity of matches. These were used to ensure that
+the text was not being split in the wrong places, such as places where
+MPs were being named in the statement of another MP.
+
+Once all interjections, comments and continuations were successfully
+split onto their own rows using the lists we created, we did one final
+check for any additional names that were not captured in these lists. To
+do so, we searched for any remaining name matches in speech bodies with
+general regular expressions and lookarounds, and separated text using
+those matches when found.
+
+We then added an order variable to the dataset based on row number, to
+keep track of the order in which everything was said. The next step was
+to fill the name, name ID, electorate and party variables with the
+correct data for each row. We also wanted to add the gender and unique
+identifier for each individual as found in the
+\texttt{AustralianPoliticians} package. To do so, we created a lookup
+table, which contained the unique incomplete form in which the name was
+transcribed, and the corresponding full name, name ID, electorate,
+party, gender, and unique ID for that individual.
+Figure~\ref{fig-lookup} provides an example of this. We used the main
+dataset from the \texttt{AustralianPoliticians} package in the creation
+of each lookup table (Alexander and Hodgetts 2021).
+
+\begin{figure}
+
+{\centering \includegraphics[width=4.66667in,height=\textheight]{images/lookup_ex.png}
+
+}
+
+\caption{\label{fig-lookup}First 10 rows of the lookup table from 19
+October 2017 Hansard processing}
+
+\end{figure}
+
+Next, we merged our main dataframe with the lookup table to replace any
+incomplete names with their full names, and to fill in any gaps with
+available name ID, electorate, party, gender, and unique ID information.
+Finally, we were able to add a flag for interjections. Grouping our data
+by the speech number, we defined an interjection as a statement made by
+anyone who is not the Speaker, the Deputy Speaker, or the MP whose turn
+it was to speak. Figure~\ref{fig-interject} provides an example of a
+Federation Chamber proceeding with interjections. Statements made by the
+MP whose turn it was to speak, or by the Deputy Speaker Maria
+Vamvakinou, are not flagged as interjections.
+
+\begin{figure}
+
+{\centering \includegraphics{images/interject_ex.png}
+
+}
+
+\caption{\label{fig-interject}Example of speech with interjections from
+21 November 2016 Hansard}
+
+\end{figure}
+
+Having developed a successful methodology for splitting interjections,
+we used this to inform our general approach in the third and fourth
+scripts. However, the difference in data cleaning used in these scripts
+necessitated some departure from the original methodology. As discussed
+in Section~\ref{sec-diff}, we used string patterns extracted from
+\texttt{\textless{}talk.start\textgreater{}} nodes to separate speeches.
+As evident in Figure~\ref{fig-xml3},
+\texttt{\textless{}talk.start\textgreater{}} nodes are nested within
+\texttt{\textless{}interjection\textgreater{}} nodes, meaning that the
+patterns of data from interjection statements were separated out in the
+process. In other words, our approach to data cleaning in the third and
+fourth scripts separated out interjections in the process. This meant
+that we did not need to create lists of names and titles for which to
+search in the text as we did before. However, we used the same list of
+general interjection statements on which to separate as was used in the
+first two scripts. We then did an additional check for statements that
+may have not been separated due to how they were embedded in the XML,
+and separated those out where needed.\footnote{While most statements
+  were categorized in their own child node and hence captured through
+  pattern-based separation, some were not individually categorized, and
+  had to be split manually in this step.}
+
+We then proceeded to clean up speeches and fill in correct details on
+the MP speaking. While we used the same lookup table approach as before,
+we did so in combination with another means of filling in these details.
+The patterns parsed from \texttt{\textless{}talk.start\textgreater{}}
+nodes contain important data on the MP making each statement. As such,
+we could extract those data associated with each pattern by parsing one
+element inward, using the XPath expression \texttt{"talk.start/talker"}.
+We created a pattern lookup table with these data, and merged it with
+the main Hansard dataframe by the first pattern detected in each
+statement. Figure~\ref{fig-patterns} provides an example of that lookup
+table. This approach enabled us to fill in missing data on each MP
+speaking using data extracted directly from the XML. Finally, we then
+used the \texttt{AustralianPoliticians} dataset to fill in other missing
+data, and flagged for interjections in the same manner as before.
+
+\begin{figure}
+
+{\centering \includegraphics{images/pattern_lookup.png}
+
+}
+
+\caption{\label{fig-patterns}10 rows of the pattern lookup table from 12
+December 2012 Hansard processing}
+
+\end{figure}
+
+\hypertarget{sec-stage}{%
+\subsection{Stage Directions}\label{sec-stage}}
+
+When building our first scripts, one of the final components needed was
+to separate general stage directions out from statements made by MPs.
+Stage directions are general statements included in the transcript to
+document happenings in parliament. Examples of stage directions are
+``Bill read a second time'', ``Question agreed to'', or ``Debate
+adjourned''. It was unclear to us from the XML and PDF who exactly these
+statements were attributed to. For further clarification, we watched
+portions of the video recording for some sitting days, and noticed that
+while these statements are documented in Hansard, they are not
+explicitly stated in parliament. For example, when the Deputy Speaker
+says ``The question is that the bill be now read a second time'', MPs
+vote, and if the majority is in favour, they proceed reading the bill
+the second time. This vote and second reading is not explicitly
+transcribed, rather what is written is: ``Question agreed to. Bill read
+a second time''. For this reason, we filled the name variable for these
+statements with ``stage direction''. Stage directions were not flagged
+as interjections. These stage directions are not defined differently
+from the regular debate speech in the XML, meaning we had to manually
+create a list of stage directions to separate out of the speeches. We
+built this list of stage directions as we worked backwards in parsing
+Hansard, and took the same approach across all four scripts.
+
+\hypertarget{filling-missing-details}{%
+\subsection{Filling Missing Details}\label{filling-missing-details}}
+
+While we did our best to maximize the completeness of the files in our
+database as they were processed in the initial four scripts, there were
+still a number of rows in which details on the person speaking were
+missing, or the name transcribed for that individual was in a short form
+(i.e.~``Mr Abbott'' instead of ``Abbott, Tony, MP''). This was a
+particularly frequent occurrence for sitting days where an MP spoke
+whose surname was shared by any other past or present MP, and automated
+filling of their details using data from the
+\texttt{AustralianPoliticians} package was avoided to prevent any
+incorrect detail attribution. In an effort to improve as many of these
+as possible, we developed a script which identifies short-form names
+belonging to people with common surnames in each CSV, looks for the full
+version of that individuals name if available in that same CSV file, and
+replaces the short-form name with the full name, and fills the rest of
+the MP details in accordingly with data from the
+\texttt{AustralianPoliticians} package. This script does the same for
+anyone who does have a unique surname but is still missing the full name
+form or any gender, unique ID, name ID, party or electorate details.
+Each file in our database passed through this script after being
+created, to ensure it is as complete as possible.
+
+Due to the fact that the names of MPs with common surnames were not all
+in their complete form when we flagged for interjections the first time,
+it was possible that the name of the MP whose turn it was to speak was
+transcribed in different forms within their speech. For example,
+``Smith, Tony, MP'' at the start and then ``Mr Smith'' later on in the
+speech. By the nature of how we flagged for interjections, this means
+that rows where the short form like ``Mr Smith'' is the name would be
+flagged as an interjection, which is incorrect. To fix this, we
+re-flagged interjections using the same definition as before, once all
+names were filled in with this script.
+
+\hypertarget{data-records}{%
+\section{Data Records}\label{data-records}}
+
+Our database is available in both CSV and parquet formats. It covers all
+sitting days of the House of Representatives from 02 March 1998 to 08
+September 2022, so there are 1,517 files for each format. All data
+records are available on the general-purpose repository Zenodo, at
+https://doi.org/10.5281/zenodo.7336075 (Katz and Alexander 2023). For
+each file, each row contains an individual statement, with details on
+the individual speaking. For general statements transcribed as made by
+``Honourable members'' for example, these variables cannot be specified.
+Table~\ref{tbl-vars} provides an overview of each variable found in the
+database.
+
+\hypertarget{tbl-vars}{}
+\begin{table}[H]
+\caption{\label{tbl-vars}Summary and description of variables in our database }\tabularnewline
+
+\centering
+\begin{tabular}{ll}
+\toprule
+Variable & Description\\
+\midrule
+name & Name of speaker\\
+order & Row number\\
+speech\_no & Speech number\\
+page.no & Page number statement can be found on in official Hansard\\
+time.stamp & Time of statement\\
+\addlinespace
+name.id & Unique member identification code, based on the Parliamentary Handbook\\
+electorate & Speaking member's electorate\\
+party & Speaking member's party\\
+in.gov & Flag for in government (1 if in government, 0 otherwise)\\
+first.speech & Flag for first speech (1 if first speech, 0 otherwise)\\
+\addlinespace
+body & Statement text\\
+fedchamb\_flag & Flag for Federation Chamber (1 if Federation Chamber, 0 if Chamber)\\
+sub1\_flag & Flag for sub-debate 1 contents (1 if sub-debate 1, 0 otherwise)\\
+sub2\_flag & Flag for sub-debate 2 contents (1 if sub-debate 2, 0 otherwise)\\
+question & Flag for question (1 if question, 0 otherwise)\\
+\addlinespace
+answer & Flag for answer (1 if answer, 0 otherwise)\\
+q\_in\_writing & Flag for question in writing (1 if question in writing, 0 otherwise)\\
+div\_flag & Flag for division (1 if division, 0 otherwise)\\
+gender & Gender of speaker\\
+uniqueID & Unique identifier of speaker\\
+\addlinespace
+interject & Flag for interjection (1 if statement is an interjection, 0 otherwise)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The \texttt{name}, \texttt{page.no}, \texttt{time.stamp},
+\texttt{name.id}, \texttt{electorate}, \texttt{party}, \texttt{in.gov},
+\texttt{first.speech}, and \texttt{body} variables all came directly
+from the XML contents. In addition to these variables, we added a number
+of flags to enable easy filtering of statements. For example, adding the
+\texttt{fedchamb\_flag} provides a clear distinction between the
+proceedings of the Chamber with those of the Federation Chamber. As
+well, the \texttt{sub1\_flag} and \texttt{sub2\_flag} variables allow us
+to keep track of where various statements are being parsed from in the
+XML document. The \texttt{question}, \texttt{answer}, and
+\texttt{q\_in\_writing} flags were added to identify statements
+belonging to Question Time, and the nature of these statements. We also
+flagged for interjections (\texttt{interject}), and the
+\texttt{div\_flag} variable was added to flag when a division is called
+for. The \texttt{gender} and \texttt{uniqueID} variables were added
+based on the main dataset from the \texttt{AustralianPoliticians}
+package. Details on the usage of \texttt{uniqueID} will be provided in
+Section~\ref{sec-usage}. Further, the \texttt{speech\_no} variable
+allows us to keep track of the speech number that each statement and
+interjection belongs to. Having the speech number variable offers an
+easy way to group statements by speech or isolate specific speeches of
+interest. Finally, the \texttt{order} variable was added to maintain the
+order of proceedings.
+
+\hypertarget{technical-validation}{%
+\section{Technical Validation}\label{technical-validation}}
+
+We developed a script to perform automated tests on each file in our
+database, to enhance its quality and consistency. Our first test
+validates that the date specified in each file name matches the date
+specified in its corresponding XML session header.\footnote{As seen in
+  Figure~\ref{fig-xml1}, the first child node of the
+  \texttt{\textless{}session.header\textgreater{}} element is the date.}
+Every file passed this test, and we detected one discrepancy in an XML
+file from 03 June 2009, where its session header contained the wrong
+date. We validated that our file name and date was correct by checking
+the official PDF release from that sitting day.
+
+The second test is designed to test for duplication errors in the data,
+by checking whether two lines that immediately follow each other have
+the same body (i.e.~spoken content). This test detected 129 dates on
+which duplicate statements were made, and one immediately follows the
+other. Note that this test does not account for who is making each
+statement, meaning one MP repeating the words of another MP would be
+picked up in this test as well. We checked a sample of 40\% of these
+duplicates, and manually validated that they are all repeated statements
+that do exist and are transcribed closely together in that day's XML
+file, and by our method should be parsed such that one of these
+statements is immediately followed by the other.
+
+When an MP runs out of allotted time for their speech, Hansard editors
+transcribe ``(Time expired)'' after their final word. As a means of
+checking that we have separated speeches out correctly, our third test
+checks that when the phrase ``(Time expired)'' exists in a body of text,
+it exists at the very end. When this is not the case, we know that we
+have missed the separation of the next statement onto its own row, and
+could fix this accordingly.
+
+The remaining tests focus on the MPs present on each sitting day. Our
+fourth test checks that there is one unique party and electorate
+attributed to each individual on each sitting day. As we parsed Hansard
+further back in time, we found a number of cases where an individual was
+associated with the wrong electorate or party due to transcription
+errors. When we found these data errors we corrected them based on the
+official release. This test provides us with an automated way to catch
+these errors and correct them at scale.
+
+Next, we test that the unique name identification code attributed to
+each individual is found in the Australian Parliamentary Handbook. We do
+so using the \texttt{ausPH} package. This test serves as another means
+to correct for transcription errors, this time in the case of name IDs.
+We found and corrected for a number of common name ID transcription
+errors detected by this test, such as a capital letter ``O'' in place of
+a zero.
+
+Our sixth test checks that on any given sitting day, the individuals
+identified are alive. To do so, we utilized the main dataset from the
+\texttt{AustralianPoliticians} package which contains the birth and
+where applicable death dates for every politician. This test confirmed
+that all MPs who are detected to speak on each sitting day are not
+deceased.
+
+Finally, our seventh test validates that all individuals speaking are
+MPs on that particular day. We use the \texttt{mps} dataset from the
+\texttt{AustralianPoliticians} package which has the dates when each MP
+was in parliament. Using these dates, we check that each person speaking
+on each sitting day is in fact an MP on that day.
+
+\hypertarget{next-steps}{%
+\section{Next Steps}\label{next-steps}}
+
+While our database makes a substantial contribution to the field, there
+are a few areas for future development.
+
+One important contribution would be to take advantage of similar records
+that exist for the Senate over this same period and add them to our
+database. The main challenge of this would be accounting for different
+parliamentarians, but the broad structures would be similar, making many
+elements of our code and methodology applicable to this work.
+
+Earlier House of Representatives records also exist, and would be
+valuable to include in future versions of our database. In some cases
+however it is difficult to get XML records for certain dates, and the
+earlier decades would require more cleaning and likely additional script
+development to account for changes in structural formatting.
+
+Having completed this work, we recognize components of our scripts which
+could be developed in a more computationally efficient manner such as
+our approach to splitting interjections and filling in MP details. In
+future, it would be beneficial to review our methodological approach to
+these steps, and consider approaches which are more concise where
+appropriate.
+
+Finally, Hansard records contain a number of statements throughout that
+were not explicitly spoken in parliament. For example, the text in
+Figure~\ref{fig-content_ex} beneath the bold subtitle ``Report from
+Federation Chamber'' is not attributed to a particular MP and was not
+spoken aloud during the parliamentary proceedings. In contrast, the text
+which comes afterward was spoken aloud in parliament by the Speaker at
+14:01. Generally, unspoken text is nested under
+\texttt{\textless{}debate.text\textgreater{}} or
+\texttt{\textless{}subdebate.text\textgreater{}} nodes, while spoken
+text is categorized under \texttt{\textless{}speech\textgreater{}}.
+Importantly, in our work we focus primarily on parsing spoken speech
+content (i.e.~what is nested within
+\texttt{\textless{}speech\textgreater{}} nodes), such as what is stated
+by the Speaker in Figure~\ref{fig-content_ex}. For this reason, many
+Hansard transcriptions which are not spoken text may not be captured in
+our database. In future work, capturing this unspoken content in our
+database would be a priority.
+
+\begin{figure}
+
+{\centering \includegraphics[width=1.88542in,height=\textheight]{images/content_ex.png}
+
+}
+
+\caption{\label{fig-content_ex}Snapshot from page 7129 of the PDF file
+for Hansard on 26 March 2013}
+
+\end{figure}
+
+\hypertarget{sec-usage}{%
+\section{Usage Notes}\label{sec-usage}}
+
+To enhance the usability of our database, we added a \texttt{uniqueID}
+variable to each file. This serves as a unique identifier for each
+speaking MP, and comes from the \texttt{uniqueID} variable present
+within data from both the \texttt{AustralianPoliticians} and
+\texttt{AustralianElections} R packages (Alexander and Hodgetts 2021;
+Alexander 2019). By including this variable, one can readily integrate
+our data records with those available in these two packages.
+
+Further, the \texttt{name.id} variable found in each file is another
+unique identifier for each MP. This variable was parsed directly from
+the Hansard XML files, and can be found in the Australian Parliamentary
+Handbook. As such, our data records can be integrated with those from
+the \texttt{ausPH} package which provides datasets for contents of the
+Australian Parliamentary Handbook (Leslie 2021). This will allow for
+convenient extraction of further details on each MP in a tidy, ready to
+analyze format.
+
+\hypertarget{code-availability}{%
+\section{Code Availability}\label{code-availability}}
+
+The code written to build this database is available on the GitHub
+repository associated with this paper:
+https://github.com/lindsaykatz/hansard-proj. All scripts were created
+using R software (R Core Team 2022). The core packages used to develop
+these scripts are: the \texttt{XML} package by Temple Lang (2022), the
+\texttt{xml2} package by Wickham, Hester, and Ooms (2021), the
+\texttt{tidyverse} R packages by Wickham et al. (2019), the
+\texttt{AustralianPoliticians} package by Alexander and Hodgetts (2021),
+and the \texttt{ausPH} package by Leslie (2021). \texttt{XML} and
+\texttt{xml2} were used for parsing the XML documents,
+\texttt{AustralianPoliticians} and \texttt{ausPH} were used for cleaning
+up and filling in MP details in the datasets, and \texttt{tidyverse}
+packages were used in all steps, for tidy wrangling of data.
+
+\hypertarget{acknowledgements}{%
+\section{Acknowledgements}\label{acknowledgements}}
+
+We thank Kristine Villaluna, Monica Alexander, and Jack Stephenson for
+helpful comments.
+
+\hypertarget{author-contributions}{%
+\section{Author Contributions}\label{author-contributions}}
+
+LK developed and implemented the code to obtain, create, and test, the
+datasets and wrote the first draft of the paper. RA conceptualized and
+designed the study, and contributed writing. Both authors approved the
+final version.
+
+\hypertarget{competing-interests}{%
+\section{Competing Interests}\label{competing-interests}}
+
+The authors declare no competing interests.
+
+\hypertarget{references}{%
+\section*{References}\label{references}}
+\addcontentsline{toc}{section}{References}
+
+\hypertarget{refs}{}
+\begin{CSLReferences}{1}{0}
+\leavevmode\vadjust pre{\hypertarget{ref-auselect}{}}%
+Alexander, Rohan. 2019. \emph{AustralianElections: Datasets on
+Australian Elections}.
+\url{https://github.com/RohanAlexander/AustralianElections}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-alexander2021}{}}%
+Alexander, Rohan, and Monica Alexander. 2021. {``The Increased Effect of
+Elections and Changing Prime Ministers on Topics Discussed in the
+Australian Federal Parliament Between 1901 and 2018.''} \emph{arXiv
+Preprint arXiv:2111.09299}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-auspol}{}}%
+Alexander, Rohan, and Paul A. Hodgetts. 2021.
+\emph{AustralianPoliticians: Provides Datasets about Australian
+Politicians}.
+\url{https://CRAN.R-project.org/package=AustralianPoliticians}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-lipad}{}}%
+Beelen, Kaspar, Timothy Alberdingk Thijm, Christopher Cochrane, Kees
+Halvemaan, Graeme Hirst, Michael Kimmins, Sander Lijbrink, et al. 2017.
+{``Digitization of the Canadian Parliamentary Debates.''} \emph{Canadian
+Journal of Political Science/Revue Canadienne de Science Politique} 50
+(3): 849--64.
+
+\leavevmode\vadjust pre{\hypertarget{ref-fraussen2018}{}}%
+Fraussen, Bert, Timothy Graham, and Darren R Halpin. 2018. {``Assessing
+the Prominence of Interest Groups in Parliament: A Supervised Machine
+Learning Approach.''} \emph{The Journal of Legislative Studies} 24 (4):
+450--74.
+
+\leavevmode\vadjust pre{\hypertarget{ref-australia2018house}{}}%
+House of Representatives. 2018. Edited by D. R. Elder and P. E. Fowler.
+\emph{{House of Representatives Practice}}. 7th ed. {Australian
+Government - Department of the House of Representatives}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-house2021}{}}%
+---------. 2021. \emph{{A window on the house: Practices and procedures
+relating to question time}}. {Parliament of Australia}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-katz_2023}{}}%
+Katz, Lindsay, and Rohan Alexander. 2023. {``{A new, comprehensive
+database of all proceedings of the Australian Parliamentary Debates
+(1998-2022)}.''} Zenodo. \url{https://doi.org/10.5281/zenodo.7785767}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Leslie_2021_HoR_Aus}{}}%
+Leslie, Patrick. 2021. \emph{Members of the Australian House of
+Representatives (1945-2019)}.
+\url{https://github.com/palesl/AustralianHouseOfRepresentatives}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-r_software}{}}%
+R Core Team. 2022. \emph{R: A Language and Environment for Statistical
+Computing}. Vienna, Austria: R Foundation for Statistical Computing.
+\url{https://www.R-project.org/}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-rasiah2010framework}{}}%
+Rasiah, Parameswary. 2010. {``A Framework for the Systematic Analysis of
+Evasion in Parliamentary Discourse.''} \emph{Journal of Pragmatics} 42
+(3): 664--80.
+
+\leavevmode\vadjust pre{\hypertarget{ref-salisbury2011}{}}%
+Salisbury, Christopher. 2011. {``'Mr Speaker, i Withdraw...': Standards
+of (Mis) Behaviour in the Queensland, Western Australian and
+Commonwealth Parliaments Compared via Online Hansard.''}
+\emph{Australasian Parliamentary Review} 26 (1): 166--77.
+
+\leavevmode\vadjust pre{\hypertarget{ref-sherratt}{}}%
+Sherratt, Tim. 2016. {``Documentation: Historic Hansard.''}
+\emph{Historic Hansard}.
+\url{http://timsherratt.org/digital-heritage-handbook/docs/historic-hansard/\#}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-XML_pkg}{}}%
+Temple Lang, Duncan. 2022. \emph{XML: Tools for Parsing and Generating
+XML Within r and s-Plus}. \url{https://CRAN.R-project.org/package=XML}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-vice2017history}{}}%
+Vice, John, and Stephen Farrell. 2017. \emph{The History of Hansard}.
+House of Lords Library; House of Lords Hansard.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Wickham2014}{}}%
+Wickham, Hadley. 2014. {``Tidy Data.''} \emph{Journal of Statistical
+Software} 59 (10). \url{https://doi.org/10.18637/jss.v059.i10}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-tidyverse}{}}%
+Wickham, Hadley, Mara Averick, Jennifer Bryan, Winston Chang, Lucy
+D'Agostino McGowan, Romain François, Garrett Grolemund, et al. 2019.
+{``Welcome to the {tidyverse}.''} \emph{Journal of Open Source Software}
+4 (43): 1686. \url{https://doi.org/10.21105/joss.01686}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-xml2_pkg}{}}%
+Wickham, Hadley, Jim Hester, and Jeroen Ooms. 2021. \emph{Xml2: Parse
+XML}. \url{https://CRAN.R-project.org/package=xml2}.
+
+\end{CSLReferences}
+
+
+
+\end{document}
