@@ -91,11 +91,7 @@
       -   `unique_data.csv` contains data on the number of unique names, name IDs, electorates, and parties found in each CSV, disaggregated by House vs. Federation Chamber proceeding
       -   `word_counts.csv` contains data on the word count of the Hansard CSV for each sitting day, also disaggregated by House vs. Federation Chamber proceeding
 -   `images` contains images used in our paper
--    the remaining files in this folder are associated with the current version of our paper
-
-
-
-
+-    All files starting with `paper-arxiv` are associated with the version of our paper available on [arxiv](https://arxiv.org/abs/2304.04561)
 
 ## input folder
 
