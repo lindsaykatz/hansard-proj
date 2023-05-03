@@ -101,3 +101,16 @@
 
 - contains old CSV files with some XML content which was parsed at the beginning of this work
 - contains an rda file with data on divisions which took place in parliament, including the date, time stamp, number of votes and names of members who voted. This was created using the script `07-divisions_data.R`
+
+## workflow
+
+To produce the most recently published version of our dataset, we used the following workflow:
+
+1. Parse, clean and export each XML file to CSV format using:
+     - `99-everything-1998_to_1999-FINAL.R` for proceedings from 02 March 1998 to 09 December 1999 (inclusive)
+     - `99-everything-2000_to_2011-FINAL.R` for proceedings from 15 February 2000 to 24 March 2011 (inclusive)
+     - `99-everything-2011_to_2012-FINAL.R` for proceedings from 10 May 2011 to 28 June 2012 (inclusive)
+     - `99-everything-2012_to_2022-FINAL.R` for proceedings from 14 August 2012 to 08 September 2022 (inclusive)
+2. Fill in member details for each CSV produced in step 1 using the `fill_details.R` script. We then exported the filled in datasets as new CSV files.
+3. Run filled in datasets from step 2 through a suite of automated tests using the `data_validation.R` script, making necessary corrections to the data which did not pass all of these tests. We then re-exported those files which required additional cleaning identified by these tests, and re-ran them through the full suite of tests to ensure every file in our dataset passed every validation test.
+4. Convert the validated CSV files to Parquet format using our `csv_to_parquet.R` script.
