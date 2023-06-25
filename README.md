@@ -1,5 +1,20 @@
 # Hansard project
 
+This repository contains all materials relating to the Digitization of the Australian Parliamentary Debates (1998-2022). The most recent version of our database is available for download on [Zenodo](https://zenodo.org/record/7799678).
+
+## Workflow
+
+To produce the most recently published version of our dataset, we used the following workflow:
+
+1. Parse, clean and export each XML file to CSV format using:
+     - `99-everything-1998_to_1999-FINAL.R` for proceedings from 02 March 1998 to 09 December 1999 (inclusive)
+     - `99-everything-2000_to_2011-FINAL.R` for proceedings from 15 February 2000 to 24 March 2011 (inclusive)
+     - `99-everything-2011_to_2012-FINAL.R` for proceedings from 10 May 2011 to 28 June 2012 (inclusive)
+     - `99-everything-2012_to_2022-FINAL.R` for proceedings from 14 August 2012 to 08 September 2022 (inclusive)
+2. Fill in member details for each CSV produced in step 1 using the `fill_details.R` script. We then exported the filled in datasets as new CSV files.
+3. Run filled in datasets from step 2 through a suite of automated tests using the `data_validation.R` script, making necessary corrections to the data which did not pass all of these tests. We then re-exported those files which required additional cleaning identified by these tests, and re-ran them through the full suite of tests to ensure every file in our dataset passed every validation test.
+4. Convert the validated CSV files to Parquet format using our `csv_to_parquet.R` script.
+
 ## urls folder
 
 -   this folder has CSV files which contain the links for each sitting day's XML file, and the name it should be assigned when downloaded
