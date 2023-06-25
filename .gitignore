@@ -4,6 +4,7 @@
 .Rdata
 .httr-oauth
 .DS_Store
+paper
 
 # History files
 .Rhistory
