@@ -26,7 +26,7 @@ parse_session_info <- function(filename){
 }
 
 # ex: call function, pass file name
-parse_session_info("2018-08-23.xml")
+# parse_session_info("2018-08-23.xml")
 
 # grab list of all file names
 files_all <- list.files("/Volumes/Verbatim/input/")
@@ -41,4 +41,4 @@ for(i in 1:length(files_all)){
 }
 
 # export all session info
-write.csv(session_info_all, paste0("/Volumes/Verbatim/output/session_info/session_info_all.csv"), row.names = FALSE)
+write.csv(session_info_all, paste0("/Volumes/Verbatim/output/old-data/session_info/session_info_all.csv"), row.names = FALSE)
