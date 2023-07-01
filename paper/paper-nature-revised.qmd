@@ -38,7 +38,7 @@ While there is evidently a growing body of literature on this topic, there is st
 
 Our database contains one comma-separated value (CSV) file and one parquet file for each sitting day of the House of Representatives from 02 March 1998 to 08 September 2022. We developed four scripts to produce these files. Each script parses Hansard documents from a specific portion of the 1998 to 2022 time frame.
 
-This section is structured as follows. First, we provide an overview of our approach to understanding and parsing an individual Hansard XML document, which informed the scripts used to create our database. This will be supplemented with an excerpt from a Hansard XML to provide a visual example of its structure. Next we will explain the specific differences between the scripts, and outline what structural changes necessitated their separate development. We then provide details on the methodological intricacies of three core components of Hansard proceedings: Question Time, interjections, and stage directions. Finally, we discuss the script we developed to fill in remaining missing details on the MP speaking, which each file in our database was passed to after being parsed and cleaned.
+This section is structured as follows. First, we provide an overview of our approach to understanding and parsing an individual Hansard XML document, which informed the scripts used to create our database. This will be supplemented with an excerpt from a Hansard XML to provide a visual example of its structure. Next we will explain the specific differences between the scripts, and outline what structural changes necessitated their separate development. We then provide details on the methodological intricacies of three core components of Hansard proceedings: Question Time, interjections, and stage directions. Further, we discuss the script we developed to fill in remaining missing details on the MP speaking, which each file in our database was passed to after being parsed and cleaned. **Finally, we review the supplementary Hansard debate topics dataset we created to expand the versatility of our database.**
 
 ## Overview {#sec-overview}
 
@@ -122,7 +122,7 @@ Below is an example of part of a speech we would need to split, extracted from H
 > #| results: asis
 > >
 > # read in XML file
-> raw_ex <-  xmlParse(here("input/2021-11-30.xml"))
+> raw_ex <-  xmlParse("/Volumes/Verbatim/input/2021-11-30.xml")
 > >
 > # extract example of text (chose this one b/c it's short and has an interruption by The Speaker)
 > interject_text_ex <- cbind(xmlToDataFrame(node=getNodeSet(raw_ex, "//chamber.xscript/debate/subdebate.1/speech/talk.start/talker")),
@@ -171,7 +171,7 @@ We then proceeded to clean up speeches and fill in correct details on the MP spe
 
 ## Stage Directions {#sec-stage}
 
-When building our first scripts, one of the final components needed was to separate general stage directions out from statements made by MPs. Stage directions are general statements included in the transcript to document happenings in parliament. Examples of stage directions are "Bill read a second time", "Question agreed to", or "Debate adjourned". It was unclear to us from the XML and PDF who exactly these statements were attributed to. For further clarification, we watched portions of the video recording for some sitting days, and noticed that while these statements are documented in Hansard, they are not explicitly stated in parliament. For example, when the Deputy Speaker says "The question is that the bill be now read a second time", MPs vote, and if the majority is in favour, they proceed reading the bill the second time. This vote and second reading is not explicitly transcribed, rather what is written is: "Question agreed to. Bill read a second time". For this reason, we filled the name variable for these statements with "stage direction". Stage directions were not flagged as interjections. These stage directions are not defined differently from the regular debate speech in the XML, meaning we had to manually create a list of stage directions to separate out of the speeches. We built this list of stage directions as we worked backwards in parsing Hansard, and took the same approach across all four scripts. **It is important to note that because they are not spoken aloud, stage directions do not represent speech components in the same way that all other components such as interjections and continuations do. However, they provide valuable information about the inner-workings and structure of parliamentary events.**
+When building our first scripts, one of the final components needed was to separate general stage directions out from statements made by MPs. Stage directions are general statements included in the transcript to document happenings in parliament. Examples of stage directions are "Bill read a second time", "Question agreed to", or "Debate adjourned". It was unclear to us from the XML and PDF who exactly these statements were attributed to. For further clarification, we watched portions of the video recording for some sitting days, and noticed that while these statements are documented in Hansard, they are not explicitly stated in parliament. For example, when the Deputy Speaker says "The question is that the bill be now read a second time", MPs vote, and if the majority is in favour, they proceed reading the bill the second time. This vote and second reading is not explicitly transcribed, rather what is written is: "Question agreed to. Bill read a second time". For this reason, we filled the name variable for these statements with "stage direction". Stage directions were not flagged as interjections. These stage directions are not defined differently from the regular debate speech in the XML, meaning we had to manually create a list of stage directions to separate out of the speeches. We built this list of stage directions as we worked backwards in parsing Hansard, and took the same approach across all four scripts. **Despite our best efforts to capture all stage directions in this list, because it had to be built manually, users should be aware that it is possible that some stage directions were not separated onto their own rows in the process. Further, it is important to note that because they are not spoken aloud, stage directions do not represent speech components in the same way that all other components such as interjections and continuations do. However, they provide valuable information about the inner-workings and structure of parliamentary events.**
 
 ## Filling Missing Details
 
@@ -181,19 +181,11 @@ Due to the fact that the names of MPs with common surnames were not all in their
 
 ## Debate Topics
 
-**To enhance the range of research questions which can be explored with our data, we have created a supplementary file containing the debate topics and their corresponding page numbers for each sitting day in our database. To extract these data, we wrote a script to parse all debate information and sub-debate information elements from each XML file in chronological order, and add a date variable with the date of each sitting day. This left us with a single dataframe containing the date, an item index variable to specify the order of proceedings (i.e. the order in which these topics were discussed), a title variable containing the debate or sub-debate title, and a page number variable specifying on which page that title can be found in the official Hansard PDF.**
-
-```{r, eval=F}
-# read in df
-topics <- arrow::read_parquet("../additional_data/all_debate_topics.parquet")
-
-# grab first 5 titles from some sitting day
-topics |> filter(date == "2015-03-16") |> slice(1:5) |> kableExtra::kable()
-```
+**To enhance the range of research questions which can be explored with our data, we have created a supplementary file containing debate topics and their corresponding page numbers for each sitting day in our database. To extract these data, we wrote a script to parse debate and sub-debate 1 information elements from each XML file in chronological order using the XPath expression "`//debate/debateinfo | //subdebate.1/subdebateinfo`", and added a date variable with the date of each sitting day. Note that in some cases there were multiple page number child nodes for the same debate or sub-debate title, likely due to manual transcription error. Upon manual inspection, we found that most often, the second page number node contained the same page number as the first node, and sometimes the second node contained a repeated debate title or a time stamp. Therefore, we took the first available page number child-node for each debate or sub-debate node to be the one we included in our dataset.**
 
 # Data Records
 
-Our database is available in both CSV and parquet formats. It covers all sitting days of the House of Representatives from 02 March 1998 to 08 September 2022, so there are 1,517 files for each format. **Additionally, there is a single corpus Parquet file containing the data from all sitting days, with a date variable added to allow for distinction and filtering of individual sitting days.** All data records are available on the general-purpose repository Zenodo, at https://doi.org/10.5281/zenodo.7799678 [@katz_2023]. For each file, each row contains an individual statement, with details on the individual speaking. For general statements transcribed as made by "Honourable members" for example, these variables cannot be specified. @tbl-vars provides an overview of each variable found in the database.
+Our database is available in both CSV and parquet formats. It covers all sitting days of the House of Representatives from 02 March 1998 to 08 September 2022, so there are **1,527 individual sitting day** files for each format. **Additionally, there is a single corpus file in both CSV and Parquet forms containing the data from all sitting days, with a date variable added to allow for distinction and filtering of individual sitting days. There is also a CSV and Parquet file containing all parsed debate topics.** All data records are available on the general-purpose repository Zenodo, at https://doi.org/10.5281/zenodo.7799678 [@katz_2023]. For each **Hansard data** file, **that is, the corpus and the individual sitting day files**, each row contains an individual statement, with details on the individual speaking. For general statements transcribed as made by "Honourable members" for example, these variables cannot be specified. @tbl-vars provides an overview of each variable found in the **Hansard data files in the** database.
 
 ```{r}
 #| warning: false
@@ -226,10 +218,11 @@ main_ex_vars <- tibble("Variable" = c("name",
                                       "question",
                                       "answer",
                                       "q_in_writing",
-                                      "div_flag",
                                       "gender",
                                       "uniqueID",
-                                      "interject"),
+                                      "interject",
+                                      "div_flag",
+                                      "partyfacts_id"),
        "Description" = c("Name of speaker",
                          "Individual row numbering, based on our data processing and text separation method",
                          "Index associated with each speech made on the given sitting day, including all statements, comments and interjections made in the duration of that speech",
@@ -245,25 +238,57 @@ main_ex_vars <- tibble("Variable" = c("name",
                          "Flag for question (1 if question, 0 otherwise)",
                          "Flag for answer (1 if answer, 0 otherwise)",
                          "Flag for question in writing (1 if question in writing, 0 otherwise)",
-                         "Flag for division (1 if division, 0 otherwise)",
                          "Gender of speaker",
                          "Unique identifier of speaker",
-                         "Flag for interjection (1 if statement is an interjection, 0 otherwise)"))
+                         "Flag for interjection (1 if statement is an interjection, 0 otherwise)",
+                         "Flag for division (1 if division, 0 otherwise)",
+                         "PartyFacts identification number, based on linked parties data from the Party Facts project"))
 
 # print tibble using kable
-knitr::kable(main_ex_vars, booktabs=T) %>% 
-  kable_styling(full_width = F, latex_options = "HOLD_position")
+knitr::kable(main_ex_vars, booktabs=T) |> 
+  kableExtra::kable_styling(full_width = F, latex_options = "HOLD_position") |> 
+  kableExtra::column_spec(1, width = "8em") |> 
+  kableExtra::column_spec(2, width="30em")
 ```
 
-The `name`, `page.no`, `time.stamp`, `name.id`, `electorate`, `party`, `in.gov`, `first.speech`, and `body` variables all came directly from the XML contents. In addition to these variables, we added a number of flags to enable easy filtering of statements. For example, adding the `fedchamb_flag` provides a clear distinction between the proceedings of the Chamber with those of the Federation Chamber. The `question`, `answer`, and `q_in_writing` flags were added to identify statements belonging to Question Time, and the nature of these statements. We also flagged for interjections (`interject`), and the `div_flag` variable was added to flag when a division is called for. The `gender` and `uniqueID` variables were added based on the main dataset from the `AustralianPoliticians` package. Details on the usage of `uniqueID` will be provided in @sec-usage. Further, the `speech_no` variable allows us to keep track of the speech number that each statement and interjection belongs to. Having the speech number variable offers an easy way to group statements by speech or isolate specific speeches of interest. **Finally, the `order` variable was added to maintain the order of proceedings, after all individual statements were separated onto their own rows.**
+The `name`, `page.no`, `time.stamp`, `name.id`, `electorate`, `party`, `in.gov`, `first.speech`, and `body` variables all came directly from the XML contents. In addition to these variables, we added a number of flags to enable easy filtering of statements. For example, adding the `fedchamb_flag` provides a clear distinction between the proceedings of the Chamber with those of the Federation Chamber. The `question`, `answer`, and `q_in_writing` flags were added to identify statements belonging to Question Time, and the nature of these statements. We also flagged for interjections (`interject`), and the `div_flag` variable was added to flag when a division is called for. The `gender` and `uniqueID` variables were added based on the main dataset from the `AustralianPoliticians` package, **and the `partyfacts_id` variable was added using code and data provided by the Party Facts Project [website](https://partyfacts.herokuapp.com).**[^3] Details on the usage of `uniqueID` **and `partyfacts_id`** will be provided in @sec-usage. Further, the `speech_no` variable allows us to keep track of the speech number that each statement and interjection belongs to. Having the speech number variable offers an easy way to group statements by speech or isolate specific speeches of interest. **Lastly, the `order` variable was added to maintain the order of proceedings, after all individual statements were separated onto their own rows.**
+
+[^3]: **Note that in accordance with the code provided on the Party Facts \[downloads page\](https://partyfacts.herokuapp.com/download/), we used only the core datasets maintained by the Party Facts project, which are the Manifesto Project and ParlGov. Details on these datasets can be found here: https://partyfacts.herokuapp.com/documentation/datasets/.**
+
+**As mentioned, in addition to the Hansard data described above, our database also contains a CSV and Parquet file with the parsed debate topics. This file is called `all_debate_topics`, and contains a `date` variable specifying the sitting day, an `item_index` variable to specify the order of proceedings (i.e. the order in which these topics were discussed), a `title` variable containing the debate or sub-debate title contents, and a `page.no` variable specifying on which page that title was recorded to be found in the official Hansard PDF.**
+
+**Finally, there is a CSV file in our database called `PartyFacts_map.csv`. This file was created using `AustralianPoliticians` data, data downloaded from the Party Facts project, and our own Hansard data `party` variable. As there are some party name and abbreviation spelling inconsistencies across these sources, creating this dataframe allowed us to ensure correct merging of PartyFacts ID numbers with their associated party, in accordance with the party abbreviation spelling transcribed in our Hansard data. Further, we included the corresponding party abbreviation and full name spelling found in the `AustralianPoliticians` package data in this dataframe for completeness.**
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: tbl-partyfacts-vars
+#| tbl-cap: "Summary and description of variables in our Party Facts mapping file"
+
+pf_vars <- tibble("Variable" = c("partyfacts_id",
+                                 "party_abb_hansard",
+                                 "party_abb_auspol",
+                                 "party_name_auspol"),
+                  "Description" = c("PartyFacts identification number, based on linked parties data from the Party Facts project",
+                                    "Party abbreviation as transcribed in the Hansard data",
+                                    "Party abbreviation as recorded in the `AustralianPoliticians` data",
+                                    "Party full name as recorded in the `AustralianPoliticians` data"))
+
+# print tibble using kable
+knitr::kable(pf_vars, booktabs=T) %>% 
+  kableExtra::kable_styling(full_width = F, latex_options = "HOLD_position") |> 
+  kableExtra::column_spec(1, width = "10em") |> 
+  kableExtra::column_spec(2, width="25em")
+```
 
 # Technical Validation
 
-We developed a script to perform automated tests on each file in our database, to enhance its quality and consistency. Our first test validates that the date specified in each file name matches the date specified in its corresponding XML session header.[^3] Every file passed this test, and we detected one discrepancy in an XML file from 03 June 2009, where its session header contained the wrong date. We validated that our file name and date was correct by checking the official PDF release from that sitting day.
+We developed a script to perform automated tests on each file in our database, to enhance its quality and consistency. Our first test validates that the date specified in each file name matches the date specified in its corresponding XML session header.[^4] Every file passed this test, and we detected one discrepancy in an XML file from 03 June 2009, where its session header contained the wrong date. We validated that our file name and date was correct by checking the official PDF release from that sitting day.
 
-[^3]: As seen in @fig-xml1, the first child node of the `<session.header>` element is the date.
+[^4]: As seen in @fig-xml1, the first child node of the `<session.header>` element is the date.
 
-The second test is designed to test for duplication errors in the data, by checking whether two lines that immediately follow each other have the same body (i.e. spoken content). This test detected 129 dates on which duplicate statements were made, and one immediately follows the other. Note that this test does not account for who is making each statement, meaning one MP repeating the words of another MP would be picked up in this test as well. We checked a sample of 40% of these duplicates, and manually validated that they are all repeated statements that do exist and are transcribed closely together in that day's XML file, and by our method should be parsed such that one of these statements is immediately followed by the other.
+The second test is designed to test for duplication errors in the data, by checking whether two lines that immediately follow each other have the same body (i.e. spoken content). This test detected **130** dates on which duplicate statements were made, and one immediately follows the other. Note that this test does not account for who is making each statement, meaning one MP repeating the words of another MP would be picked up in this test as well. We checked a sample of 40% of these duplicates, and manually validated that they are all repeated statements that do exist and are transcribed closely together in that day's XML file, and by our method should be parsed such that one of these statements is immediately followed by the other.
 
 When an MP runs out of allotted time for their speech, Hansard editors transcribe "(Time expired)" after their final word. As a means of checking that we have separated speeches out correctly, our third test checks that when the phrase "(Time expired)" exists in a body of text, it exists at the very end. When this is not the case, we know that we have missed the separation of the next statement onto its own row, and could fix this accordingly.
 
@@ -279,11 +304,11 @@ Finally, our eighth test validates that all individuals speaking are MPs on that
 
 # Usage Notes {#sec-usage}
 
-To enhance the usability of our database, we added a `uniqueID` variable to each file. This serves as a unique identifier for each speaking MP, and comes from the `uniqueID` variable present within data from both the `AustralianPoliticians` and `AustralianElections` R packages [@auspol; @auselect]. By including this variable, one can readily integrate our data records with those available in these two packages.
+To enhance the usability of our database, we added a `uniqueID` variable to each file. This serves as a unique identifier for each speaking MP, and comes from the `uniqueID` variable present within data from both the `AustralianPoliticians` and `AustralianElections` R packages [@auspol; @auselect]. By including this variable, one can readily integrate our data records with those available in these two packages. **Similarly, we added the `partyfacts_id` variable to our data which allows users to link our data to external political party data sources with this unique identifier.**
 
 Further, the `name.id` variable found in each file is another unique identifier for each MP. This variable was parsed directly from the Hansard XML files, and can be found in the Australian Parliamentary Handbook. As such, our data records can be integrated with those from the `ausPH` package which provides datasets for contents of the Australian Parliamentary Handbook [@Leslie_2021_HoR_Aus]. This will allow for convenient extraction of further details on each MP in a tidy, ready to analyze format.
 
-**Finally, the README file on our GitHub repository contains example code on how to read in a file from our database, for both CSV and Parquet formats. Should a user wish to use the single Hansard corpus rather than individual sitting day files, we provide example code on how to read it in, filter for those sitting days of interest, and split them into distinct data frames. We have also added example code for filtering out stage directions, and updating the `order` variable to reflect the ordering of remaining rows, should the user wish to remove stage directions from their analysis.**
+**Finally, the README file on our GitHub repository and on Zenodo contains example code on how to read in a file from our database, for both CSV and Parquet formats. Should a user wish to use the single Hansard corpus rather than individual sitting day files, we provide example code on how to read it in, filter for those sitting days of interest, and split them into distinct data frames. We have also added example code for filtering out stage directions, and updating the `order` variable to reflect the ordering of remaining rows, should the user wish to remove stage directions from their analysis. Lastly, the README contains example code showing users how to merge the debate topics data with a Hansard data file for one sitting day.**
 
 # Code Availability
 
