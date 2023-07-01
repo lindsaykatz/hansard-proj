@@ -4,6 +4,7 @@
 .Rdata
 .httr-oauth
 .DS_Store
+old_scripts/
 
 # History files
 .Rhistory
