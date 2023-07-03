@@ -184,7 +184,7 @@
 \author{Lindsay Katz\footnote{University of Toronto,
   lindsay.katz@mail.utoronto.ca} \and Rohan Alexander\footnote{University
   of Toronto, rohan.alexander@utoronto.ca}}
-\date{June 29, 2023}
+\date{July 3, 2023}
 
 \begin{document}
 \maketitle
@@ -204,7 +204,7 @@ such as election results. The creation and accessibility of this
 database enables the exploration of new questions and serves as a
 valuable resource for both researchers and policymakers.
 \end{abstract}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, frame hidden, borderline west={3pt}{0pt}{shadecolor}, sharp corners, interior hidden, enhanced, breakable]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[breakable, frame hidden, interior hidden, enhanced, boxrule=0pt, sharp corners, borderline west={3pt}{0pt}{shadecolor}]}{\end{tcolorbox}}\fi
 
 \hypertarget{sec-intro}{%
 \section{Background \& Summary}\label{sec-intro}}
@@ -701,6 +701,9 @@ interrupted by the Speaker who states that the time for members'
 statements has concluded.
 
 \begin{quote}
+\end{quote}
+
+\begin{quote}
 ``Mr VAN MANEN (Forde---Chief Government Whip) (13:59): It's a great
 pleasure to share with the House that Windaroo Valley State High School
 has qualified for the finals of the Australian Space Design Competition,
@@ -982,21 +985,21 @@ debate or sub-debate node to be the one we included in our dataset.}
 
 Our database is available in both CSV and parquet formats. It covers all
 sitting days of the House of Representatives from 02 March 1998 to 08
-September 2022, so there are 1,517 \textbf{individual sitting day} files
-for each format. \textbf{Additionally, there is a single corpus file in
-both CSV and Parquet forms containing the data from all sitting days,
-with a date variable added to allow for distinction and filtering of
-individual sitting days. There is also a CSV and Parquet file containing
-all parsed debate topics.} All data records are available on the
-general-purpose repository Zenodo, at
-https://doi.org/10.5281/zenodo.7799678 (Katz and Alexander 2023). For
-each \textbf{Hansard data} file, \textbf{that is, the corpus and the
-individual sitting day files}, each row contains an individual
-statement, with details on the individual speaking. For general
-statements transcribed as made by ``Honourable members'' for example,
-these variables cannot be specified. Table~\ref{tbl-vars} provides an
-overview of each variable found in the \textbf{Hansard data files in
-the} database.
+September 2022 \textbf{where an XML transcript is available}, so there
+are \textbf{1,532 individual sitting day} files for each format.
+\textbf{Additionally, there is a single corpus file in both CSV and
+Parquet forms containing the data from all sitting days, with a date
+variable added to allow for distinction and filtering of individual
+sitting days. There is also a CSV and Parquet file containing all parsed
+debate topics.} All data records are available on the general-purpose
+repository Zenodo, at https://doi.org/10.5281/zenodo.7799678 (Katz and
+Alexander 2023). For each \textbf{Hansard data} file, \textbf{that is,
+the corpus and the individual sitting day files}, each row contains an
+individual statement, with details on the individual speaking. For
+general statements transcribed as made by ``Honourable members'' for
+example, these variables cannot be specified. Table~\ref{tbl-vars}
+provides an overview of each variable found in the \textbf{Hansard data
+files in the} database.
 
 \hypertarget{tbl-vars}{}
 \begin{table}[H]
@@ -1045,14 +1048,14 @@ proceedings of the Chamber with those of the Federation Chamber. The
 were added to identify statements belonging to Question Time, and the
 nature of these statements. We also flagged for interjections
 (\texttt{interject}), and the \texttt{div\_flag} variable was added to
-flag when a division is called for. The \texttt{gender} and
-\texttt{uniqueID} variables were added based on the main dataset from
-the \texttt{AustralianPoliticians} package, \textbf{and the
-\texttt{partyfacts\_id} variable was added using code and data provided
-by the Party Facts Project
+flag \textbf{those rows where ``The House divided.'' was detected in the
+body variable}. The \texttt{gender} and \texttt{uniqueID} variables were
+added based on the main dataset from the \texttt{AustralianPoliticians}
+package, \textbf{and the \texttt{partyfacts\_id} variable was added
+using code and data provided by the Party Facts Project
 \href{https://partyfacts.herokuapp.com}{website}.}\footnote{\textbf{Note
   that in accordance with the code provided on the Party Facts
-  {[}downloads page{]}(https://partyfacts.herokuapp.com/download/), we
+  \href{https://partyfacts.herokuapp.com/download/}{downloads page}, we
   used only the core datasets maintained by the Party Facts project,
   which are the Manifesto Project and ParlGov. Details on these datasets
   can be found here:
@@ -1086,7 +1089,7 @@ correct merging of PartyFacts ID numbers with their associated party, in
 accordance with the party abbreviation spelling transcribed in our
 Hansard data. Further, we included the corresponding party abbreviation
 and full name spelling found in the \texttt{AustralianPoliticians}
-package data in this dataframe for completeness.}
+package for completeness.}
 
 \hypertarget{tbl-partyfacts-vars}{}
 \begin{table}[H]
@@ -1099,8 +1102,8 @@ Variable & Description\\
 \midrule
 partyfacts\_id & PartyFacts identification number, based on linked parties data from the Party Facts project\\
 party\_abb\_hansard & Party abbreviation as transcribed in the Hansard data\\
-party\_abb\_auspol & Party abbreviation as recorded in the `AustralianPoliticians` data\\
-party\_name\_auspol & Party full name as recorded in the `AustralianPoliticians` data\\
+party\_abb\_auspol & Party abbreviation as recorded in the AustralianPoliticians R package data\\
+party\_name\_auspol & Party full name as recorded in the AustralianPoliticians R package data\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1121,15 +1124,15 @@ the official PDF release from that sitting day.
 
 The second test is designed to test for duplication errors in the data,
 by checking whether two lines that immediately follow each other have
-the same body (i.e.~spoken content). This test detected 129 dates on
-which duplicate statements were made, and one immediately follows the
-other. Note that this test does not account for who is making each
-statement, meaning one MP repeating the words of another MP would be
-picked up in this test as well. We checked a sample of 40\% of these
-duplicates, and manually validated that they are all repeated statements
-that do exist and are transcribed closely together in that day's XML
-file, and by our method should be parsed such that one of these
-statements is immediately followed by the other.
+the same body (i.e.~spoken content). This test detected \textbf{131}
+dates on which duplicate statements were made, and one immediately
+follows the other. Note that this test does not account for who is
+making each statement, meaning one MP repeating the words of another MP
+would be picked up in this test as well. We checked a sample of 40\% of
+these duplicates, and manually validated that they are all repeated
+statements that do exist and are transcribed closely together in that
+day's XML file, and by our method should be parsed such that one of
+these statements is immediately followed by the other.
 
 When an MP runs out of allotted time for their speech, Hansard editors
 transcribe ``(Time expired)'' after their final word. As a means of
@@ -1185,6 +1188,93 @@ on that particular day. We use the \texttt{mps} dataset from the
 was in parliament. Using these dates, we check that each person speaking
 on each sitting day is in fact an MP on that day.
 
+\hypertarget{summary-statistics}{%
+\subsection{Summary Statistics}\label{summary-statistics}}
+
+\textbf{To further explore the quality of our data and detect any
+unexpected or distinct trends, we generated a number of summary
+statistics using the complete Hansard corpus. First, we looked at the
+number of speeches made each day, disaggregated by Chamber and
+Federation Chamber debate venues. As shown in
+Figure~\ref{fig-dailyspeeches}, there are consistently more speeches
+made in the Chamber proceedings than in the Federation Chamber, which
+aligns with the wider scope of business covered in the Chamber. Further,
+in both debate venues, the number of speeches each day appears to have
+increased slightly over time.}
+
+\begin{figure}
+
+{\centering \includegraphics[width=4.58333in,height=\textheight]{n_daily_speeches.png}
+
+}
+
+\caption{\label{fig-dailyspeeches}Number of speeches made on each
+sitting day in the House of Representatives}
+
+\end{figure}
+
+\textbf{Next, we explored the number of unique names detected on each
+sitting day disaggregated by debate venue, visualized in
+Figure~\ref{fig-names}. As expected, there are generally more individual
+MPs detected to be present in the Chamber proceedings in our data than
+in the Federation Chamber proceedings. Further, in both venues, the
+number of individuals detected per sitting day appears to have increased
+since around 2008-2009, with a maximum of 116 and 87 unique names
+detected for the Chamber and Federation Chamber, respectively. Across
+the time frame of our data, there was a daily average of 84 unique names
+detected in the Chamber, and 34 in the Federation Chamber. These
+observations are in accordance with the official number of Members
+belonging to the House of Representatives, which was 148 in 1998, 150 in
+2001, and then increased to 151 in the 2019 general election (House of
+Representatives 2018).}
+
+\begin{figure}
+
+{\centering \includegraphics[width=4.58333in,height=\textheight]{n_unique_names.png}
+
+}
+
+\caption{\label{fig-names}Daily number of unique names detected in our
+Hansard data}
+
+\end{figure}
+
+\textbf{We then computed the total number of speeches made in our
+database by political party, summarized in
+Table~\ref{tbl-speeches_by_party}. We found that the Australian Labor
+Party made the most speeches overall, followed by the Liberal Party of
+Australia, and the Nationalist Party. These rankings are unsurprising,
+as those parties are the three main political parties in the Australian
+House of Representatives (Parliament of Australia 2022).}
+
+\hypertarget{tbl-speeches_by_party}{}
+\begin{table}[H]
+\caption{\label{tbl-speeches_by_party}Total number of speeches made in our database by political party }\tabularnewline
+
+\centering
+\begin{tabular}{llr}
+\toprule
+Party Name & Party Abbreviation & Total \# of Speeches\\
+\midrule
+Australian Labor Party & ALP & 112268\\
+Liberal Party of Australia & LIB & 106139\\
+Nationalist Party & NAT & 15799\\
+Independent & IND & 5357\\
+National Party of Australia & NPA & 4580\\
+\addlinespace
+Australian Greens & GRN & 1446\\
+Country Liberal Party (Northern Territory) & CLP & 665\\
+Centre Alliance & CA & 638\\
+Katters Australian Party & KAP & 263\\
+Nick Xenophon Team & NXT & 186\\
+\addlinespace
+National Party of Australia (WA) & NATS WA & 68\\
+Palmer United Party & PUP & 64\\
+United Australia Party & UAP & 43\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \hypertarget{sec-usage}{%
 \section{Usage Notes}\label{sec-usage}}
 
@@ -1197,7 +1287,7 @@ Alexander 2019). By including this variable, one can readily integrate
 our data records with those available in these two packages.
 \textbf{Similarly, we added the \texttt{partyfacts\_id} variable to our
 data which allows users to link our data to external political party
-information.}
+data sources with this unique identifier.}
 
 Further, the \texttt{name.id} variable found in each file is another
 unique identifier for each MP. This variable was parsed directly from
@@ -1310,6 +1400,11 @@ database of all proceedings of the Australian Parliamentary Debates
 Leslie, Patrick. 2021. \emph{Members of the Australian House of
 Representatives (1945-2019)}.
 \url{https://github.com/palesl/AustralianHouseOfRepresentatives}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-infosheet_parties}{}}%
+Parliament of Australia. 2022. {``Infosheet 22 - Political Parties.''}
+\emph{House of Representatives Infosheets}.
+\url{https://www.aph.gov.au/About_Parliament/House_of_Representatives/Powers_practice_and_procedure/00_-_Infosheets/Infosheet_22_-_Political_parties}.
 
 \leavevmode\vadjust pre{\hypertarget{ref-r_software}{}}%
 R Core Team. 2022. \emph{R: A Language and Environment for Statistical

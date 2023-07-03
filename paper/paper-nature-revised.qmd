@@ -115,7 +115,8 @@ As mentioned, the text was structured and parsed in such a way that various inte
 
 Below is an example of part of a speech we would need to split, extracted from Hansard on 30 November 2021, where Bert van Manen is interrupted by the Speaker who states that the time for members' statements has concluded.
 
-> ```{r}
+> ```{r, eval = F, echo=F}
+> # pasting text in directly to avoid issues with rendering.
 > #| warning: false
 > #| echo: false
 > #| message: false
@@ -134,6 +135,8 @@ Below is an example of part of a speech we would need to split, extracted from H
 > # print example of text in quotations
 > cat(paste0('"', interject_text_ex, '"'))
 > ```
+
+> "Mr VAN MANEN (Forde---Chief Government Whip) (13:59): It's a great pleasure to share with the House that Windaroo Valley State High School has qualified for the finals of the Australian Space Design Competition, to begin in January next year. The competition is regarded as the premier STEM competition for high school students and is recognised by universities around the country. The students are required to respond to industry-level engineering and requests for tender for design and---The SPEAKER: Order! In accordance with standing order 43, the time for members' statements has concluded."
 
 We want each statement on its own row with the correct name, name ID, electorate and party information on the individual speaking. We approached this task in a number of steps.
 
@@ -185,7 +188,7 @@ Due to the fact that the names of MPs with common surnames were not all in their
 
 # Data Records
 
-Our database is available in both CSV and parquet formats. It covers all sitting days of the House of Representatives from 02 March 1998 to 08 September 2022, so there are **1,527 individual sitting day** files for each format. **Additionally, there is a single corpus file in both CSV and Parquet forms containing the data from all sitting days, with a date variable added to allow for distinction and filtering of individual sitting days. There is also a CSV and Parquet file containing all parsed debate topics.** All data records are available on the general-purpose repository Zenodo, at https://doi.org/10.5281/zenodo.7799678 [@katz_2023]. For each **Hansard data** file, **that is, the corpus and the individual sitting day files**, each row contains an individual statement, with details on the individual speaking. For general statements transcribed as made by "Honourable members" for example, these variables cannot be specified. @tbl-vars provides an overview of each variable found in the **Hansard data files in the** database.
+Our database is available in both CSV and parquet formats. It covers all sitting days of the House of Representatives from 02 March 1998 to 08 September 2022 **where an XML transcript is available**, so there are **1,532 individual sitting day** files for each format. **Additionally, there is a single corpus file in both CSV and Parquet forms containing the data from all sitting days, with a date variable added to allow for distinction and filtering of individual sitting days. There is also a CSV and Parquet file containing all parsed debate topics.** All data records are available on the general-purpose repository Zenodo, at https://doi.org/10.5281/zenodo.7799678 [@katz_2023]. For each **Hansard data** file, **that is, the corpus and the individual sitting day files**, each row contains an individual statement, with details on the individual speaking. For general statements transcribed as made by "Honourable members" for example, these variables cannot be specified. @tbl-vars provides an overview of each variable found in the **Hansard data files in the** database.
 
 ```{r}
 #| warning: false
@@ -251,13 +254,13 @@ knitr::kable(main_ex_vars, booktabs=T) |>
   kableExtra::column_spec(2, width="30em")
 ```
 
-The `name`, `page.no`, `time.stamp`, `name.id`, `electorate`, `party`, `in.gov`, `first.speech`, and `body` variables all came directly from the XML contents. In addition to these variables, we added a number of flags to enable easy filtering of statements. For example, adding the `fedchamb_flag` provides a clear distinction between the proceedings of the Chamber with those of the Federation Chamber. The `question`, `answer`, and `q_in_writing` flags were added to identify statements belonging to Question Time, and the nature of these statements. We also flagged for interjections (`interject`), and the `div_flag` variable was added to flag when a division is called for. The `gender` and `uniqueID` variables were added based on the main dataset from the `AustralianPoliticians` package, **and the `partyfacts_id` variable was added using code and data provided by the Party Facts Project [website](https://partyfacts.herokuapp.com).**[^3] Details on the usage of `uniqueID` **and `partyfacts_id`** will be provided in @sec-usage. Further, the `speech_no` variable allows us to keep track of the speech number that each statement and interjection belongs to. Having the speech number variable offers an easy way to group statements by speech or isolate specific speeches of interest. **Lastly, the `order` variable was added to maintain the order of proceedings, after all individual statements were separated onto their own rows.**
+The `name`, `page.no`, `time.stamp`, `name.id`, `electorate`, `party`, `in.gov`, `first.speech`, and `body` variables all came directly from the XML contents. In addition to these variables, we added a number of flags to enable easy filtering of statements. For example, adding the `fedchamb_flag` provides a clear distinction between the proceedings of the Chamber with those of the Federation Chamber. The `question`, `answer`, and `q_in_writing` flags were added to identify statements belonging to Question Time, and the nature of these statements. We also flagged for interjections (`interject`), and the `div_flag` variable was added to flag **those rows where "The House divided." was detected in the body variable**. The `gender` and `uniqueID` variables were added based on the main dataset from the `AustralianPoliticians` package, **and the `partyfacts_id` variable was added using code and data provided by the Party Facts Project [website](https://partyfacts.herokuapp.com).**[^3] Details on the usage of `uniqueID` **and `partyfacts_id`** will be provided in @sec-usage. Further, the `speech_no` variable allows us to keep track of the speech number that each statement and interjection belongs to. Having the speech number variable offers an easy way to group statements by speech or isolate specific speeches of interest. **Lastly, the `order` variable was added to maintain the order of proceedings, after all individual statements were separated onto their own rows.**
 
-[^3]: **Note that in accordance with the code provided on the Party Facts \[downloads page\](https://partyfacts.herokuapp.com/download/), we used only the core datasets maintained by the Party Facts project, which are the Manifesto Project and ParlGov. Details on these datasets can be found here: https://partyfacts.herokuapp.com/documentation/datasets/.**
+[^3]: **Note that in accordance with the code provided on the Party Facts [downloads page](https://partyfacts.herokuapp.com/download/), we used only the core datasets maintained by the Party Facts project, which are the Manifesto Project and ParlGov. Details on these datasets can be found here: https://partyfacts.herokuapp.com/documentation/datasets/.**
 
 **As mentioned, in addition to the Hansard data described above, our database also contains a CSV and Parquet file with the parsed debate topics. This file is called `all_debate_topics`, and contains a `date` variable specifying the sitting day, an `item_index` variable to specify the order of proceedings (i.e. the order in which these topics were discussed), a `title` variable containing the debate or sub-debate title contents, and a `page.no` variable specifying on which page that title was recorded to be found in the official Hansard PDF.**
 
-**Finally, there is a CSV file in our database called `PartyFacts_map.csv`. This file was created using `AustralianPoliticians` data, data downloaded from the Party Facts project, and our own Hansard data `party` variable. As there are some party name and abbreviation spelling inconsistencies across these sources, creating this dataframe allowed us to ensure correct merging of PartyFacts ID numbers with their associated party, in accordance with the party abbreviation spelling transcribed in our Hansard data. Further, we included the corresponding party abbreviation and full name spelling found in the `AustralianPoliticians` package data in this dataframe for completeness.**
+**Finally, there is a CSV file in our database called `PartyFacts_map.csv`. This file was created using `AustralianPoliticians` data, data downloaded from the Party Facts project, and our own Hansard data `party` variable. As there are some party name and abbreviation spelling inconsistencies across these sources, creating this dataframe allowed us to ensure correct merging of PartyFacts ID numbers with their associated party, in accordance with the party abbreviation spelling transcribed in our Hansard data. Further, we included the corresponding party abbreviation and full name spelling found in the `AustralianPoliticians` package for completeness.**
 
 ```{r}
 #| warning: false
@@ -272,8 +275,8 @@ pf_vars <- tibble("Variable" = c("partyfacts_id",
                                  "party_name_auspol"),
                   "Description" = c("PartyFacts identification number, based on linked parties data from the Party Facts project",
                                     "Party abbreviation as transcribed in the Hansard data",
-                                    "Party abbreviation as recorded in the `AustralianPoliticians` data",
-                                    "Party full name as recorded in the `AustralianPoliticians` data"))
+                                    "Party abbreviation as recorded in the AustralianPoliticians R package data",
+                                    "Party full name as recorded in the AustralianPoliticians R package data"))
 
 # print tibble using kable
 knitr::kable(pf_vars, booktabs=T) %>% 
@@ -288,7 +291,7 @@ We developed a script to perform automated tests on each file in our database, t
 
 [^4]: As seen in @fig-xml1, the first child node of the `<session.header>` element is the date.
 
-The second test is designed to test for duplication errors in the data, by checking whether two lines that immediately follow each other have the same body (i.e. spoken content). This test detected **130** dates on which duplicate statements were made, and one immediately follows the other. Note that this test does not account for who is making each statement, meaning one MP repeating the words of another MP would be picked up in this test as well. We checked a sample of 40% of these duplicates, and manually validated that they are all repeated statements that do exist and are transcribed closely together in that day's XML file, and by our method should be parsed such that one of these statements is immediately followed by the other.
+The second test is designed to test for duplication errors in the data, by checking whether two lines that immediately follow each other have the same body (i.e. spoken content). This test detected **131** dates on which duplicate statements were made, and one immediately follows the other. Note that this test does not account for who is making each statement, meaning one MP repeating the words of another MP would be picked up in this test as well. We checked a sample of 40% of these duplicates, and manually validated that they are all repeated statements that do exist and are transcribed closely together in that day's XML file, and by our method should be parsed such that one of these statements is immediately followed by the other.
 
 When an MP runs out of allotted time for their speech, Hansard editors transcribe "(Time expired)" after their final word. As a means of checking that we have separated speeches out correctly, our third test checks that when the phrase "(Time expired)" exists in a body of text, it exists at the very end. When this is not the case, we know that we have missed the separation of the next statement onto its own row, and could fix this accordingly.
 
@@ -301,6 +304,30 @@ Next, we test that the unique name identification code attributed to each indivi
 Our seventh test checks that on any given sitting day, the individuals identified are alive. To do so, we utilized the main dataset from the `AustralianPoliticians` package which contains the birth and where applicable death dates for every politician. This test confirmed that all MPs who are detected to speak on each sitting day are not deceased.
 
 Finally, our eighth test validates that all individuals speaking are MPs on that particular day. We use the `mps` dataset from the `AustralianPoliticians` package which has the dates when each MP was in parliament. Using these dates, we check that each person speaking on each sitting day is in fact an MP on that day.
+
+## Summary Statistics
+
+**To further explore the quality of our data and detect any unexpected or distinct trends, we generated a number of summary statistics using the complete Hansard corpus. First, we looked at the number of speeches made each day, disaggregated by Chamber and Federation Chamber debate venues. As shown in @fig-dailyspeeches, there are consistently more speeches made in the Chamber proceedings than in the Federation Chamber, which aligns with the wider scope of business covered in the Chamber. Further, in both debate venues, the number of speeches each day appears to have increased slightly over time.**
+
+![Number of speeches made on each sitting day in the House of Representatives](n_daily_speeches.png){#fig-dailyspeeches width="440"}
+
+**Next, we explored the number of unique names detected on each sitting day disaggregated by debate venue, visualized in @fig-names. As expected, there are generally more individual MPs detected to be present in the Chamber proceedings in our data than in the Federation Chamber proceedings. Further, in both venues, the number of individuals detected per sitting day appears to have increased since around 2008-2009, with a maximum of 116 and 87 unique names detected for the Chamber and Federation Chamber, respectively. Across the time frame of our data, there was a daily average of 84 unique names detected in the Chamber, and 34 in the Federation Chamber. These observations are in accordance with the official number of Members belonging to the House of Representatives, which was 148 in 1998, 150 in 2001, and then increased to 151 in the 2019 general election [@australia2018house].**
+
+![Daily number of unique names detected in our Hansard data](n_unique_names.png){#fig-names width="440"}
+
+**We then computed the total number of speeches made in our database by political party, summarized in @tbl-speeches_by_party. We found that the Australian Labor Party made the most speeches overall, followed by the Liberal Party of Australia, and the Nationalist Party. These rankings are unsurprising, as those parties are the three main political parties in the Australian House of Representatives [@infosheet_parties].**
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: tbl-speeches_by_party
+#| tbl-cap: "Total number of speeches made in our database by political party"
+read_csv("s_by_party_name.csv", show_col_types = F) |> 
+  knitr::kable(booktabs=T) |> 
+  kableExtra::kable_styling(full_width = F, latex_options = "HOLD_position")
+#### check NAT vs NPA full names - are these correct? google is confusing me
+```
 
 # Usage Notes {#sec-usage}
 
