@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
 ```{r}
 library(tidyverse)
-library(here)
 library(arrow)
 
 # read in corpus
@@ -21,7 +20,7 @@ corpus <- read_parquet("/Volumes/Verbatim/v4/hansard_1998_to_2022-parquet/hansar
 party_table_final <- read_csv("../additional_data/PartyFacts_map.csv", show_col_types = F)
 ```
 
-## Total distinct speeches by party
+## Total distinct speeches by party facts ID
 
 ```{r}
 # only for those parties with a party facts ID
@@ -41,6 +40,42 @@ s_by_party <- corpus |> select(date, speech_no, partyfacts_id, party) |>
 
 # rename vars
 s_by_party |> select(party_name_auspol, everything()) |> 
+  arrange(desc(total_distinct_speeches)) |> 
+  rename("Party Name" = party_name_auspol,
+         "PartyFacts ID" = partyfacts_id,
+         "# Distinct Speeches" = total_distinct_speeches) |> 
+  kableExtra::kable()
+```
+
+## Total distinct speeches by Australian Politicians party name
+
+```{r}
+corpus |> select(date, speech_no, party) |> 
+  filter(!is.na(party)) |> 
+  left_join(party_table_final, by=c("party" = "party_abb_hansard")) |> 
+  group_by(date, party_abb_auspol, party_name_auspol) |> 
+  summarise(n_distinct_speeches = n_distinct(speech_no, na.rm=T)) |> 
+  group_by(party_abb_auspol, party_name_auspol) |> 
+  summarise(total_distinct_speeches = sum(n_distinct_speeches)) 
+
+# only for those parties with a party facts ID
+s_by_party <- corpus |> select(date, speech_no, partyfacts_id, party) |> 
+  mutate(party = as.character(ifelse(str_detect(party, "^Ind"), "IND", as.character(party)))) |> 
+  group_by(date, partyfacts_id) |> 
+  summarise(n_distinct_speeches = n_distinct(speech_no, na.rm=T)) |> 
+  group_by(partyfacts_id) |> 
+  summarise(total_distinct_speeches = sum(n_distinct_speeches)) |> 
+  filter(!is.na(partyfacts_id)) |> 
+  left_join(party_table_final |> 
+              select(-party_abb_hansard, -party_abb_auspol) |> 
+              distinct() |> 
+              # b/c Centre Alliance is current name and they have the same party facts ID
+              filter(party_name_auspol!="Nick Xenophon Team"), 
+            by="partyfacts_id")
+
+# rename vars
+s_by_party |> select(party_name_auspol, everything()) |> 
+  arrange(desc(total_distinct_speeches)) |> 
   rename("Party Name" = party_name_auspol,
          "PartyFacts ID" = partyfacts_id,
          "# Distinct Speeches" = total_distinct_speeches) |> 
@@ -93,10 +128,11 @@ s_by_electorate <- corpus |> group_by(date, electorate) |>
 # look at avg
 s_by_electorate |> summarise(avg = mean(total_speeches_electorate))
 
-# look at min and max
-s_by_electorate |> 
-  filter(total_speeches_electorate==min(total_speeches_electorate) |
-           total_speeches_electorate==max(total_speeches_electorate))
+# look at top 10
+s_by_electorate |> arrange(desc(total_speeches_electorate)) |> slice(1:10)
+
+# look at bottom 10
+s_by_electorate |> arrange(total_speeches_electorate) |> slice(1:10)
 ```
 
 ## Annual proportion of interjections, by gender
@@ -117,6 +153,7 @@ interject_yr_sex <- corpus %>% select(date, gender, interject, fedchamb_flag) %>
   ungroup()
 
 # plot
+# remove 2022 b/c incomplete
 interject_yr_sex |> filter(year!="2022") |> 
 ggplot(aes(x=as.numeric(year), y=prop_interject, color=as.factor(gender))) +
   geom_point() +
@@ -156,16 +193,21 @@ ggplot(interject_day_sex, aes(x=as.Date(date), y=prop_interject, color=as.factor
 ```{r}
 ## DAILY WORD COUNT ##
 daily_word_count <- corpus |> 
-  group_by(date, fedchamb_flag) |> 
-  summarise(word_count = sum(str_count(body)))
+  group_by(date) |> 
+  summarise(word_count = sum(str_count(body), na.rm = T))
+
+daily_word_count |> arrange(word_count)
+
+daily_word_count |> filter(is.na(word_count))
 
 # plot
-ggplot(daily_word_count, aes(x=as.Date(date), y=word_count, color = fedchamb_flag, fill=fedchamb_flag)) +
+ggplot(daily_word_count, aes(x=as.Date(date), y=word_count)) +
   geom_point(alpha = 0.5) +
   geom_smooth() +
-  labs(x="Date", y="Word Count", color=NULL, fill=NULL) +
-  scale_color_discrete(labels=c("Chamber", "Federation Chamber")) +
-  scale_fill_discrete(labels=c("Chamber", "Federation Chamber"))
+  labs(x="Date", y="Word Count") +
+  theme_bw()
+
+ggsave("../paper/word_count.png", width=8, height=5)
 ```
 
 ## Daily number of unique names
@@ -174,7 +216,7 @@ ggplot(daily_word_count, aes(x=as.Date(date), y=word_count, color = fedchamb_fla
 ## DAILY # UNIQUE NAMES ##
 daily_unique_names <- corpus |> 
   select(date, name, fedchamb_flag) |> 
-  filter(name!="business start" & name!="stage direction" & !str_detect(name, "SPEAKER")) |> 
+  filter(name!="business start" & name!="stage direction") |> 
   group_by(date, name, fedchamb_flag) |> 
   distinct() |> 
   group_by(date, fedchamb_flag) |> 
@@ -183,8 +225,67 @@ daily_unique_names <- corpus |>
 # plot
 ggplot(daily_unique_names, aes(x=as.Date(date), y = n, color=fedchamb_flag, fill=fedchamb_flag)) +
   geom_point(alpha = 0.5) +
-  geom_smooth() +
-  labs(x="Date", y="# Unique Names", color=NULL, fill=NULL) +
+  geom_smooth(method="loess") +
+  labs(x="Date", y="Number of unique names", color=NULL, fill=NULL) +
   scale_color_discrete(labels=c("Chamber", "Federation Chamber")) +
-  scale_fill_discrete(labels=c("Chamber", "Federation Chamber"))
+  scale_fill_discrete(labels=c("Chamber", "Federation Chamber")) +
+  theme_bw()
+
+ggsave("n_unique_names.png", path = "../paper/", width=8, height = 5)
 ```
+
+## Annual number of divisions
+
+```{r}
+corpus |> select(date, div_flag) |> 
+  mutate(year = str_extract(date, "^\\d{4}")) |> 
+  filter(div_flag==1) |> 
+  group_by(year) |> 
+  summarise(n_divs = n())
+
+# not sure why the numbers are so low for 2012 onward
+```
+
+## Meeting per year - chamber and federation chamber
+
+```{r}
+meeting_per_year <- corpus |> select(date, fedchamb_flag) |>
+  mutate(year = str_extract(date, "^\\d{4}")) |> 
+  group_by(year, fedchamb_flag) |> 
+  summarise(n_sittings = n_distinct(date))
+```
+
+These match well with the numbers [here](https://www.aph.gov.au/-/media/02_Parliamentary_Business/22_Chamber_Documents/224_Statistics/House_of_Representatives/Statistics_Historical/sittings_statistics.pdf?la=en&hash=5B5E7E9518C4D7A416D0846FE0D44E063A4AB3FD)
+
+```{r}
+sitting_stats <- read_csv("~/Desktop/RA/sitting_stats.txt", col_names = FALSE)
+
+sitting_stats <- sitting_stats |> select(X1, X3, X5) |> 
+  rename(year = X1,
+         chamb = X3,
+         fed_chamb = X5) |> 
+  pivot_longer(chamb:fed_chamb, names_to = "fedchamb_flag", values_to = "official_stats")
+
+# find years where there is a discrepancy in # of meetings
+# care more about chamber b/c often fedchamb is wrongly transcribed so there are bound to be discrepancies
+meeting_per_year |> mutate(fedchamb_flag = case_when(fedchamb_flag == 0 ~"chamb",
+                                                     fedchamb_flag == 1 ~"fed_chamb"),
+                           year = as.numeric(year)) |> 
+  left_join(sitting_stats, by=c("year", "fedchamb_flag")) |> 
+  filter(year!=2022) |> 
+  mutate(diff = abs(n_sittings-official_stats)) |> 
+  filter(diff!=0) |> 
+  arrange(desc(diff))
+```
+
+## Q in writing and Q without notice per year
+
+```{r}
+corpus |> select(date, question, q_in_writing) |>
+  mutate(year = str_extract(date, "^\\d{4}")) |> 
+  filter(question==1) |> 
+  group_by(year, q_in_writing) |> 
+  summarise(n())
+```
+
+https://www.aph.gov.au/-/media/02_Parliamentary_Business/22_Chamber_Documents/224_Statistics/House_of_Representatives/Statistics_Historical/questions_statistics.pdf?la=en&hash=A3B9F79402CC7D15B576EDAF1BC28259CDEC9553

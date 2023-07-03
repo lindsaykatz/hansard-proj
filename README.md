@@ -24,15 +24,13 @@ To produce the most recently published version of our dataset, we used the follo
 
 -   Run filled in datasets from step 2 through a suite of automated tests using the `08-data_validation.R` script, making necessary corrections to the data which did not pass all of these tests. We then re-exported those files which required additional cleaning identified by these tests, and re-ran them through the full suite of tests to ensure every file in our dataset passed every validation test.
 
--   Convert the validated CSV files to Parquet format using our `09-csv_to_parquet.R` script.
+-   Run a time stamp validation check on the data with `09-check_time_stamps.R`.
 
--   Run time stamp validation check with `10-check_time_stamps.R`.
+-   Add a PartyFacts ID variable to each validated file in our database with `10-add_party_facts.R`, and export each to both CSV and Parquet forms. In this script we also export the `PartyFacts_map.csv` file, which was used to map the correct PartyFact identification number to it's corresponding party abbreviation.
 
--   Add a PartyFacts ID variable to each CSV and Parquet file in our database with `11-add_party_facts.R`. In this script we also export the `PartyFacts_map.csv` file, which was used to map the correct PartyFact identification number to it's corresponding party abbreviation.
+-   Generate a single corpus with all sitting day's data in both CSV and Parquet forms with `11-ceate_one_corpus.R`.
 
--   Generate a single corpus with all sitting day's data in both CSV and Parquet forms with 12-`create_one_corpus.R`.
-
--   Extract and clean all debate topics from each Hansard XML, and export them as a single CSV file and a single Parquet file using `13-get_debate_topics.R`.
+-   Extract and clean all debate topics from each Hansard XML, and export them as a single CSV file and a single Parquet file using `12-get_debate_topics.R`.
 
 ## Example Code
 

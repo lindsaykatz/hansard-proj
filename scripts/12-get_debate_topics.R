@@ -68,14 +68,14 @@ for (i in 1:length(files_all)) {
 all_debate_topics <- all_debate_topics %>% rename(item_index = itemindex) %>% mutate(page.no = as.double(page.no))
 
 # export tibble as csv and parquet files
-readr::write_csv(all_debate_topics, here("~/Desktop/RA/hansard/additional_data/all_debate_topics.csv"))
-arrow::write_parquet(all_debate_topics, here("~/Desktop/RA/hansard/additional_data/all_debate_topics.parquet"))
+readr::write_csv(all_debate_topics, here("/Volumes/Verbatim/v4/hansard-debate_topics/all_debate_topics.csv"))
+arrow::write_parquet(all_debate_topics, here("/Volumes/Verbatim/v4/hansard-debate_topics/all_debate_topics.parquet"))
 
 # example where there were two page.no nodes and one was not an actual page number:
 # 2005-05-12, cmd+F "<page.no>Biofuels</page.no>", cmd+F "<page.no>14.36 pm</page.no>"
 
 # check that things look ok
-topics <- read_csv("~/Desktop/RA/hansard/additional_data/all_debate_topics.csv", show_col_types = F)
+topics <- read_csv("/Volumes/Verbatim/v4/hansard-debate_topics/all_debate_topics.csv", show_col_types = F)
 
 # all page numbers have a digit and are numeric (read in as a double with no issue)
 topics |> filter(!str_detect(page.no, "\\d"))

@@ -32,11 +32,11 @@ full_hansard <- all_files_csv %>%
   mutate(date = str_extract(date, "(?<=hansard_1998_to_2022-csv/)\\d{4}-\\d{2}-\\d{2}"))
 
 # export full_hansard data frame to CSV
-write_csv(full_hansard, "/Volumes/Verbatim/v4/hansard_1998_to_2022-csv/hansard_corpus_1998_to_2022.csv")
+write_csv(full_hansard, "/Volumes/Verbatim/v4/hansard-corpus/hansard_corpus_1998_to_2022.csv")
 
 # export full_hansard data frame to Parquet
-write_parquet(full_hansard, "/Volumes/Verbatim/v4/hansard_1998_to_2022-parquet/hansard_corpus_1998_to_2022.parquet")
+write_parquet(full_hansard, "/Volumes/Verbatim/v4/hansard-corpus/hansard_corpus_1998_to_2022.parquet")
 
 # check file sizes
-file_size("/Volumes/Verbatim/v4/hansard_1998_to_2022-csv/hansard_corpus_1998_to_2022.csv")
-file_size("/Volumes/Verbatim/v4/hansard_1998_to_2022-parquet/hansard_corpus_1998_to_2022.parquet")
+file_size("/Volumes/Verbatim/v4/hansard-corpus/hansard_corpus_1998_to_2022.csv")
+file_size("/Volumes/Verbatim/v4/hansard-corpus/hansard_corpus_1998_to_2022.parquet")

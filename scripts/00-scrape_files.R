@@ -19,7 +19,7 @@ heapsofpapers::get_and_save(data=urls,
 
 # 2000-2009
 # read in excel sheet with URLs
-urls_df <- read.csv(here("hansard-urls-2000-2009.csv"))
+urls_df <- read.csv(here("urls/hansard-urls-2000-2009.csv"))
 
 # two dates are missing XMLs so I left the url blank, filter those out
 urls_df <- urls_df %>% filter(URL!="")
@@ -48,7 +48,3 @@ heapsofpapers::get_and_save(data=urls,
                             save_names = "save_here",
                             dir = "/Volumes/Verbatim/input",
                             dupe_strategy = "overwrite")
-
-
-
-
