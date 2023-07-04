@@ -5,6 +5,7 @@ format:
   pdf:
     keep-tex: true
 bibliography: references.bib
+csl: nature.csl
 editor: visual
 date: "now"
 date-format: long
