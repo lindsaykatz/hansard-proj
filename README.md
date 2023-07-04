@@ -8,7 +8,9 @@ To produce the most recently published version of our dataset, we used the follo
 
 -   With `00-scrape_files.R`, we first download and store all Hansard XML files using the `HeapsOfPapers` package, with the CSV files from the urls folder.
 
--   In the `01-session_info.R` script, we parse and clean the session info from each Hansard XML file. The resulting dataframe is used later on in our data validation script (step 5).
+-   In the `01-session_info.R` script, we parse and clean the session info from each Hansard XML file. The resulting dataframe is used later on in our data validation script.
+  
+-   Using data from the `AustralianPoliticians` and `ausPH` R packages, in `02-auspol_lookup.R`, create and export various lookup tables which will later be used in the fill details script. These tables contain data on Members of Parliament such as their electorate, party, and unique identification code which corresponds to that in the Australian Parliamentary Handbook.
 
 -   Parse, clean and export each XML file to CSV format using:
 
