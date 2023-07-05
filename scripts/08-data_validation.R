@@ -12,7 +12,7 @@ party <- AustralianPoliticians::get_auspol('allbyparty')
 mps <- AustralianPoliticians::get_auspol('mps')
 
 # read in my lookup table
-lookup <- read_csv("/Volumes/Verbatim/lookup_tables/member_lookup.csv", show_col_types = F)
+lookup <- read_csv("additional_data/lookup_tables/member_lookup.csv", show_col_types = F)
 
 # grab list of file names
 files_all <- list.files("/Volumes/Verbatim/output/main-filled-csv-v2")
@@ -20,7 +20,7 @@ files_all <- list.files("/Volumes/Verbatim/output/main-filled-csv-v2")
 ##### test 1 - date in filename must match one date in our list of dates from all session headers
 
 # grab session header csv - code to make this is in 01-session_info.R script
-session_headers <- read_csv("/Volumes/Verbatim/output/old-data/session_info/session_info_all.csv", show_col_types = F) %>% pull(date)
+session_headers <- read_csv("additional_data/session_info_all.csv", show_col_types = F) %>% pull(date)
 
 # extract dates from file names, convert to date
 dates_all <- files_all %>% as_tibble() %>% mutate(value = as.Date(str_remove(value, "-main-v2.csv"))) %>% pull(value)
@@ -116,8 +116,8 @@ test4 <- test4 %>% filter(!is.na(name.id) & name.id!="UNKNOWN" & name.id!="10000
 # this is likely due to my own filling in with the lookup table that doesn't account for the date (these things can change)
 # using newly created party and electorate lookup tables with dates
 
-party_lookup <- read_csv("/Volumes/Verbatim/lookup_tables/party_lookup.csv", show_col_types = F)
-electorate_lookup <- read_csv("/Volumes/Verbatim/lookup_tables/electorate_lookup.csv", show_col_types = F)
+party_lookup <- read_csv("additional_data/lookup_tables/party_lookup.csv", show_col_types = F)
+electorate_lookup <- read_csv("additional_data/lookup_tables/electorate_lookup.csv", show_col_types = F)
 
 # grab dates that failed test 4 so we can fix them
 test4_dates <- test4 %>% ungroup() %>% select(date) %>% unique() %>% mutate(date = paste0(date, "-main-v2.csv")) %>% pull()
@@ -133,7 +133,7 @@ for (i in 1:length(test4_dates)) {
   # define filename
   filename <- test4_dates[i]
   
-  # read in fike
+  # read in file
   thisFile <- read_csv(paste0("/Volumes/Verbatim/output/main-filled-csv-v2/", filename), show_col_types = F)
   
   # grab the name ids that were caught in test above

@@ -3,8 +3,8 @@
 library(tidyverse)
 
 # read in master lookup table
-master_orig <- read_csv("/Volumes/Verbatim/lookup_tables/member_lookup.csv", show_col_types = F) 
-speaker_list <- read_csv("/Volumes/Verbatim/lookup_tables/speaker_lookup.csv", show_col_types = F) %>% unique()
+master_orig <- read_csv("additional_data/lookup_tables/member_lookup.csv", show_col_types = F) 
+speaker_list <- read_csv("additional_data/lookup_tables/speaker_lookup.csv", show_col_types = F) %>% unique()
 
 # rename phid to match with hansard, and change parties to hansard abbreviations for consistency
 # these are from: https://www.aph.gov.au/Parliamentary_Business/Committees/Senate/woc/wocjanjun08/a02
@@ -28,8 +28,6 @@ speaker_list <- speaker_list %>%
                            party=="Liberal Party of Australia" ~ "LP",
                            party=="National Party of Australia" ~ "NATS"))
 
-# define file-name
-filename <- "2002-08-29-main.csv"
 
 fill_main <- function(filename) {
   
