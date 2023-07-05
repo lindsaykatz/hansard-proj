@@ -39,7 +39,7 @@ While there is evidently a growing body of literature on this topic, there is st
 
 Our database contains one comma-separated value (CSV) file and one parquet file for each sitting day of the House of Representatives from 02 March 1998 to 08 September 2022. We developed four scripts to produce these files. Each script parses Hansard documents from a specific portion of the 1998 to 2022 time frame.
 
-This section is structured as follows. First, we provide an overview of our approach to understanding and parsing an individual Hansard XML document, which informed the scripts used to create our database. This will be supplemented with an excerpt from a Hansard XML to provide a visual example of its structure. Next we will explain the specific differences between the scripts, and outline what structural changes necessitated their separate development. We then provide details on the methodological intricacies of three core components of Hansard proceedings: Question Time, interjections, and stage directions. Further, we discuss the script we developed to fill in remaining missing details on the MP speaking, which each file in our database was passed to after being parsed and cleaned. **Finally, we review the supplementary Hansard debate topics dataset we created to expand the versatility of our database.**
+This section is structured as follows. First, we provide an overview of our approach to understanding and parsing an individual Hansard XML document, which informed the scripts used to create our database. This will be supplemented with an excerpt from a Hansard XML to provide a visual example of its structure. Next we will explain the specific differences between the scripts, and outline what structural changes necessitated their separate development. We then provide details on the methodological intricacies of three core components of Hansard proceedings: Question Time, interjections, and stage directions. Further, we discuss the script we developed to fill in remaining missing details on the MP speaking, which each file in our database was passed to after being parsed and cleaned. **Finally, we review the supplementary Hansard debate topics dataset and supplementary divisions dataset we created to expand the versatility of our database.**
 
 ## Overview {#sec-overview}
 
@@ -187,6 +187,12 @@ Due to the fact that the names of MPs with common surnames were not all in their
 
 **To enhance the range of research questions which can be explored with our data, we have created a supplementary file containing debate topics and their corresponding page numbers for each sitting day in our database. To extract these data, we wrote a script to parse debate and sub-debate 1 information elements from each XML file in chronological order using the XPath expression "`//debate/debateinfo | //subdebate.1/subdebateinfo`", and added a date variable with the date of each sitting day. Note that in some cases there were multiple page number child nodes for the same debate or sub-debate title, likely due to manual transcription error. Upon manual inspection, we found that most often, the second page number node contained the same page number as the first node, and sometimes the second node contained a repeated debate title or a time stamp. Therefore, we took the first available page number child-node for each debate or sub-debate node to be the one we included in our dataset.**
 
+## Divisions
+
+**Another fundamental component of parliamentary proceedings is voting. In the House, when a question arises such as “The question is that the amendment be agreed to”, Members are asked to cast their vote either in the affirmative or in the negative, and the majority of votes as judged by the Speaker determines the outcome [@australia2018house]. Further, Members can vote in an unofficial arrangement called pairs, in which as written in Chapter 8 of @australia2018house, "can be used to enable a Member on one side of the House to be absent for any votes when a Member from the other side is to be absent at the same time or when, by agreement, a Member abstains from voting". If the result as determined by the Speaker is challenged by more than one MP, this leads to a division of the House in which the question is re-stated and Members must move to the left or right of their chair depending on how they vote, so that the votes can be re-counted and recorded [@australia2018house].**
+
+**In the Hansard XML files, divisions data are structured outside of the `<speech>` content in their own `<division>` nodes that contain the voting data and division result. Since we focus primarily on the spoken `<speech>` Hansard content, our parsing scripts do not necessarily capture all divisions data from House proceedings. Our approach to parsing Hansard in the third and fourth scripts described in @sec-diff naturally allowed for much of the divisions data to be added to our resulting files for 1998 to March 2011, however the parsing scripts used for May 2011 to September 2022 Hansard did not. To supplement our database and in an effort to fill this divisions data gap, we created an additional file containing all divisions data nested under the XPath "`//chamber.xscript//division`" from the Hansard files in our time frame. To produce this data file, for each Hansard XML we parsed the `<division.header>`, `<division.data>`, and `<division.result>` child-nodes where they existed, extracted any time stamps where available, and did any additional data cleaning as necessary. We used a series of if-else statements in this script to account for variation in the structure of the `<divisions>` node over time. Finally, we then added a date variable to distinguish between sitting days.**
+
 # Data Records
 
 Our database is available in both CSV and parquet formats. It covers all sitting days of the House of Representatives from 02 March 1998 to 08 September 2022 **where an XML transcript is available**, so there are **1,532 individual sitting day** files for each format. **Additionally, there is a single corpus file in both CSV and Parquet forms containing the data from all sitting days, with a date variable added to allow for distinction and filtering of individual sitting days. There is also a CSV and Parquet file containing all parsed debate topics.** All data records are available on the general-purpose repository Zenodo, at https://doi.org/10.5281/zenodo.7799678 [@katz_2023]. For each **Hansard data** file, **that is, the corpus and the individual sitting day files**, each row contains an individual statement, with details on the individual speaking. For general statements transcribed as made by "Honourable members" for example, these variables cannot be specified. @tbl-vars provides an overview of each variable found in the **Hansard data files in the** database.
@@ -261,7 +267,7 @@ The `name`, `page.no`, `time.stamp`, `name.id`, `electorate`, `party`, `in.gov`,
 
 **As mentioned, in addition to the Hansard data described above, our database also contains a CSV and Parquet file with the parsed debate topics. This file is called `all_debate_topics`, and contains a `date` variable specifying the sitting day, an `item_index` variable to specify the order of proceedings (i.e. the order in which these topics were discussed), a `title` variable containing the debate or sub-debate title contents, and a `page.no` variable specifying on which page that title was recorded to be found in the official Hansard PDF.**
 
-**Finally, there is a CSV file in our database called `PartyFacts_map.csv`. This file was created using `AustralianPoliticians` data, data downloaded from the Party Facts project, and our own Hansard data `party` variable. As there are some party name and abbreviation spelling inconsistencies across these sources, creating this dataframe allowed us to ensure correct merging of PartyFacts ID numbers with their associated party, in accordance with the party abbreviation spelling transcribed in our Hansard data. Further, we included the corresponding party abbreviation and full name spelling found in the `AustralianPoliticians` package for completeness.**
+**There is also a CSV file in our database called `PartyFacts_map.csv`. This file was created using `AustralianPoliticians` data, data downloaded from the Party Facts project, and our own Hansard data `party` variable. As there are some party name and abbreviation spelling inconsistencies across these sources, creating this dataframe allowed us to ensure correct merging of PartyFacts ID numbers with their associated party, in accordance with the party abbreviation spelling transcribed in our Hansard data. Further, we included the corresponding party abbreviation and full name spelling found in the `AustralianPoliticians` package for completeness.**
 
 ```{r}
 #| warning: false
@@ -284,6 +290,38 @@ knitr::kable(pf_vars, booktabs=T) %>%
   kableExtra::kable_styling(full_width = F, latex_options = "HOLD_position") |> 
   kableExtra::column_spec(1, width = "10em") |> 
   kableExtra::column_spec(2, width="25em")
+```
+
+**Finally, our database contains a file with all parsed divisions data in our timeframe. This is called `division_data`, and is available in RDA form and in Parquet form. The reason it is not available in CSV form is because three of the variables (`names_AYES`, `names_NOES`, and `names_PAIRS`) are lists, which are not supported by the CSV rectangular data structure. The variables found in these data are summarized below, in @tbl-divisions.**
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: tbl-divisions
+#| tbl-cap: "Summary and description of variables in our divisions data file"
+tibble("Variable" = c("date",
+                      "div_num",
+                      "time.stamp",
+                      "num.votes_AYES",
+                      "num.votes_NOES",
+                      "num.votes_PAIRS",
+                      "names_AYES",
+                      "names_NOES",
+                      "names_PAIRS",
+                      "result"),
+       "Description" = c("Sitting day",
+                         "Index for each division parsed for that sitting day",
+                         "Time stamp associated with each division",
+                         "Number of votes in the affirmative",
+                         "Number of votes in the negative",
+                         "Number of votes in pairs",
+                         "List of the names of Members who voted in the affirmative",
+                         "List of the names of Members who voted in the negative",
+                         "List of the names of Members who votes in pairs",
+                         "Voting result")) |> 
+  kable(booktabs=T) %>% 
+  kableExtra::kable_styling(full_width = F, latex_options = "HOLD_position")
 ```
 
 # Technical Validation
@@ -327,7 +365,6 @@ Finally, our eighth test validates that all individuals speaking are MPs on that
 read_csv("s_by_party_name.csv", show_col_types = F) |> 
   knitr::kable(booktabs=T) |> 
   kableExtra::kable_styling(full_width = F, latex_options = "HOLD_position")
-#### check NAT vs NPA full names - are these correct? google is confusing me
 ```
 
 # Usage Notes {#sec-usage}

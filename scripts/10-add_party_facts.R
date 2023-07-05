@@ -74,7 +74,7 @@ auspol_data <- AustralianPoliticians::get_auspol('allbyparty') |>
 party_table <- full_join(auspol_data, pf_data, by = c("name_auspol" = "name_pf"), multiple="all") |> select(name_auspol, name_short_auspol, partyfacts_id)
 
 # read in our Hansard corpus as of v3 (before we add party facts)
-corpus <- read_parquet(here("additional_data/hansard_corpus_1998_to_2022.parquet"))
+corpus <- read_parquet(here("/Volumes/Verbatim/v4/hansard-corpus/hansard_corpus_1998_to_2022.parquet"))
   
 # grab list of all unique party names found in corpus
 corpus_parties <- corpus %>% 
@@ -92,7 +92,7 @@ corpus_parties <- corpus_parties %>%
                                 party == "CLP" ~ "Country Liberal Party (Northern Territory)",
                                 party == "KAP" ~ "Katters Australian Party",
                                 party == "LNP" ~ "Liberal National Party of Queensland",
-                                party == "NATS" | party=="Nats" ~ "Nationalist Party",
+                                party == "NATS" | party=="Nats" ~ "National Party of Australia",
                                 party == "NatsWA" ~ "National Party of Australia (WA)",
                                 party == "PUP" ~ "Palmer United Party",
                                 party == "UAP" ~ "United Australia Party",
@@ -113,7 +113,9 @@ party_table_final <- left_join(party_table, corpus_parties, by=c("name_auspol"="
   select(partyfacts_id, party_abb_hansard, party_abb_auspol, party_name_auspol)
 
 # export clean party table to have
-# write_csv(party_table_final, "additional_data/party_table.csv")
+write_csv(party_table_final, "additional_data/PartyFacts_map.csv")
+write_csv(party_table_final, "/Volumes/Verbatim/v4/hansard-supplementary-data/PartyFacts_map.csv")
+
 party_table_final <- read_csv("additional_data/PartyFacts_map.csv", show_col_types = F)
 
 # grab list of filenames to iterate over
@@ -124,8 +126,9 @@ all_csvs <- list.files("/Volumes/Verbatim/v3/hansard_1998_to_2022-csv")
 # NOTE - splitting this up into a few hundred at a time is best to avoid weird errors / the session aborting
 # i found when i tried to do this for the full csv list it always crashed halfway through and gave me really weird errors, restarting R helped
 # adding sys.sleep didn't resolve the issue anyway
+#length(all_csvs)
 
-for (i in 1:length(all_csvs)){
+for (i in 1456:length(all_csvs)){
   
   # read in file, specify column types
   thisFile <- readr::read_csv(paste0("/Volumes/Verbatim/v3/hansard_1998_to_2022-csv/", all_csvs[i]), 
@@ -159,9 +162,9 @@ for (i in 1:length(all_csvs)){
   stopifnot(nrow(thisFile) == nrow(thisFile_new))
   
   # export updated file as CSV and Parquet
-  readr::write_csv(thisFile_new, paste0("/Volumes/Verbatim/v4/hansard_1998_to_2022-csv/", all_csvs[i]))
+  readr::write_csv(thisFile_new, paste0("/Volumes/Verbatim/v4/hansard-daily-csv/", all_csvs[i]))
   
-  arrow::write_parquet(thisFile_new, paste0("/Volumes/Verbatim/v4/hansard_1998_to_2022-parquet/", str_remove(all_csvs[i], "csv"), "parquet"))
+  arrow::write_parquet(thisFile_new, paste0("/Volumes/Verbatim/v4/hansard-daily-parquet/", str_remove(all_csvs[i], "csv"), "parquet"))
   
 
 }
