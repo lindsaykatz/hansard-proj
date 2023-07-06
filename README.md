@@ -1,6 +1,6 @@
 # Hansard project
 
-This repository contains all materials relating to the Digitization of the Australian Parliamentary Debates (1998-2022). The most recent version of our database is available for download on [Zenodo](https://zenodo.org/record/7799678).
+This repository contains all materials relating to the Digitization of the Australian Parliamentary Debates (1998-2022). The most recent version of our database is available for download on [Zenodo](https://zenodo.org/record/7336075).
 
 ## Workflow
 
@@ -45,7 +45,7 @@ library(tidyverse)
 library(arrow)
 
 # csv
-hansard_csv <- readr::read_csv("hansard_1998_to_2022-csv/2000-06-05.csv", 
+hansard_csv <- readr::read_csv("hansard-daily-csv/2000-06-05.csv", 
                                col_types = list(name = col_character(),
                                                 order = col_double(),
                                                 speech_no = col_double(),
@@ -68,13 +68,13 @@ hansard_csv <- readr::read_csv("hansard_1998_to_2022-csv/2000-06-05.csv",
                                                 partyfacts_id = col_double()))
 
 # parquet
-hansard_parquet <- arrow::read_parquet("hansard_1998_to_2022-parquet/2000-06-05.parquet")
+hansard_parquet <- arrow::read_parquet("hansard-daily-parquet/2000-06-05.parquet")
 ```
 
 The following code shows you how to read in the full corpus of data in Parquet format, filter for particular dates of interest (in this case, all available Hansard data from the 1990s which in our database is 1998 and 1999), and then split each sitting day's data into a separate tibble, stored as a list.
 
 ``` r
-hansard_corpus <- arrow::read_parquet("hansard_1998_to_2022-parquet/hansard_corpus_1998_to_2022.parquet")
+hansard_corpus <- arrow::read_parquet("hansard-corpus/hansard_corpus_1998_to_2022.parquet")
 
 hansard_1990s <- hansard_corpus |> 
   filter(str_detect(date, "^199")) |>  
@@ -85,7 +85,7 @@ If you wish to filter out stage directions, you can do so with the following cod
 
 ``` r
 hansard_csv |> 
-  filter(!str_detect(name, "stage direction")) |> 
+  filter(name!="stage direction" & name!="business start") |> 
   select(-order) |> 
   rowid_to_column("order")
 ```
@@ -99,7 +99,7 @@ We then group the topics dataframe by page number, and summarise the title varia
 Finally, we ungroup the data and then right join onto the Hansard dataframe by page number. We use the multiple="all" argument because this allows each row in topics to match multiple rows of the Hansard data. In other words, since multiple rows in the Hansard data have the same page number, they will join to the same row in the topics data. This can also be done similarly with the full corpus.
 
 ``` r
-topics <- arrow::read_parquet("all_debate_topics.parquet")
+topics <- arrow::read_parquet("hansard-supplementary-data/all_debate_topics.parquet")
 
 topics |> filter(date=="2000-06-05") |> 
   group_by(page.no) |> 
