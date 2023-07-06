@@ -110,3 +110,7 @@ topics |> filter(date=="2000-06-05") |>
 
 -   this folder has CSV files which contain the links for each sitting day's XML file, and the name it should be assigned when downloaded
 -   these files cover all sitting days from 1998 to September 2022
+
+## Accessing original data
+
+As at July 2023, the Hansard website navigated to obtain the datasets that we need. Begin by going to: https://www.aph.gov.au/Parliamentary_Business/Hansard. Then "House Hansard" from the menu on the right. Click "back to 1901." Each day's content is grouped within decades, which can be navigated on the menu on the left.

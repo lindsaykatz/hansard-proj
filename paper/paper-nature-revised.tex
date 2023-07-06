@@ -9,7 +9,6 @@
   numbers=noendperiod]{scrartcl}
 
 \usepackage{amsmath,amssymb}
-\usepackage{lmodern}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
@@ -19,6 +18,10 @@
   \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else  
+    % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -157,10 +160,12 @@
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
 \makeatletter
-\@ifpackageloaded{tcolorbox}{}{\usepackage[many]{tcolorbox}}
+\@ifpackageloaded{tcolorbox}{}{\usepackage[skins,breakable]{tcolorbox}}
 \makeatother
 \makeatletter
 \@ifundefined{shadecolor}{\definecolor{shadecolor}{rgb}{.97, .97, .97}}
+\makeatother
+\makeatletter
 \makeatother
 \makeatletter
 \makeatother
@@ -184,7 +189,7 @@
 \author{Lindsay Katz\footnote{University of Toronto,
   lindsay.katz@mail.utoronto.ca} \and Rohan Alexander\footnote{University
   of Toronto, rohan.alexander@utoronto.ca}}
-\date{July 5, 2023}
+\date{July 6, 2023}
 
 \begin{document}
 \maketitle
@@ -204,48 +209,71 @@ such as election results. The creation and accessibility of this
 database enables the exploration of new questions and serves as a
 valuable resource for both researchers and policymakers.
 \end{abstract}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, frame hidden, enhanced, breakable, sharp corners, boxrule=0pt, interior hidden]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, sharp corners, enhanced, interior hidden, frame hidden, borderline west={3pt}{0pt}{shadecolor}, breakable]}{\end{tcolorbox}}\fi
 
 \hypertarget{sec-intro}{%
 \section{Background \& Summary}\label{sec-intro}}
 
-The official written record of parliamentary debates, formally known as
-Hansard, plays a fundamental role in capturing the history of political
-proceedings and facilitating the exploration of valuable research
-questions. Originating in the British parliament, the production of
-Hansard became tradition in many other Commonwealth countries, such as
-Canada and Australia\textsuperscript{1}. Given the content and magnitude
-of these records, they have significance, particularly in the context of
-political science research. In the case of Canada, the Hansard has been
-digitized for 1901 to 2019\textsuperscript{2}. Having a digitized
-version of Hansard enables researchers to conduct text analysis and
-statistical modelling. Following the lead of that project, in this paper
-we introduce a similar database for Australia. This is composed of
-individual datasets for each sitting day in the House of Representatives
-from 1998 to 2022, containing details on everything said in parliament
-in a form that can be readily used by researchers. With the development
-of tools for large-scale text analysis, this database will serve as a
-resource for understanding political behaviour in Australia over time.
+The official written record of parliamentary debates, \textbf{formally
+known as Hansard\textsuperscript{1},} plays a fundamental role in
+capturing the history of political proceedings and facilitating the
+exploration of valuable research questions. Originating in the British
+parliament, the production of Hansard became tradition in many other
+Commonwealth countries, such as Canada and Australia\textsuperscript{2}.
+Given the content and magnitude of these records, they have
+significance, particularly in the context of political science research.
+In the case of Canada, the Hansard has been digitized for 1901 to
+2019\textsuperscript{3}. Having a digitized version of Hansard enables
+researchers to conduct text analysis and statistical modelling.
+Following the lead of that project, in this paper we introduce a similar
+database for Australia. This is composed of individual datasets for each
+sitting day in the House of Representatives from 1998 to 2022,
+containing details on everything said in parliament in a form that can
+be readily used by researchers. With the development of tools for
+large-scale text analysis, this database will serve as a resource for
+understanding political behaviour in Australia over time.
+
+\textbf{There are a wide variety of potential applications of this
+database. For instance, within Australia there is considerable concern
+that there has been a decline in the `quality' of public policy debate
+(however that might be defined). Our dataset could be used to look at
+whether it is really getting worse in particular ways, and if so, why.
+We might also be interested in whether particular sub-populations are
+appropriately represented in what is talked about in parliament. For
+instance, there is often concern that regional areas are overlooked
+compared with metropolitan areas. Again, our database could be used to
+examine whether this has changed over time. We have developed our
+database in such a way that it could be linked with similar databases
+from other countries which would enable comparative analysis. For
+instance, we may be interested in how the policy focus of a parliament
+changes given various global events such as pandemics or wars. An
+international linkage provides a comparison case where domestic issues
+are different while international ones are common. As an example of
+enabling this linkage this we have included partyfacts IDs in our
+database. This should make it possible to link our database with other
+large parliamentary speech collection projects, such as
+ParlaMint\textsuperscript{4}, ParlSpeech\textsuperscript{5},
+ParlEE\textsuperscript{6}, and MAPLE\textsuperscript{7}.}
 
 The Australian House of Representatives `the House' performs a number of
 crucial governmental functions, such as creating new laws and overseeing
-government expenditure\textsuperscript{3, ch.~1}. Politicians in the
+government expenditure\textsuperscript{8, ch.~1}. Politicians in the
 House are referred to as Members of Parliament (MPs). The House operates
 under a parallel chamber setup, meaning there are two debate venues
 where proceedings take place: the Chamber, and the Federation Chamber.
 Sittings of the House follow a predefined order of business, regulated
-by procedural rules called standing orders\textsuperscript{3, ch.~8}. A
+by procedural rules called standing orders\textsuperscript{8, ch.~8}. A
 typical sitting day in the Chamber has a number of scheduled proceedings
 including debates on government business, 90 second member statements,
-and Question Time\textsuperscript{3, ch.~8}. The Federation Chamber was
+and Question Time\textsuperscript{8, ch.~8}. The Federation Chamber was
 created in 1994 as a subordinate debate venue of the Chamber. This
 allows for better time management of House business as its proceedings
-occur simultaneously with those of the Chamber\textsuperscript{3,
+occur simultaneously with those of the Chamber\textsuperscript{8,
 ch.~21}. Sittings in the Federation Chamber are different to those of
 the Chamber in terms of their order of business and scope of discussion.
 Business matters discussed in the Federation Chamber are limited largely
 to intermediate stages of bill development, and the business of private
-Members\textsuperscript{3, ch.~21}. It is the recording and compilation
+Members\textsuperscript{8, ch.~21}. It is the recording and compilation
 of these proceedings on which Hansard is based, and it is essentially,
 but not entirely, verbatim.
 
@@ -261,36 +289,43 @@ proceed with processing the XML, we defer first to the PDF, and then to
 the video recording of the proceeding, if available.
 
 At present, the Hansard format that is available on the Parliament of
-Australia website is not accessible for large scale analysis. To this
-point, various researchers have had to create their own databases of
-usable, complete data based on content from the Australian Parliament
-website. For instance,\textsuperscript{4} created an online, easy to
-read database of Hansard from 1901 to 1980 using the XML files. These
-data can be navigated by year, parliament, people, and
-bills\textsuperscript{4}. To make the Australian Parliamentary Handbook
-more accessible,\textsuperscript{5} has released an \texttt{R} package
-which includes data on all MPs from 1945 to 2019.
-Further,\textsuperscript{6} created the \texttt{AustralianPoliticians}
-\texttt{R} package, which contains several datasets related to the
-political and biographical information of Australian federal politicians
-who were active between 1901 and 2021.
+Australia website is not easily accessible for large scale analysis. To
+this point, various researchers have had to create their own databases
+of usable, complete data based on content from the Australian Parliament
+website. For instance, an online, easy to read database of Hansard from
+1901 to 1980 using the XML files has been created\textsuperscript{9}.
+These data can be navigated by year, parliament, people, and
+bills\textsuperscript{9}. To make the Australian Parliamentary Handbook
+more accessible, an \texttt{R} package which includes data on all MPs
+from 1945 to 2019 has been created\textsuperscript{10}. Further, there
+is the \texttt{AustralianPoliticians} \texttt{R} package, which contains
+several datasets related to the political and biographical information
+of Australian federal politicians who were active between 1901 and
+2021\textsuperscript{11}. \textbf{And finally, there has been
+examination of speech and MP level data between 1990 and 2019 in
+Australia\textsuperscript{12}. Like us they scrape the Hansard record
+and link it with biographical data. They key difference is that our
+focus is on the database itself, while are focused on using a database
+constructed from the same source to answer a particular question about
+speaker time. This different focus leads to different emphasis and
+approaches.}
 
 Many papers exist which use components of Australian Hansard to explore
-various research topics. For example,\textsuperscript{7} used the
-Hansard to investigate occurrences of unparliamentary comments by MPs,
-where the Speaker tells that MP to withdraw their
-remark.\textsuperscript{8} worked with Question Time data from Hansard
-transcripts during February and March of 2003, to investigate resistance
-of politicians in answering questions about Iraq.\textsuperscript{9} use
-Hansard to quantify political prominence by investigating strategic
-mentions of interest groups by elected officials.
-Finally,\textsuperscript{10} construct a dataset of the Australian
-Hansard, along with an analysis of the effect of elections and changes
-in Prime Ministers upon topics mentioned in
-parliament.\textsuperscript{10} created this database with the static
-PDF versions of Hansard, using OCR to digitize these files into text
-which is suitable for analysis. This means there are considerable
-digitization errors especially in the first half of the dataset.
+various research topics. For example, the Hansard has been used to
+investigate occurrences of unparliamentary comments by MPs, where the
+Speaker tells that MP to withdraw their remark\textsuperscript{13}.
+Question Time data from Hansard transcripts during February and March of
+2003 has been used to investigate resistance of politicians in answering
+questions about Iraq\textsuperscript{14}. Hansard has been used to
+quantify political prominence by investigating strategic mentions of
+interest groups by elected officials\textsuperscript{15}. Finally, a
+dataset of the Australian Hansard has been constructed and then used to
+analyze the effect of elections and changes in Prime Ministers upon
+topics mentioned in parliament\textsuperscript{16}. This was created
+with the static PDF versions of Hansard, using OCR to digitize these
+files into text which is suitable for analysis. This means there are
+considerable digitization errors especially in the first half of the
+dataset.
 
 While there is evidently a growing body of literature on this topic,
 there is still no comprehensive database for Australian Hansard based on
@@ -330,7 +365,7 @@ single Hansard XML transcript from 2019. Doing so enabled us to identify
 the various components of interest in the document, and how each one can
 be parsed according to its corresponding structural form. Parsing was
 performed in \texttt{R} using the \texttt{XML} and \texttt{xml2}
-packages\textsuperscript{11,12}. Focusing on one transcript also allowed
+packages\textsuperscript{17,18}. Focusing on one transcript also allowed
 us to ensure that all key components of the transcript were parsed and
 captured in as much detail as possible. The typical form of a Hansard
 XML transcript is summarized in the nested list below. This provides an
@@ -449,7 +484,7 @@ speech text, and Question Time contents contained in the XML document,
 using these unique XPath expressions to do so.
 
 The next step was to further develop our script to produce tidy data
-sets, as defined and introduced by\textsuperscript{13}. These contain
+sets, as defined and introduced by\textsuperscript{19}. These contain
 all parsed text elements, where each statement is separated onto its own
 row with details about the MP who is speaking, and rows are maintained
 in chronological order. This first involved correcting the variable
@@ -520,7 +555,7 @@ third and fourth scripts.
 The need for a second script stems from the fact that when established
 in 1994, the Federation Chamber was originally named the Main Committee.
 The Main Committee was renamed to the Federation Chamber in
-mid-2012\textsuperscript{3, ch.~21}. As a result, the child node under
+mid-2012\textsuperscript{8, ch.~21}. As a result, the child node under
 which Federation Chamber proceedings are nested is named
 \texttt{\textless{}maincomm.xscript\textgreater{}} in all XML files
 prior to 14 August 2012. Having developed our first script based on
@@ -636,7 +671,7 @@ Question Time. This is a period of each sitting day in the Chamber where
 MPs can ask ministers two types of questions: questions in writing which
 are written in advance, or questions without notice which are asked
 verbally in the Chamber and are responded to in real
-time\textsuperscript{14}. Questions without notice are included directly
+time\textsuperscript{20}. Questions without notice are included directly
 in the \texttt{"chamber.xscript"} child node, with sub-child nodes
 called \texttt{"question"} and \texttt{"answer"} to differentiate the
 two. Questions in writing, however, are embedded in their own child node
@@ -808,7 +843,7 @@ transcribed, and the corresponding full name, name ID, electorate,
 party, gender, and unique ID for that individual.
 Figure~\ref{fig-lookup} provides an example of this. We used the main
 dataset from the \texttt{AustralianPoliticians} package in the creation
-of each lookup table\textsuperscript{6}.
+of each lookup table\textsuperscript{11}.
 
 \begin{figure}
 
@@ -986,17 +1021,16 @@ debate or sub-debate node to be the one we included in our dataset.}
 voting. In the House, when a question arises such as ``The question is
 that the amendment be agreed to'', Members are asked to cast their vote
 either in the affirmative or in the negative, and the majority of votes
-as judged by the Speaker determines the outcome\textsuperscript{3}.
-Further, Members can vote in an unofficial arrangement called pairs, in
-which as written in Chapter 8 of\textsuperscript{3}, ``can be used to
-enable a Member on one side of the House to be absent for any votes when
-a Member from the other side is to be absent at the same time or when,
-by agreement, a Member abstains from voting''. If the result as
-determined by the Speaker is challenged by more than one MP, this leads
-to a division of the House in which the question is re-stated and
-Members must move to the left or right of their chair depending on how
-they vote, so that the votes can be re-counted and
-recorded\textsuperscript{3}.}
+as judged by the Speaker determines the outcome\textsuperscript{8}.
+Further, Members can vote in an unofficial arrangement called pairs,
+which ``can be used to enable a Member on one side of the House to be
+absent for any votes when a Member from the other side is to be absent
+at the same time or when, by agreement, a Member abstains from
+voting''\textsuperscript{8}. If the result as determined by the Speaker
+is challenged by more than one MP, this leads to a division of the House
+in which the question is re-stated and Members must move to the left or
+right of their chair depending on how they vote, so that the votes can
+be re-counted and recorded\textsuperscript{8}.}
 
 \textbf{In the Hansard XML files, divisions data are structured outside
 of the \texttt{\textless{}speech\textgreater{}} content in their own
@@ -1025,17 +1059,20 @@ we then added a date variable to distinguish between sitting days.}
 \hypertarget{data-records}{%
 \section{Data Records}\label{data-records}}
 
-Our database is available in both CSV and parquet formats. It covers all
-sitting days of the House of Representatives from 02 March 1998 to 08
-September 2022 \textbf{where an XML transcript is available}, so there
-are \textbf{1,532 individual sitting day} files for each format.
+Our database is available in both CSV and parquet formats. Both CSV and
+parquet are open standards. We provide both because while CSVs are
+commonly used and can be manually inspected, parquet files are typically
+smaller and preserve class. Our database covers all sitting days of the
+House of Representatives from 02 March 1998 to 08 September 2022
+\textbf{where an XML transcript is available}, so there are
+\textbf{1,532 individual sitting day} files for each format.
 \textbf{Additionally, there is a single corpus file in both CSV and
 Parquet forms containing the data from all sitting days, with a date
 variable added to allow for distinction and filtering of individual
 sitting days. There is also a CSV and Parquet file containing all parsed
 debate topics.} All data records are available on the general-purpose
 repository Zenodo, at
-https://doi.org/10.5281/zenodo.7799678\textsuperscript{15}. For each
+https://doi.org/10.5281/zenodo.7799678\textsuperscript{21}. For each
 \textbf{Hansard data} file, \textbf{that is, the corpus and the
 individual sitting day files}, each row contains an individual
 statement, with details on the individual speaking. For general
@@ -1280,7 +1317,7 @@ increased slightly over time.}
 
 \begin{figure}
 
-{\centering \includegraphics[width=4.58333in,height=\textheight]{n_daily_speeches.png}
+{\centering \includegraphics[width=4.58333in,height=\textheight]{images/n_daily_speeches.png}
 
 }
 
@@ -1302,11 +1339,11 @@ detected in the Chamber, and 34 in the Federation Chamber. These
 observations are in accordance with the official number of Members
 belonging to the House of Representatives, which was 148 in 1998, 150 in
 2001, and then increased to 151 in the 2019 general
-election\textsuperscript{3}.}
+election\textsuperscript{8}.}
 
 \begin{figure}
 
-{\centering \includegraphics[width=4.58333in,height=\textheight]{n_unique_names.png}
+{\centering \includegraphics[width=4.58333in,height=\textheight]{images/n_unique_names.png}
 
 }
 
@@ -1321,7 +1358,7 @@ Table~\ref{tbl-speeches_by_party}. We found that the Australian Labor
 Party made the most speeches overall, followed by the Liberal Party of
 Australia, and the Nationalist Party. These rankings are unsurprising,
 as those parties are the three main political parties in the Australian
-House of Representatives\textsuperscript{16}.}
+House of Representatives\textsuperscript{22}.}
 
 \hypertarget{tbl-speeches_by_party}{}
 \begin{table}[H]
@@ -1357,7 +1394,7 @@ To enhance the usability of our database, we added a \texttt{uniqueID}
 variable to each file. This serves as a unique identifier for each
 speaking MP, and comes from the \texttt{uniqueID} variable present
 within data from both the \texttt{AustralianPoliticians} and
-\texttt{AustralianElections} R packages\textsuperscript{6,17}. By
+\texttt{AustralianElections} R packages\textsuperscript{11,23}. By
 including this variable, one can readily integrate our data records with
 those available in these two packages. \textbf{Similarly, we added the
 \texttt{partyfacts\_id} variable to our data which allows users to link
@@ -1369,7 +1406,7 @@ unique identifier for each MP. This variable was parsed directly from
 the Hansard XML files, and can be found in the Australian Parliamentary
 Handbook. As such, our data records can be integrated with those from
 the \texttt{ausPH} package which provides datasets for contents of the
-Australian Parliamentary Handbook\textsuperscript{5}. This will allow
+Australian Parliamentary Handbook\textsuperscript{10}. This will allow
 for convenient extraction of further details on each MP in a tidy, ready
 to analyze format.
 
@@ -1391,13 +1428,13 @@ debate topics data with a Hansard data file for one sitting day.}
 The code written to build this database is available on the GitHub
 repository associated with this paper:
 https://github.com/lindsaykatz/hansard-proj. All scripts were created
-using R software\textsuperscript{18}. The core packages used to develop
-these scripts are: the \texttt{XML} package by\textsuperscript{11}, the
-\texttt{xml2} package by\textsuperscript{12}, the \texttt{tidyverse} R
-packages by\textsuperscript{19}, the \texttt{AustralianPoliticians}
-package by\textsuperscript{6}, and the \texttt{ausPH} package
-by\textsuperscript{5}. \texttt{XML} and \texttt{xml2} were used for
-parsing the XML documents, \texttt{AustralianPoliticians} and
+using R software\textsuperscript{24}. The core packages used to develop
+these scripts are: the \texttt{XML} package\textsuperscript{17}, the
+\texttt{xml2} package\textsuperscript{18}, the \texttt{tidyverse} R
+packages\textsuperscript{25}, the \texttt{AustralianPoliticians}
+package\textsuperscript{11}, and the \texttt{ausPH}
+package\textsuperscript{10}. \texttt{XML} and \texttt{xml2} were used
+for parsing the XML documents, \texttt{AustralianPoliticians} and
 \texttt{ausPH} were used for cleaning up and filling in MP details in
 the datasets, and \texttt{tidyverse} packages were used in all steps,
 for tidy wrangling of data.
@@ -1406,7 +1443,9 @@ for tidy wrangling of data.
 \section{Acknowledgements}\label{acknowledgements}}
 
 We thank Kristine Villaluna, Monica Alexander, and Jack Stephenson for
-helpful comments.
+helpful comments. We wish to especially thank Guy Jones, Chief Editor,
+the two anonymous reviewers, and the Editorial Board Member, Michael
+Jankowski for their comments.
 
 \hypertarget{author-contributions}{%
 \section{Author Contributions}\label{author-contributions}}
@@ -1427,120 +1466,162 @@ The authors declare no competing interests.
 
 \hypertarget{refs}{}
 \begin{CSLReferences}{0}{0}
-\leavevmode\vadjust pre{\hypertarget{ref-vice2017history}{}}%
+\leavevmode\vadjust pre{\hypertarget{ref-citehansard}{}}%
 \CSLLeftMargin{1. }%
+\CSLRightInline{Commonwealth of Australia.
+\href{https://www.aph.gov.au/Parliamentary_Business/Hansard}{Parliamentary
+debates, house of representatives}. (2023).}
+
+\leavevmode\vadjust pre{\hypertarget{ref-vice2017history}{}}%
+\CSLLeftMargin{2. }%
 \CSLRightInline{Vice, J. \& Farrell, S. \emph{The history of hansard}.
 (House of Lords Library; House of Lords Hansard, 2017).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-lipad}{}}%
-\CSLLeftMargin{2. }%
+\CSLLeftMargin{3. }%
 \CSLRightInline{Beelen, K. \emph{et al.} Digitization of the canadian
 parliamentary debates. \emph{Canadian Journal of Political Science/Revue
 canadienne de science politique} \textbf{50}, 849--864 (2017).}
 
+\leavevmode\vadjust pre{\hypertarget{ref-Erjavec2022}{}}%
+\CSLLeftMargin{4. }%
+\CSLRightInline{Erjavec, T. \emph{et al.}
+\href{https://doi.org/10.1007/s10579-021-09574-0}{The {ParlaMint}
+corpora of parliamentary proceedings}. \emph{Language Resources and
+Evaluation} \textbf{57}, 415--448 (2022).}
+
+\leavevmode\vadjust pre{\hypertarget{ref-Rauh}{}}%
+\CSLLeftMargin{5. }%
+\CSLRightInline{Rauh, C. \& Schwalbach, J. The ParlSpeech V2 data set:
+Full-text corpora of 6.3 million parliamentary speeches in the key
+legislative chambers of nine representative democracies. (2020)
+doi:\href{https://doi.org/10.7910/DVN/L4OAKN}{10.7910/DVN/L4OAKN}.}
+
+\leavevmode\vadjust pre{\hypertarget{ref-parlee}{}}%
+\CSLLeftMargin{6. }%
+\CSLRightInline{Sylvester, C., Ershova, A., Khokhlova, A., Yordanova, N.
+\& Greene, Z. {ParlEE plenary speeches V2 data set: Annotated full-text
+of 15.1 million sentence-level plenary speeches of six EU legislative
+chambers}. \emph{Harvard Dataverse} (2023)
+doi:\href{https://doi.org/10.7910/DVN/VOPK0E}{10.7910/DVN/VOPK0E}.}
+
+\leavevmode\vadjust pre{\hypertarget{ref-maple}{}}%
+\CSLLeftMargin{7. }%
+\CSLRightInline{Kartalis, Y. \& Costa Lobo, M. MAPLE parliamentary
+datasets: Full-text and annotated corpora of parliamentary speeches in
+the legislatures of six european democracies. (2021)
+doi:\href{https://doi.org/10.7910/DVN/9MN0RL}{10.7910/DVN/9MN0RL}.}
+
 \leavevmode\vadjust pre{\hypertarget{ref-australia2018house}{}}%
-\CSLLeftMargin{3. }%
+\CSLLeftMargin{8. }%
 \CSLRightInline{House of Representatives. \emph{{House of
 Representatives Practice}} ({Australian Government - Department of the
 House of Representatives}, 2018).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-sherratt}{}}%
-\CSLLeftMargin{4. }%
+\CSLLeftMargin{9. }%
 \CSLRightInline{Sherratt, T.
 \href{http://timsherratt.org/digital-heritage-handbook/docs/historic-hansard/\#}{Documentation:
 Historic hansard}. \emph{Historic Hansard} (2016).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-Leslie_2021_HoR_Aus}{}}%
-\CSLLeftMargin{5. }%
+\CSLLeftMargin{10. }%
 \CSLRightInline{Leslie, P.
-\emph{\href{https://github.com/palesl/AustralianHouseOfRepresentatives}{Members
-of the australian house of representatives (1945-2019)}}. (2021).}
+\href{https://github.com/palesl/AustralianHouseOfRepresentatives}{Members
+of the australian house of representatives (1945-2019)}. (2021).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-auspol}{}}%
-\CSLLeftMargin{6. }%
+\CSLLeftMargin{11. }%
 \CSLRightInline{Alexander, R. \& Hodgetts, P. A.
 \emph{\href{https://CRAN.R-project.org/package=AustralianPoliticians}{AustralianPoliticians:
 Provides datasets about australian politicians}}. (2021).}
 
+\leavevmode\vadjust pre{\hypertarget{ref-Dowding2021}{}}%
+\CSLLeftMargin{12. }%
+\CSLRightInline{Dowding, K., Leslie, P. \& Taflaga, M. Australia. in
+\emph{The politics of legislative debates} 130--151 (Oxford University
+Press, 2021).
+doi:\href{https://doi.org/10.1093/oso/9780198849063.003.0008}{10.1093/oso/9780198849063.003.0008}.}
+
 \leavevmode\vadjust pre{\hypertarget{ref-salisbury2011}{}}%
-\CSLLeftMargin{7. }%
+\CSLLeftMargin{13. }%
 \CSLRightInline{Salisbury, C. 'Mr speaker, i withdraw...': Standards of
 (mis) behaviour in the queensland, western australian and commonwealth
 parliaments compared via online hansard. \emph{Australasian
 Parliamentary Review} \textbf{26}, 166--177 (2011).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-rasiah2010framework}{}}%
-\CSLLeftMargin{8. }%
+\CSLLeftMargin{14. }%
 \CSLRightInline{Rasiah, P. A framework for the systematic analysis of
 evasion in parliamentary discourse. \emph{Journal of Pragmatics}
 \textbf{42}, 664--680 (2010).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-fraussen2018}{}}%
-\CSLLeftMargin{9. }%
+\CSLLeftMargin{15. }%
 \CSLRightInline{Fraussen, B., Graham, T. \& Halpin, D. R. Assessing the
 prominence of interest groups in parliament: A supervised machine
 learning approach. \emph{The Journal of Legislative Studies}
 \textbf{24}, 450--474 (2018).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-alexander2021}{}}%
-\CSLLeftMargin{10. }%
+\CSLLeftMargin{16. }%
 \CSLRightInline{Alexander, R. \& Alexander, M. The increased effect of
 elections and changing prime ministers on topics discussed in the
 australian federal parliament between 1901 and 2018. \emph{arXiv
 preprint arXiv:2111.09299} (2021).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-XML_pkg}{}}%
-\CSLLeftMargin{11. }%
+\CSLLeftMargin{17. }%
 \CSLRightInline{Temple Lang, D.
 \emph{\href{https://CRAN.R-project.org/package=XML}{XML: Tools for
 parsing and generating XML within r and s-plus}}. (2022).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-xml2_pkg}{}}%
-\CSLLeftMargin{12. }%
+\CSLLeftMargin{18. }%
 \CSLRightInline{Wickham, H., Hester, J. \& Ooms, J.
 \emph{\href{https://CRAN.R-project.org/package=xml2}{xml2: Parse XML}}.
 (2021).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-Wickham2014}{}}%
-\CSLLeftMargin{13. }%
+\CSLLeftMargin{19. }%
 \CSLRightInline{Wickham, H.
 \href{https://doi.org/10.18637/jss.v059.i10}{Tidy data}. \emph{Journal
 of Statistical Software} \textbf{59}, (2014).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-house2021}{}}%
-\CSLLeftMargin{14. }%
+\CSLLeftMargin{20. }%
 \CSLRightInline{House of Representatives. \emph{{A window on the house:
 Practices and procedures relating to question time}}. ({Parliament of
 Australia}, 2021).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-katz_2023}{}}%
-\CSLLeftMargin{15. }%
+\CSLLeftMargin{21. }%
 \CSLRightInline{Katz, L. \& Alexander, R. {A new, comprehensive database
 of all proceedings of the Australian Parliamentary Debates (1998-2022)}.
 (2023)
 doi:\href{https://doi.org/10.5281/zenodo.7799678}{10.5281/zenodo.7799678}.}
 
 \leavevmode\vadjust pre{\hypertarget{ref-infosheet_parties}{}}%
-\CSLLeftMargin{16. }%
+\CSLLeftMargin{22. }%
 \CSLRightInline{Parliament of Australia.
 \href{https://www.aph.gov.au/About_Parliament/House_of_Representatives/Powers_practice_and_procedure/00_-_Infosheets/Infosheet_22_-_Political_parties}{Infosheet
 22 - political parties}. \emph{House of Representatives Infosheets}
 (2022).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-auselect}{}}%
-\CSLLeftMargin{17. }%
+\CSLLeftMargin{23. }%
 \CSLRightInline{Alexander, R.
 \emph{\href{https://github.com/RohanAlexander/AustralianElections}{AustralianElections:
 Datasets on australian elections}}. (2019).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-r_software}{}}%
-\CSLLeftMargin{18. }%
+\CSLLeftMargin{24. }%
 \CSLRightInline{R Core Team. \emph{\href{https://www.R-project.org/}{R:
 A language and environment for statistical computing}}. (R Foundation
 for Statistical Computing, 2022).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-tidyverse}{}}%
-\CSLLeftMargin{19. }%
+\CSLLeftMargin{25. }%
 \CSLRightInline{Wickham, H. \emph{et al.}
 \href{https://doi.org/10.21105/joss.01686}{Welcome to the {tidyverse}}.
 \emph{Journal of Open Source Software} \textbf{4}, 1686 (2019).}
