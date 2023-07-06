@@ -9,18 +9,18 @@ To produce the most recently published version of our dataset, we used the follo
 -   With `00-scrape_files.R`, we first download and store all Hansard XML files using the `HeapsOfPapers` package, with the CSV files from the urls folder.
 
 -   In the `01-session_info.R` script, we parse and clean the session info from each Hansard XML file. The resulting dataframe is used later on in our data validation script.
-  
+
 -   Using data from the `AustralianPoliticians` and `ausPH` R packages, in `02-auspol_lookup.R`, create and export various lookup tables which will later be used in the fill details script. These tables contain data on Members of Parliament such as their electorate, party, and unique identification code which corresponds to that in the Australian Parliamentary Handbook.
 
 -   Parse, clean and export each XML file to CSV format using:
 
-    -   `03-everything-1998_to_1999-FINAL.R` for proceedings from 02 March 1998 to 09 December 1999 (inclusive)
+    -   `03-parse-1998_to_1999.R` for proceedings from 02 March 1998 to 09 December 1999 (inclusive)
 
-    -   `04-everything-2000_to_2011-FINAL.R` for proceedings from 15 February 2000 to 24 March 2011 (inclusive)
+    -   `04-parse-2000_to_2011.R` for proceedings from 15 February 2000 to 24 March 2011 (inclusive)
 
-    -   `05-everything-2011_to_2012-FINAL.R` for proceedings from 10 May 2011 to 28 June 2012 (inclusive)
+    -   `05-parse-2011_to_2012.R` for proceedings from 10 May 2011 to 28 June 2012 (inclusive)
 
-    -   `06-everything-2012_to_2022-FINAL.R` for proceedings from 14 August 2012 to 08 September 2022 (inclusive)
+    -   `06-parse-2012_to_2022.R` for proceedings from 14 August 2012 to 08 September 2022 (inclusive)
 
 -   Fill in member details for each CSV produced in step 1 using the `07-fill_details.R` script. We then exported the filled in datasets as new CSV files.
 
@@ -33,6 +33,8 @@ To produce the most recently published version of our dataset, we used the follo
 -   Generate a single corpus with all sitting day's data in both CSV and Parquet forms with `11-ceate_one_corpus.R`.
 
 -   Extract and clean all debate topics from each Hansard XML, and export them as a single CSV file and a single Parquet file using `12-get_debate_topics.R`.
+
+-   In `13-divisions_data.R`, we extract and clean all divisions data from the Hansard XMLs in our timeframe, and export them as an RDA file as well as a Parquet file.
 
 ## Example Code
 
@@ -113,4 +115,4 @@ topics |> filter(date=="2000-06-05") |>
 
 ## Accessing original data
 
-As at July 2023, the Hansard website navigated to obtain the datasets that we need. Begin by going to: https://www.aph.gov.au/Parliamentary_Business/Hansard. Then "House Hansard" from the menu on the right. Click "back to 1901." Each day's content is grouped within decades, which can be navigated on the menu on the left.
+As at July 2023, the Hansard website navigated to obtain the datasets that we need. Begin by going to: <https://www.aph.gov.au/Parliamentary_Business/Hansard>. Then "House Hansard" from the menu on the right. Click "back to 1901." Each day's content is grouped within decades, which can be navigated on the menu on the left.
