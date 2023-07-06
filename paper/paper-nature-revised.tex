@@ -204,7 +204,7 @@ such as election results. The creation and accessibility of this
 database enables the exploration of new questions and serves as a
 valuable resource for both researchers and policymakers.
 \end{abstract}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, sharp corners, interior hidden, borderline west={3pt}{0pt}{shadecolor}, frame hidden, enhanced, breakable]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, boxrule=0pt, enhanced, interior hidden, breakable, sharp corners, frame hidden]}{\end{tcolorbox}}\fi
 
 \hypertarget{sec-intro}{%
 \section{Background \& Summary}\label{sec-intro}}
@@ -704,7 +704,7 @@ honourable member's question'', in which case we re-code that statement
 as an answer. \textbf{It is important to note, however, that because we
 identified and corrected for these transcription errors manually as we
 discovered them, additional flagging errors may exist which we did not
-catch. As such, users may identify and should be weary of occasional
+catch. As such, users may identify and should be wary of occasional
 incorrectly flagged questions or answers in the data.}
 
 The next step was to merge Question Time contents with all the debate
@@ -951,9 +951,9 @@ are not spoken aloud, stage directions do not represent speech
 components in the same way that all other components such as
 interjections and continuations do. However, they provide valuable
 information about the inner-workings and structure of parliamentary
-events. If the focus on the user's research does not require stage
-directions, then this can be removed by filtering observations in name
-equal to ``business start'', or ``stage direction''.}
+events. If the focus of the user's research does not require stage
+directions, then this can be removed by filtering observations in
+\texttt{name} equal to ``business start'', or ``stage direction''.}
 
 \hypertarget{filling-missing-details}{%
 \subsection{Filling Missing Details}\label{filling-missing-details}}
