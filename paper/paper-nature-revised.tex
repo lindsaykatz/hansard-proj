@@ -204,7 +204,7 @@ such as election results. The creation and accessibility of this
 database enables the exploration of new questions and serves as a
 valuable resource for both researchers and policymakers.
 \end{abstract}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, boxrule=0pt, enhanced, interior hidden, breakable, sharp corners, frame hidden]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[breakable, boxrule=0pt, interior hidden, frame hidden, enhanced, sharp corners, borderline west={3pt}{0pt}{shadecolor}]}{\end{tcolorbox}}\fi
 
 \hypertarget{sec-intro}{%
 \section{Background \& Summary}\label{sec-intro}}
@@ -561,7 +561,7 @@ avoid causing issues in our first script which successfully parses about
 10 years of Hansard, we created a second script where we replaced all
 occurrences of \texttt{\textless{}fedchamb.xscript\textgreater{}} with
 \texttt{\textless{}maincomm.xscript\textgreater{}}. After making this
-modification and accounting for other small changes such as time stamp
+modification and accounting for other small changes such as timestamp
 formatting, this second script successfully parses all Hansard sitting
 days from 10 May 2011 to 28 June 2012 (inclusive).
 
@@ -1005,11 +1005,11 @@ in some cases there were multiple page number child nodes for the same
 debate or sub-debate title, likely due to manual transcription error.
 Upon manual inspection, we found that most often, the second page number
 node contained the same page number as the first node, and sometimes the
-second node contained a repeated debate title or a time stamp.
-Therefore, we took the first available page number child-node for each
-debate or sub-debate node to be the one we included in our dataset.
-After summarizing, these topics can be added to the main text by
-joining, and example code is provided in the README.}
+second node contained a repeated debate title or a timestamp. Therefore,
+we took the first available page number child-node for each debate or
+sub-debate node to be the one we included in our dataset. After
+summarizing, these topics can be added to the main text by joining, and
+example code is provided in the README.}
 
 \hypertarget{divisions}{%
 \subsection{Divisions}\label{divisions}}
@@ -1047,7 +1047,7 @@ time frame. To produce this data file, for each Hansard XML we parsed
 the \texttt{\textless{}division.header\textgreater{}},
 \texttt{\textless{}division.data\textgreater{}}, and
 \texttt{\textless{}division.result\textgreater{}} child-nodes where they
-existed, extracted any time stamps where available, and did any
+existed, extracted any timestamps where available, and did any
 additional data cleaning as necessary. We used a series of if-else
 statements in this script to account for variation in the structure of
 the \texttt{\textless{}division\textgreater{}} node over time. Finally,
@@ -1205,7 +1205,7 @@ Variable & Description\\
 \midrule
 date & Sitting day\\
 div\_num & Index for each division parsed for that sitting day\\
-time.stamp & Time stamp associated with each division\\
+time.stamp & Timestamp associated with each division\\
 num.votes\_AYES & Number of votes in the affirmative\\
 num.votes\_NOES & Number of votes in the negative\\
 \addlinespace
@@ -1253,9 +1253,9 @@ have missed the separation of the next statement onto its own row, and
 could fix this accordingly.
 
 \textbf{The fourth test is designed to detect issues in timestamp
-formatting in the data, by detecting all time stamps in our database
+formatting in the data, by detecting all timestamps in our database
 which do not match the correct ``HH:MM:SS'' format. We found a total of
-88 incorrectly formatted time stamps, with common issues such as the
+88 incorrectly formatted timestamps, with common issues such as the
 ``HH'' or ``MM'' component recorded as ``NaN'' (e.g.~``NaN:28:00'' or
 ``09:NaN:00''), as well as timestamps with a third digit in the minute
 component (e.g.~``09:497:00'' or ``13:445:00''). We took a random sample
