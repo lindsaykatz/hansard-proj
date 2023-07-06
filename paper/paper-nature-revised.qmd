@@ -72,7 +72,7 @@ The outer-most node, also known as the parent node, is denoted `<hansard>` and s
 
 @fig-xml1 provides an example of the beginning of an XML file for Hansard, which illustrates the structure outlined in the nested list above. As stated, the XML structure begins with a parent element `<hansard>` (highlighted in blue), followed by a child element `<session.header>` (highlighted in yellow) with sub-child elements such as the date and parliament number, which are all highlighted in pink. Next, there is the child element containing everything that takes place in the Chamber, `<chamber.xscript>`, which is also highlighted in yellow in @fig-xml1. As previously mentioned, the first sub-node of `<chamber.xscript>` is `<business.start>`. The structure of this can be seen between the nodes highlighted in green in @fig-xml1, where the content we parse from the business start is highlighted in orange.
 
-![Snapshot of the beginning of the XML file for Hansard on 25 February 2020](images/xml1.png){#fig-xml1}
+![Snapshot of the beginning of the XML file for Hansard on 25 February 2020](xml1.png){#fig-xml1}
 
 Evidently, the nature of XML formatting means that different pieces of information are categorized under a series of uniquely named and nested nodes. As a result, to parse each piece of information, one must specify the unique hierarchy of the nodes in which it is structured. This is known as an XPath expression, and tells the parser how to navigate the XML document to obtain the desired information. For example, the session header date in @fig-xml1 can be accessed using the XPath expression "`hansard/session.header/date`". When specifying an XPath expression, one can use an "or" operator to obtain elements from multiple node paths at once, in the order that they appear in the document. We did so throughout our script as we parsed uniquely nested speech content. This allows the correct ordering of elements to be maintained. We began our first script by parsing all the business start, speech text, and Question Time contents contained in the XML document, using these unique XPath expressions to do so.
 
@@ -96,7 +96,7 @@ Since the earlier Hansard XMLs do not have a `<talk.text>` node, we found that t
 
 > `09:31:0010261Costello, Peter, MPMr COSTELLOCT4HigginsLPTreasurer10`
 
-![Portion of XML file for Hansard on 12 December 2002](images/patternEX.png){#fig-patternEX width="315"}
+![Portion of XML file for Hansard on 12 December 2002](patternEX.png){#fig-patternEX width="315"}
 
 This was not isolated to just the beginning of speeches --- details on individuals interjecting or commenting during speeches were also captured this way. To separate statements correctly, we collected all of these patterns using the `<talk.start>` node, and used them to split statements wherever one of these patterns was found. After separating the statements, we were able to remove these patterns from the body of text. We also used this method of extracting and later removing unwanted patterns for other pieces of data which did not belong to the debate proceedings, such as sub-debate titles.
 
@@ -149,7 +149,7 @@ The next step was to extract all the names and titles preceding these interjecti
 
 As mentioned in @sec-diff, more recent years of Hansard XMLs contain a series of child nodes which exist to capture the structure of interruptions in that speech. @fig-xml3 provides an example of this, where the speech was interrupted by a comment from the Deputy Speaker, and then the MP continued their speech. Looking at the element names highlighted in blue, these child nodes do not contain the actual text for the interjection or continuation --- this text is embedded within the speech above it. However, as shown by the content highlighted in pink in @fig-xml3, we were able to extract useful details on the individual interjecting which we could use later. Making use of this structure, we extracted names and information of all individuals that were categorized within the XML as interjections. We stored this as a dataframe called `"interject"`. We decided not to include this data in our final database, as it is embedded in our resulting datasets which have a flag for interjections.
 
-![Snapshot of XML structure with interjection and continuation from 03 February 2021 Hansard](images/xml3.png){#fig-xml3 width="345"}
+![Snapshot of XML structure with interjection and continuation from 03 February 2021 Hansard](xml3.png){#fig-xml3 width="345"}
 
 We then created lists using both the `interject` and `main` dataframes to capture all the names of individuals who spoke that day. We added the names of all MPs in a number of unique formats, due to the frequent variation in how names are transcribed in Hansard. When an MP interjects or continues a speech, the usual form of their name is a title followed by their first name or first initial and/or last name. There is also variation in the capitalization of these names.[^1] Another source of variation is in individuals with more than one first name, as sometimes only their initial first name is written, while other times their entire first name is written. Additionally, some surnames have punctuation, and some surnames have specific capitalization such as "McCormack", where even in full capitalization, the first "c" remains lower case. This variation demands careful consideration when writing regular expression patterns. In these lists we also accounted for any general interjection statements that were not attributed to an individual, such as "An opposition member interjecting-".
 
@@ -161,11 +161,11 @@ Once all interjections, comments and continuations were successfully split onto 
 
 We then added an order variable to the dataset based on row number, to keep track of the order in which everything was said. The next step was to fill the name, name ID, electorate and party variables with the correct data for each row. We also wanted to add the gender and unique identifier for each individual as found in the `AustralianPoliticians` package. To do so, we created a lookup table, which contained the unique incomplete form in which the name was transcribed, and the corresponding full name, name ID, electorate, party, gender, and unique ID for that individual. @fig-lookup provides an example of this. We used the main dataset from the `AustralianPoliticians` package in the creation of each lookup table [@auspol].
 
-![First 10 rows of the lookup table from 19 October 2017 Hansard processing](images/lookup_ex.png){#fig-lookup width="448"}
+![First 10 rows of the lookup table from 19 October 2017 Hansard processing](lookup_ex.png){#fig-lookup width="448"}
 
 Next, we merged our main dataframe with the lookup table to replace any incomplete names with their full names, and to fill in any gaps with available name ID, electorate, party, gender, and unique ID information. Finally, we were able to add a flag for interjections. Grouping our data by the speech number, we defined an interjection as a statement made by anyone who is not the Speaker, the Deputy Speaker, or the MP whose turn it was to speak. @fig-interject provides an example of a Federation Chamber proceeding with interjections. Statements made by the MP whose turn it was to speak, or by the Deputy Speaker Maria Vamvakinou, are not flagged as interjections.
 
-![Example of speech with interjections from 21 November 2016 Hansard](images/interject_ex.png){#fig-interject}
+![Example of speech with interjections from 21 November 2016 Hansard](interject_ex.png){#fig-interject}
 
 Having developed a successful methodology for splitting interjections, we used this to inform our general approach in the third and fourth scripts. However, the difference in data cleaning used in these scripts necessitated some departure from the original methodology. As discussed in @sec-diff, we used string patterns extracted from `<talk.start>` nodes to separate speeches. As evident in @fig-xml3, `<talk.start>` nodes are nested within `<interjection>` nodes, meaning that the patterns of data from interjection statements were separated out in the process. In other words, our approach to data cleaning in the third and fourth scripts separated out interjections in the process. This meant that we did not need to create lists of names and titles for which to search in the text as we did before. However, we used the same list of general interjection statements on which to separate as was used in the first two scripts. We then did an additional check for statements that may have not been separated due to how they were embedded in the XML, and separated those out where needed.[^2]
 
@@ -173,7 +173,7 @@ Having developed a successful methodology for splitting interjections, we used t
 
 We then proceeded to clean up speeches and fill in correct details on the MP speaking. While we used the same lookup table approach as before, we did so in combination with another means of filling in these details. The patterns parsed from `<talk.start>` nodes contain important data on the MP making each statement. As such, we could extract those data associated with each pattern by parsing one element inward, using the XPath expression `"talk.start/talker"`. We created a pattern lookup table with these data, and merged it with the main Hansard dataframe by the first pattern detected in each statement. @fig-patterns provides an example of that lookup table. This approach enabled us to fill in missing data on each MP speaking using data extracted directly from the XML. Finally, we then used the `AustralianPoliticians` dataset to fill in other missing data, and flagged for interjections in the same manner as before.
 
-![10 rows of the pattern lookup table from 12 December 2012 Hansard processing](images/pattern_lookup.png){#fig-patterns}
+![10 rows of the pattern lookup table from 12 December 2012 Hansard processing](pattern_lookup.png){#fig-patterns}
 
 ## Stage Directions {#sec-stage}
 
@@ -350,11 +350,11 @@ Finally, our eighth test validates that all individuals speaking are MPs on that
 
 **To further explore the quality of our data and detect any unexpected or distinct trends, we generated a number of summary statistics using the complete Hansard corpus. First, we looked at the number of speeches made each day, disaggregated by Chamber and Federation Chamber debate venues. As shown in @fig-dailyspeeches, there are consistently more speeches made in the Chamber proceedings than in the Federation Chamber, which aligns with the wider scope of business covered in the Chamber. Further, in both debate venues, the number of speeches each day appears to have increased slightly over time.**
 
-![Number of speeches made on each sitting day in the House of Representatives](images/n_daily_speeches.png){#fig-dailyspeeches width="440"}
+![Number of speeches made on each sitting day in the House of Representatives](n_daily_speeches.png){#fig-dailyspeeches width="440"}
 
 **Next, we explored the number of unique names detected on each sitting day disaggregated by debate venue, visualized in @fig-names. As expected, there are generally more individual MPs detected to be present in the Chamber proceedings in our data than in the Federation Chamber proceedings. Further, in both venues, the number of individuals detected per sitting day appears to have increased since around 2008-2009, with a maximum of 116 and 87 unique names detected for the Chamber and Federation Chamber, respectively. Across the time frame of our data, there was a daily average of 84 unique names detected in the Chamber, and 34 in the Federation Chamber. These observations are in accordance with the official number of Members belonging to the House of Representatives, which was 148 in 1998, 150 in 2001, and then increased to 151 in the 2019 general election [@australia2018house].**
 
-![Daily number of unique names detected in our Hansard data](images/n_unique_names.png){#fig-names width="440"}
+![Daily number of unique names detected in our Hansard data](n_unique_names.png){#fig-names width="440"}
 
 **We then computed the total number of speeches made in our database by political party, summarized in @tbl-speeches_by_party. We found that the Australian Labor Party made the most speeches overall, followed by the Liberal Party of Australia, and the National Party of Australia. These rankings are unsurprising, as those parties are the three main political parties in the Australian House of Representatives [@infosheet_parties].**
 
