@@ -9,6 +9,7 @@
   numbers=noendperiod]{scrartcl}
 
 \usepackage{amsmath,amssymb}
+\usepackage{lmodern}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
@@ -18,10 +19,6 @@
   \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
-\fi
-\usepackage{lmodern}
-\ifPDFTeX\else  
-    % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -160,12 +157,10 @@
 \@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
 \makeatother
 \makeatletter
-\@ifpackageloaded{tcolorbox}{}{\usepackage[skins,breakable]{tcolorbox}}
+\@ifpackageloaded{tcolorbox}{}{\usepackage[many]{tcolorbox}}
 \makeatother
 \makeatletter
 \@ifundefined{shadecolor}{\definecolor{shadecolor}{rgb}{.97, .97, .97}}
-\makeatother
-\makeatletter
 \makeatother
 \makeatletter
 \makeatother
@@ -209,7 +204,7 @@ such as election results. The creation and accessibility of this
 database enables the exploration of new questions and serves as a
 valuable resource for both researchers and policymakers.
 \end{abstract}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, sharp corners, enhanced, interior hidden, frame hidden, borderline west={3pt}{0pt}{shadecolor}, breakable]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[boxrule=0pt, sharp corners, interior hidden, borderline west={3pt}{0pt}{shadecolor}, frame hidden, enhanced, breakable]}{\end{tcolorbox}}\fi
 
 \hypertarget{sec-intro}{%
 \section{Background \& Summary}\label{sec-intro}}
@@ -227,11 +222,12 @@ In the case of Canada, the Hansard has been digitized for 1901 to
 researchers to conduct text analysis and statistical modelling.
 Following the lead of that project, in this paper we introduce a similar
 database for Australia. This is composed of individual datasets for each
-sitting day in the House of Representatives from 1998 to 2022,
-containing details on everything said in parliament in a form that can
-be readily used by researchers. With the development of tools for
-large-scale text analysis, this database will serve as a resource for
-understanding political behaviour in Australia over time.
+sitting day in the House of Representatives from 1998 to
+\textbf{September} 2022, containing details on everything said in
+parliament in a form that can be readily used by researchers. With the
+development of tools for large-scale text analysis, this database will
+serve as a resource for understanding political behaviour in Australia
+over time.
 
 \textbf{There are a wide variety of potential applications of this
 database. For instance, within Australia there is considerable concern
@@ -249,9 +245,9 @@ instance, we may be interested in how the policy focus of a parliament
 changes given various global events such as pandemics or wars. An
 international linkage provides a comparison case where domestic issues
 are different while international ones are common. As an example of
-enabling this linkage this we have included partyfacts IDs in our
-database. This should make it possible to link our database with other
-large parliamentary speech collection projects, such as
+enabling this linkage we have included PartyFacts IDs in our database.
+This should make it possible to link our database with other large
+parliamentary speech collection projects, such as
 ParlaMint\textsuperscript{4}, ParlSpeech\textsuperscript{5},
 ParlEE\textsuperscript{6}, and MAPLE\textsuperscript{7}.}
 
@@ -304,8 +300,8 @@ of Australian federal politicians who were active between 1901 and
 2021\textsuperscript{11}. \textbf{And finally, there has been
 examination of speech and MP level data between 1990 and 2019 in
 Australia\textsuperscript{12}. Like us they scrape the Hansard record
-and link it with biographical data. They key difference is that our
-focus is on the database itself, while are focused on using a database
+and link it with biographical data. The key difference is that our focus
+is on the database itself, while they are focused on using a database
 constructed from the same source to answer a particular question about
 speaker time. This different focus leads to different emphasis and
 approaches.}
@@ -316,7 +312,7 @@ investigate occurrences of unparliamentary comments by MPs, where the
 Speaker tells that MP to withdraw their remark\textsuperscript{13}.
 Question Time data from Hansard transcripts during February and March of
 2003 has been used to investigate resistance of politicians in answering
-questions about Iraq\textsuperscript{14}. Hansard has been used to
+questions about Iraq\textsuperscript{14}. Hansard has also been used to
 quantify political prominence by investigating strategic mentions of
 interest groups by elected officials\textsuperscript{15}. Finally, a
 dataset of the Australian Hansard has been constructed and then used to
@@ -735,9 +731,6 @@ interrupted by the Speaker who states that the time for members'
 statements has concluded.
 
 \begin{quote}
-\end{quote}
-
-\begin{quote}
 ``Mr VAN MANEN (Forde---Chief Government Whip) (13:59): It's a great
 pleasure to share with the House that Windaroo Valley State High School
 has qualified for the finals of the Australian Space Design Competition,
@@ -958,7 +951,9 @@ are not spoken aloud, stage directions do not represent speech
 components in the same way that all other components such as
 interjections and continuations do. However, they provide valuable
 information about the inner-workings and structure of parliamentary
-events.}
+events. If the focus on the user's research does not require stage
+directions, then this can be removed by filtering observations in name
+equal to ``business start'', or ``stage direction''.}
 
 \hypertarget{filling-missing-details}{%
 \subsection{Filling Missing Details}\label{filling-missing-details}}
@@ -1012,7 +1007,9 @@ Upon manual inspection, we found that most often, the second page number
 node contained the same page number as the first node, and sometimes the
 second node contained a repeated debate title or a time stamp.
 Therefore, we took the first available page number child-node for each
-debate or sub-debate node to be the one we included in our dataset.}
+debate or sub-debate node to be the one we included in our dataset.
+After summarizing, these topics can be added to the main text by
+joining, and example code is provided in the README.}
 
 \hypertarget{divisions}{%
 \subsection{Divisions}\label{divisions}}
@@ -1053,27 +1050,27 @@ the \texttt{\textless{}division.header\textgreater{}},
 existed, extracted any time stamps where available, and did any
 additional data cleaning as necessary. We used a series of if-else
 statements in this script to account for variation in the structure of
-the \texttt{\textless{}divisions\textgreater{}} node over time. Finally,
+the \texttt{\textless{}division\textgreater{}} node over time. Finally,
 we then added a date variable to distinguish between sitting days.}
 
 \hypertarget{data-records}{%
 \section{Data Records}\label{data-records}}
 
-Our database is available in both CSV and parquet formats. Both CSV and
-parquet are open standards. We provide both because while CSVs are
-commonly used and can be manually inspected, parquet files are typically
-smaller and preserve class. Our database covers all sitting days of the
-House of Representatives from 02 March 1998 to 08 September 2022
-\textbf{where an XML transcript is available}, so there are
+Our database is available in both CSV and parquet formats. \textbf{Both
+CSV and parquet are open standards. We provide both because while CSVs
+are commonly used and can be manually inspected, parquet files are
+typically smaller and preserve class.} Our database covers all sitting
+days of the House of Representatives from 02 March 1998 to 08 September
+2022 \textbf{where an XML transcript is available}, so there are
 \textbf{1,532 individual sitting day} files for each format.
 \textbf{Additionally, there is a single corpus file in both CSV and
-Parquet forms containing the data from all sitting days, with a date
+parquet forms containing the data from all sitting days, with a date
 variable added to allow for distinction and filtering of individual
-sitting days. There is also a CSV and Parquet file containing all parsed
+sitting days. There is also a CSV and parquet file containing all parsed
 debate topics.} All data records are available on the general-purpose
 repository Zenodo, at
-https://doi.org/10.5281/zenodo.7799678\textsuperscript{21}. For each
-\textbf{Hansard data} file, \textbf{that is, the corpus and the
+\url{https://doi.org/10.5281/zenodo.7336075}\textsuperscript{21}. For
+each \textbf{Hansard data} file, \textbf{that is, the corpus and the
 individual sitting day files}, each row contains an individual
 statement, with details on the individual speaking. For general
 statements transcribed as made by ``Honourable members'' for example,
@@ -1150,7 +1147,7 @@ added to maintain the order of proceedings, after all individual
 statements were separated onto their own rows.}
 
 \textbf{As mentioned, in addition to the Hansard data described above,
-our database also contains a CSV and Parquet file with the parsed debate
+our database also contains a CSV and parquet file with the parsed debate
 topics. This file is called \texttt{all\_debate\_topics}, and contains a
 \texttt{date} variable specifying the sitting day, an
 \texttt{item\_index} variable to specify the order of proceedings
@@ -1190,7 +1187,7 @@ party\_name\_auspol & Party full name as recorded in the AustralianPoliticians R
 
 \textbf{Finally, our database contains a file with all parsed divisions
 data in our timeframe. This is called \texttt{division\_data}, and is
-available in RDA form and in Parquet form. The reason it is not
+available in RDA form and in parquet form. The reason it is not
 available in CSV form is because three of the variables
 (\texttt{names\_AYES}, \texttt{names\_NOES}, and \texttt{names\_PAIRS})
 are lists, which are not supported by the CSV rectangular data
@@ -1356,9 +1353,9 @@ Hansard data}
 database by political party, summarized in
 Table~\ref{tbl-speeches_by_party}. We found that the Australian Labor
 Party made the most speeches overall, followed by the Liberal Party of
-Australia, and the Nationalist Party. These rankings are unsurprising,
-as those parties are the three main political parties in the Australian
-House of Representatives\textsuperscript{22}.}
+Australia, and the National Party of Australia. These rankings are
+unsurprising, as those parties are the three main political parties in
+the Australian House of Representatives\textsuperscript{22}.}
 
 \hypertarget{tbl-speeches_by_party}{}
 \begin{table}[H]
@@ -1412,7 +1409,7 @@ to analyze format.
 
 \textbf{Finally, the README file on our GitHub repository and on Zenodo
 contains example code on how to read in a file from our database, for
-both CSV and Parquet formats. Should a user wish to use the single
+both CSV and parquet formats. Should a user wish to use the single
 Hansard corpus rather than individual sitting day files, we provide
 example code on how to read it in, filter for those sitting days of
 interest, and split them into distinct data frames. We have also added
@@ -1527,8 +1524,8 @@ Historic hansard}. \emph{Historic Hansard} (2016).}
 \leavevmode\vadjust pre{\hypertarget{ref-Leslie_2021_HoR_Aus}{}}%
 \CSLLeftMargin{10. }%
 \CSLRightInline{Leslie, P.
-\href{https://github.com/palesl/AustralianHouseOfRepresentatives}{Members
-of the australian house of representatives (1945-2019)}. (2021).}
+\emph{\href{https://github.com/palesl/AustralianHouseOfRepresentatives}{Members
+of the australian house of representatives (1945-2019)}}. (2021).}
 
 \leavevmode\vadjust pre{\hypertarget{ref-auspol}{}}%
 \CSLLeftMargin{11. }%
@@ -1599,7 +1596,7 @@ Australia}, 2021).}
 \CSLRightInline{Katz, L. \& Alexander, R. {A new, comprehensive database
 of all proceedings of the Australian Parliamentary Debates (1998-2022)}.
 (2023)
-doi:\href{https://doi.org/10.5281/zenodo.7799678}{10.5281/zenodo.7799678}.}
+doi:\href{https://doi.org/10.5281/zenodo.7336075}{10.5281/zenodo.7336075}.}
 
 \leavevmode\vadjust pre{\hypertarget{ref-infosheet_parties}{}}%
 \CSLLeftMargin{22. }%
