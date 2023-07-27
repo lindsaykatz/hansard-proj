@@ -38,7 +38,7 @@
 \makeatother
 \usepackage{xcolor}
 \setlength{\emergencystretch}{3em} % prevent overfull lines
-\setcounter{secnumdepth}{5}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
 % Make \paragraph and \subparagraph free-standing
 \ifx\paragraph\undefined\else
   \let\oldparagraph\paragraph
@@ -184,7 +184,7 @@
 \author{Lindsay Katz\footnote{University of Toronto,
   lindsay.katz@mail.utoronto.ca} \and Rohan Alexander\footnote{University
   of Toronto, rohan.alexander@utoronto.ca}}
-\date{July 6, 2023}
+\date{July 26, 2023}
 
 \begin{document}
 \maketitle
@@ -204,52 +204,51 @@ such as election results. The creation and accessibility of this
 database enables the exploration of new questions and serves as a
 valuable resource for both researchers and policymakers.
 \end{abstract}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[enhanced, interior hidden, borderline west={3pt}{0pt}{shadecolor}, boxrule=0pt, breakable, frame hidden, sharp corners]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, interior hidden, breakable, frame hidden, enhanced, sharp corners, boxrule=0pt]}{\end{tcolorbox}}\fi
 
 \hypertarget{sec-intro}{%
 \section{Background \& Summary}\label{sec-intro}}
 
-The official written record of parliamentary debates, \textbf{formally
-known as Hansard\textsuperscript{1},} plays a fundamental role in
-capturing the history of political proceedings and facilitating the
-exploration of valuable research questions. Originating in the British
-parliament, the production of Hansard became tradition in many other
-Commonwealth countries, such as Canada and Australia\textsuperscript{2}.
-Given the content and magnitude of these records, they have
-significance, particularly in the context of political science research.
-In the case of Canada, the Hansard has been digitized for 1901 to
+The official written record of parliamentary debates, formally known as
+Hansard\textsuperscript{1}, plays a fundamental role in capturing the
+history of political proceedings and facilitating the exploration of
+valuable research questions. Originating in the British parliament, the
+production of Hansard became tradition in many other Commonwealth
+countries, such as Canada and Australia\textsuperscript{2}. Given the
+content and magnitude of these records, they have significance,
+particularly in the context of political science research. In the case
+of Canada, the Hansard has been digitized for 1901 to
 2019\textsuperscript{3}. Having a digitized version of Hansard enables
 researchers to conduct text analysis and statistical modelling.
 Following the lead of that project, in this paper we introduce a similar
 database for Australia. This is composed of individual datasets for each
-sitting day in the House of Representatives from 1998 to
-\textbf{September} 2022, containing details on everything said in
-parliament in a form that can be readily used by researchers. With the
-development of tools for large-scale text analysis, this database will
-serve as a resource for understanding political behaviour in Australia
-over time.
+sitting day in the House of Representatives from 1998 to September 2022,
+containing details on everything said in parliament in a form that can
+be readily used by researchers. With the development of tools for
+large-scale text analysis, this database will serve as a resource for
+understanding political behaviour in Australia over time.
 
-\textbf{There are a wide variety of potential applications of this
-database. For instance, within Australia there is considerable concern
-that there has been a decline in the `quality' of public policy debate
-(however that might be defined). Our dataset could be used to look at
-whether it is really getting worse in particular ways, and if so, why.
-We might also be interested in whether particular sub-populations are
-appropriately represented in what is talked about in parliament. For
-instance, there is often concern that regional areas are overlooked
-compared with metropolitan areas. Again, our database could be used to
-examine whether this has changed over time. We have developed our
-database in such a way that it could be linked with similar databases
-from other countries which would enable comparative analysis. For
-instance, we may be interested in how the policy focus of a parliament
-changes given various global events such as pandemics or wars. An
-international linkage provides a comparison case where domestic issues
-are different while international ones are common. As an example of
-enabling this linkage we have included PartyFacts IDs in our database.
-This should make it possible to link our database with other large
-parliamentary speech collection projects, such as
-ParlaMint\textsuperscript{4}, ParlSpeech\textsuperscript{5},
-ParlEE\textsuperscript{6}, and MAPLE\textsuperscript{7}.}
+There are a wide variety of potential applications of this database. For
+instance, within Australia there is considerable concern that there has
+been a decline in the `quality' of public policy debate (however that
+might be defined). Our dataset could be used to look at whether it is
+really getting worse in particular ways, and if so, why. We might also
+be interested in whether particular sub-populations are appropriately
+represented in what is talked about in parliament. For instance, there
+is often concern that regional areas are overlooked compared with
+metropolitan areas. Again, our database could be used to examine whether
+this has changed over time. We have developed our database in such a way
+that it could be linked with similar databases from other countries
+which would enable comparative analysis. For instance, we may be
+interested in how the policy focus of a parliament changes given various
+global events such as pandemics or wars. An international linkage
+provides a comparison case where domestic issues are different while
+international ones are common. As an example of enabling this linkage we
+have included PartyFacts IDs in our database. This should make it
+possible to link our database with other large parliamentary speech
+collection projects, such as ParlaMint\textsuperscript{4},
+ParlSpeech\textsuperscript{5}, ParlEE\textsuperscript{6}, and
+MAPLE\textsuperscript{7}.
 
 The Australian House of Representatives `the House' performs a number of
 crucial governmental functions, such as creating new laws and overseeing
@@ -297,14 +296,14 @@ from 1945 to 2019 has been created\textsuperscript{10}. Further, there
 is the \texttt{AustralianPoliticians} \texttt{R} package, which contains
 several datasets related to the political and biographical information
 of Australian federal politicians who were active between 1901 and
-2021\textsuperscript{11}. \textbf{And finally, there has been
-examination of speech and MP level data between 1990 and 2019 in
+2021\textsuperscript{11}. And finally, there has been examination of
+speech and MP level data between 1990 and 2019 in
 Australia\textsuperscript{12}. Like us they scrape the Hansard record
 and link it with biographical data. The key difference is that our focus
 is on the database itself, while they are focused on using a database
 constructed from the same source to answer a particular question about
 speaker time. This different focus leads to different emphasis and
-approaches.}
+approaches.
 
 Many papers exist which use components of Australian Hansard to explore
 various research topics. For example, the Hansard has been used to
@@ -348,9 +347,9 @@ methodological intricacies of three core components of Hansard
 proceedings: Question Time, interjections, and stage directions.
 Further, we discuss the script we developed to fill in remaining missing
 details on the MP speaking, which each file in our database was passed
-to after being parsed and cleaned. \textbf{Finally, we review the
-supplementary Hansard debate topics dataset and supplementary divisions
-dataset we created to expand the versatility of our database.}
+to after being parsed and cleaned. Finally, we review the supplementary
+Hansard debate topics dataset and supplementary divisions dataset we
+created to expand the versatility of our database.
 
 \hypertarget{sec-overview}{%
 \subsection{Overview}\label{sec-overview}}
@@ -433,7 +432,7 @@ different sub-nodes depending on their nature, such as
 \texttt{\textless{}continuation\textgreater{}}. The final key component
 of Hansard is Question Time, in which questions and answers are
 classified as unique elements. More detail on the purpose and processing
-of Question Time will follow in Section~\ref{sec-qa}.
+of Question Time will \protect\hyperlink{sec-qa}{follow}.
 
 Figure~\ref{fig-xml1} provides an example of the beginning of an XML
 file for Hansard, which illustrates the structure outlined in the nested
@@ -454,7 +453,7 @@ start is highlighted in orange.
 
 \begin{figure}
 
-{\centering \includegraphics{xml1.png}
+{\centering \includegraphics{xml1.jpg}
 
 }
 
@@ -495,8 +494,8 @@ speech were all parsed together as a single string. As such, the name,
 name ID, electorate and party details were only provided for the person
 whose turn it was to speak. There were many intricacies in the task of
 splitting these speeches in a way that would be generalizable across
-sitting days. Details on these are provided in
-Section~\ref{sec-interject}.
+sitting days. Details on these are provided in the Interjections
+\protect\hyperlink{sec-interject}{section} to follow.
 
 Since we are looking at a wide time span of documents, there are many
 changes in the way they are formatted. These became apparent as we ran
@@ -529,11 +528,11 @@ we noticed in the resulting datasets such as excess whitespace or
 spacing issues, and splitting up any additional sections of the parsed
 text onto separate rows where necessary. Specifically, we added a
 section of our script to separate out general stage directions. More
-information on this separation will be provided in
-Section~\ref{sec-stage}. After completing our first script, it was
-formatted as a function which takes a single file name argument and
-produces one CSV file containing data on all proceedings from the given
-sitting day.
+information on this separation will be provided in the subsequent Stage
+Directions \protect\hyperlink{sec-stage}{section}. After completing our
+first script, it was formatted as a function which takes a single file
+name argument and produces one CSV file containing data on all
+proceedings from the given sitting day.
 
 \hypertarget{sec-diff}{%
 \subsection{Script Differences}\label{sec-diff}}
@@ -543,10 +542,10 @@ As mentioned, we developed a total of four scripts to parse the
 to create four scripts as opposed to just one, the first being
 structural variation in XML over time, and the second being improved
 computational efficiency with separate scripts. While all four scripts
-use the same general approach to parsing described in
-Section~\ref{sec-overview} and produce the same CSV structure, the first
-and second scripts use a different method of data processing than the
-third and fourth scripts.
+use the same general approach to parsing described in the Overview
+\protect\hyperlink{sec-overview}{section} and produce the same CSV
+structure, the first and second scripts use a different method of data
+processing than the third and fourth scripts.
 
 The need for a second script stems from the fact that when established
 in 1994, the Federation Chamber was originally named the Main Committee.
@@ -623,7 +622,7 @@ the speech content, like so:
 
 \begin{figure}
 
-{\centering \includegraphics[width=3.28125in,height=\textheight]{patternEX.png}
+{\centering \includegraphics[width=3.28125in,height=\textheight]{patternEX.jpg}
 
 }
 
@@ -695,17 +694,17 @@ we made use of the fact that the patterns preceding text transcribed
 under a question node were stored separately from those transcribed
 under an answer node. As a result, we could readily use those patterns
 to flag questions and answers correctly based on which list of patterns
-it belonged to. Sometimes, \textbf{we identified} questions
-\textbf{which} were incorrectly transcribed under an answer node and
-vice-versa, in which cases we manually corrected the question and answer
-flags. For instance, we check for any statements flagged as questions
-which include the phrase ``has provided the following answer to the
-honourable member's question'', in which case we re-code that statement
-as an answer. \textbf{It is important to note, however, that because we
-identified and corrected for these transcription errors manually as we
-discovered them, additional flagging errors may exist which we did not
-catch. As such, users may identify and should be wary of occasional
-incorrectly flagged questions or answers in the data.}
+it belonged to. Sometimes, we identified questions which were
+incorrectly transcribed under an answer node and vice-versa, in which
+cases we manually corrected the question and answer flags. For instance,
+we check for any statements flagged as questions which include the
+phrase ``has provided the following answer to the honourable member's
+question'', in which case we re-code that statement as an answer. It is
+important to note, however, that because we identified and corrected for
+these transcription errors manually as we discovered them, additional
+flagging errors may exist which we did not catch. As such, users may
+identify and should be wary of occasional incorrectly flagged questions
+or answers in the data.
 
 The next step was to merge Question Time contents with all the debate
 speech. Our method of parsing meant that everything was already in
@@ -761,30 +760,30 @@ extraction process with a few intermediate steps, due to the large
 number of name styles and interjection types that had to be accounted
 for, each requiring their own unique regular expression format.
 
-As mentioned in Section~\ref{sec-diff}, more recent years of Hansard
-XMLs contain a series of child nodes which exist to capture the
-structure of interruptions in that speech. Figure~\ref{fig-xml3}
-provides an example of this, where the speech was interrupted by a
-comment from the Deputy Speaker, and then the MP continued their speech.
-Looking at the element names highlighted in blue, these child nodes do
-not contain the actual text for the interjection or continuation ---
-this text is embedded within the speech above it. However, as shown by
-the content highlighted in pink in Figure~\ref{fig-xml3}, we were able
-to extract useful details on the individual interjecting which we could
-use later. Making use of this structure, we extracted names and
-information of all individuals that were categorized within the XML as
-interjections. We stored this as a dataframe called
-\texttt{"interject"}. We decided not to include this data in our final
-database, as it is embedded in our resulting datasets which have a flag
-for interjections.
+As mentioned in the Script Differences
+\protect\hyperlink{sec-diff}{section}, more recent years of Hansard XMLs
+contain a series of child nodes which exist to capture the structure of
+interruptions in that speech. Figure~\ref{fig-xml2} provides an example
+of this, where the speech was interrupted by a comment from the Deputy
+Speaker, and then the MP continued their speech. Looking at the element
+names highlighted in blue, these child nodes do not contain the actual
+text for the interjection or continuation --- this text is embedded
+within the speech above it. However, as shown by the content highlighted
+in pink in Figure~\ref{fig-xml2}, we were able to extract useful details
+on the individual interjecting which we could use later. Making use of
+this structure, we extracted names and information of all individuals
+that were categorized within the XML as interjections. We stored this as
+a dataframe called \texttt{"interject"}. We decided not to include this
+data in our final database, as it is embedded in our resulting datasets
+which have a flag for interjections.
 
 \begin{figure}
 
-{\centering \includegraphics[width=3.59375in,height=\textheight]{xml3.png}
+{\centering \includegraphics[width=3.59375in,height=\textheight]{xml2.jpg}
 
 }
 
-\caption{\label{fig-xml3}Snapshot of XML structure with interjection and
+\caption{\label{fig-xml2}Snapshot of XML structure with interjection and
 continuation from 03 February 2021 Hansard}
 
 \end{figure}
@@ -796,18 +795,18 @@ formats, due to the frequent variation in how names are transcribed in
 Hansard. When an MP interjects or continues a speech, the usual form of
 their name is a title followed by their first name or first initial
 and/or last name. There is also variation in the capitalization of these
-names.\footnote{Sometimes when someone's first name is included, only
-  their last name is capitalized, while sometimes their full name is
-  capitalized, or other times neither are capitalized.} Another source
-of variation is in individuals with more than one first name, as
-sometimes only their initial first name is written, while other times
-their entire first name is written. Additionally, some surnames have
-punctuation, and some surnames have specific capitalization such as
-``McCormack'', where even in full capitalization, the first ``c''
-remains lower case. This variation demands careful consideration when
-writing regular expression patterns. In these lists we also accounted
-for any general interjection statements that were not attributed to an
-individual, such as ``An opposition member interjecting-''.
+names. Sometimes when someone's first name is included, only their last
+name is capitalized, while sometimes their full name is capitalized, or
+other times neither are capitalized. Another source of variation is in
+individuals with more than one first name, as sometimes only their
+initial first name is written, while other times their entire first name
+is written. Additionally, some surnames have punctuation, and some
+surnames have specific capitalization such as ``McCormack'', where even
+in full capitalization, the first ``c'' remains lower case. This
+variation demands careful consideration when writing regular expression
+patterns. In these lists we also accounted for any general interjection
+statements that were not attributed to an individual, such as ``An
+opposition member interjecting-''.
 
 Having these lists enabled us to extract the names of MPs and their
 associated titles as they exist in the text, by searching for exact
@@ -840,7 +839,7 @@ of each lookup table\textsuperscript{11}.
 
 \begin{figure}
 
-{\centering \includegraphics[width=4.66667in,height=\textheight]{lookup_ex.png}
+{\centering \includegraphics[width=4.66667in,height=\textheight]{lookup_ex.jpg}
 
 }
 
@@ -862,7 +861,7 @@ Vamvakinou, are not flagged as interjections.
 
 \begin{figure}
 
-{\centering \includegraphics{interject_ex.png}
+{\centering \includegraphics{interject_ex.jpg}
 
 }
 
@@ -875,9 +874,10 @@ Having developed a successful methodology for splitting interjections,
 we used this to inform our general approach in the third and fourth
 scripts. However, the difference in data cleaning used in these scripts
 necessitated some departure from the original methodology. As discussed
-in Section~\ref{sec-diff}, we used string patterns extracted from
+in the Script Differences \protect\hyperlink{sec-diff}{section}, we used
+string patterns extracted from
 \texttt{\textless{}talk.start\textgreater{}} nodes to separate speeches.
-As evident in Figure~\ref{fig-xml3},
+As evident in Figure~\ref{fig-xml2},
 \texttt{\textless{}talk.start\textgreater{}} nodes are nested within
 \texttt{\textless{}interjection\textgreater{}} nodes, meaning that the
 patterns of data from interjection statements were separated out in the
@@ -888,10 +888,10 @@ search in the text as we did before. However, we used the same list of
 general interjection statements on which to separate as was used in the
 first two scripts. We then did an additional check for statements that
 may have not been separated due to how they were embedded in the XML,
-and separated those out where needed.\footnote{While most statements
-  were categorized in their own child node and hence captured through
-  pattern-based separation, some were not individually categorized, and
-  had to be split manually in this step.}
+and separated those out where needed. In particular, while most
+statements were categorized in their own child node and hence captured
+through pattern-based separation, some were not individually
+categorized, and had to be split manually in this step.
 
 We then proceeded to clean up speeches and fill in correct details on
 the MP speaking. While we used the same lookup table approach as before,
@@ -910,7 +910,7 @@ data, and flagged for interjections in the same manner as before.
 
 \begin{figure}
 
-{\centering \includegraphics{pattern_lookup.png}
+{\centering \includegraphics{pattern_lookup.jpg}
 
 }
 
@@ -942,18 +942,18 @@ as interjections. These stage directions are not defined differently
 from the regular debate speech in the XML, meaning we had to manually
 create a list of stage directions to separate out of the speeches. We
 built this list of stage directions as we worked backwards in parsing
-Hansard, and took the same approach across all four scripts.
-\textbf{Despite our best efforts to capture all stage directions in this
-list, because it had to be built manually, users should be aware that it
-is possible that some stage directions were not separated onto their own
-rows in the process. Further, it is important to note that because they
-are not spoken aloud, stage directions do not represent speech
-components in the same way that all other components such as
-interjections and continuations do. However, they provide valuable
-information about the inner-workings and structure of parliamentary
-events. If the focus of the user's research does not require stage
-directions, then this can be removed by filtering observations in
-\texttt{name} equal to ``business start'', or ``stage direction''.}
+Hansard, and took the same approach across all four scripts. Despite our
+best efforts to capture all stage directions in this list, because it
+had to be built manually, users should be aware that it is possible that
+some stage directions were not separated onto their own rows in the
+process. Further, it is important to note that because they are not
+spoken aloud, stage directions do not represent speech components in the
+same way that all other components such as interjections and
+continuations do. However, they provide valuable information about the
+inner-workings and structure of parliamentary events. If the focus of
+the user's research does not require stage directions, then this can be
+removed by filtering observations in \texttt{name} equal to ``business
+start'', or ``stage direction''.
 
 \hypertarget{filling-missing-details}{%
 \subsection{Filling Missing Details}\label{filling-missing-details}}
@@ -993,9 +993,9 @@ names were filled in with this script.
 \hypertarget{debate-topics}{%
 \subsection{Debate Topics}\label{debate-topics}}
 
-\textbf{To enhance the range of research questions which can be explored
-with our data, we have created a supplementary file containing debate
-topics and their corresponding page numbers for each sitting day in our
+To enhance the range of research questions which can be explored with
+our data, we have created a supplementary file containing debate topics
+and their corresponding page numbers for each sitting day in our
 database. To extract these data, we wrote a script to parse debate and
 sub-debate 1 information elements from each XML file in chronological
 order using the XPath expression
@@ -1009,39 +1009,40 @@ second node contained a repeated debate title or a timestamp. Therefore,
 we took the first available page number child-node for each debate or
 sub-debate node to be the one we included in our dataset. After
 summarizing, these topics can be added to the main text by joining, and
-example code is provided in the README.}
+example code is provided in the README.
 
 \hypertarget{divisions}{%
 \subsection{Divisions}\label{divisions}}
 
-\textbf{Another fundamental component of parliamentary proceedings is
-voting. In the House, when a question arises such as ``The question is
-that the amendment be agreed to'', Members are asked to cast their vote
-either in the affirmative or in the negative, and the majority of votes
-as judged by the Speaker determines the outcome\textsuperscript{8}.
-Further, Members can vote in an unofficial arrangement called pairs,
-which ``can be used to enable a Member on one side of the House to be
-absent for any votes when a Member from the other side is to be absent
-at the same time or when, by agreement, a Member abstains from
+Another fundamental component of parliamentary proceedings is voting. In
+the House, when a question arises such as ``The question is that the
+amendment be agreed to'', Members are asked to cast their vote either in
+the affirmative or in the negative, and the majority of votes as judged
+by the Speaker determines the outcome\textsuperscript{8}. Further,
+Members can vote in an unofficial arrangement called pairs, which ``can
+be used to enable a Member on one side of the House to be absent for any
+votes when a Member from the other side is to be absent at the same time
+or when, by agreement, a Member abstains from
 voting''\textsuperscript{8}. If the result as determined by the Speaker
 is challenged by more than one MP, this leads to a division of the House
 in which the question is re-stated and Members must move to the left or
 right of their chair depending on how they vote, so that the votes can
-be re-counted and recorded\textsuperscript{8}.}
+be re-counted and recorded\textsuperscript{8}.
 
-\textbf{In the Hansard XML files, divisions data are structured outside
-of the \texttt{\textless{}speech\textgreater{}} content in their own
+In the Hansard XML files, divisions data are structured outside of the
+\texttt{\textless{}speech\textgreater{}} content in their own
 \texttt{\textless{}division\textgreater{}} nodes that contain the voting
 data and division result. Since we focus primarily on the spoken
 \texttt{\textless{}speech\textgreater{}} Hansard content, our parsing
 scripts do not necessarily capture all divisions data from House
 proceedings. Our approach to parsing Hansard in the third and fourth
-scripts described in Section~\ref{sec-diff} naturally allowed for much
-of the divisions data to be added to our resulting files for 1998 to
-March 2011, however the parsing scripts used for May 2011 to September
-2022 Hansard did not. To supplement our database and in an effort to
-fill this divisions data gap, we created an additional file containing
-all divisions data nested under the XPath
+scripts described in the Script Differences
+\protect\hyperlink{sec-diff}{section} naturally allowed for much of the
+divisions data to be added to our resulting files for 1998 to March
+2011, however the parsing scripts used for May 2011 to September 2022
+Hansard did not. To supplement our database and in an effort to fill
+this divisions data gap, we created an additional file containing all
+divisions data nested under the XPath
 ``\texttt{//chamber.xscript//division}'' from the Hansard files in our
 time frame. To produce this data file, for each Hansard XML we parsed
 the \texttt{\textless{}division.header\textgreater{}},
@@ -1051,32 +1052,30 @@ existed, extracted any timestamps where available, and did any
 additional data cleaning as necessary. We used a series of if-else
 statements in this script to account for variation in the structure of
 the \texttt{\textless{}division\textgreater{}} node over time. Finally,
-we then added a date variable to distinguish between sitting days.}
+we then added a date variable to distinguish between sitting days.
 
 \hypertarget{data-records}{%
 \section{Data Records}\label{data-records}}
 
-Our database is available in both CSV and parquet formats. \textbf{Both
-CSV and parquet are open standards. We provide both because while CSVs
-are commonly used and can be manually inspected, parquet files are
-typically smaller and preserve class.} Our database covers all sitting
-days of the House of Representatives from 02 March 1998 to 08 September
-2022 \textbf{where an XML transcript is available}, so there are
-\textbf{1,532 individual sitting day} files for each format.
-\textbf{Additionally, there is a single corpus file in both CSV and
-parquet forms containing the data from all sitting days, with a date
-variable added to allow for distinction and filtering of individual
-sitting days. There is also a CSV and parquet file containing all parsed
-debate topics.} All data records are available on the general-purpose
-repository Zenodo, at
+Our database is available in both CSV and parquet formats. Both CSV and
+parquet are open standards. We provide both because while CSVs are
+commonly used and can be manually inspected, parquet files are typically
+smaller and preserve class. Our database covers all sitting days of the
+House of Representatives from 02 March 1998 to 08 September 2022 where
+an XML transcript is available, so there are 1,532 individual sitting
+day files for each format. Additionally, there is a single corpus file
+in both CSV and parquet forms containing the data from all sitting days,
+with a date variable added to allow for distinction and filtering of
+individual sitting days. There is also a CSV and parquet file containing
+all parsed debate topics. All data records are available on the
+general-purpose repository Zenodo, at
 \url{https://doi.org/10.5281/zenodo.7336075}\textsuperscript{21}. For
-each \textbf{Hansard data} file, \textbf{that is, the corpus and the
-individual sitting day files}, each row contains an individual
-statement, with details on the individual speaking. For general
-statements transcribed as made by ``Honourable members'' for example,
-these variables cannot be specified. Table~\ref{tbl-vars} provides an
-overview of each variable found in the \textbf{Hansard data files in
-the} database.
+each Hansard data file, that is, the corpus and the individual sitting
+day files, each row contains an individual statement, with details on
+the individual speaking. For general statements transcribed as made by
+``Honourable members'' for example, these variables cannot be specified.
+Table~\ref{tbl-vars} provides an overview of each variable found in the
+Hansard data files in the database.
 
 \hypertarget{tbl-vars}{}
 \begin{table}[H]
@@ -1125,38 +1124,38 @@ proceedings of the Chamber with those of the Federation Chamber. The
 were added to identify statements belonging to Question Time, and the
 nature of these statements. We also flagged for interjections
 (\texttt{interject}), and the \texttt{div\_flag} variable was added to
-flag \textbf{those rows where ``The House divided.'' was detected in the
-body variable}. The \texttt{gender} and \texttt{uniqueID} variables were
-added based on the main dataset from the \texttt{AustralianPoliticians}
-package, \textbf{and the \texttt{partyfacts\_id} variable was added
-using code and data provided by the Party Facts Project
-\href{https://partyfacts.herokuapp.com}{website}.}\footnote{\textbf{Note
-  that in accordance with the code provided on the Party Facts
-  \href{https://partyfacts.herokuapp.com/download/}{downloads page}, we
-  used only the core datasets maintained by the Party Facts project,
-  which are the Manifesto Project and ParlGov. Details on these datasets
-  can be found here:
-  https://partyfacts.herokuapp.com/documentation/datasets/.}} Details on
-the usage of \texttt{uniqueID} \textbf{and \texttt{partyfacts\_id}} will
-be provided in Section~\ref{sec-usage}. Further, the \texttt{speech\_no}
-variable allows us to keep track of the speech number that each
-statement and interjection belongs to. Having the speech number variable
-offers an easy way to group statements by speech or isolate specific
-speeches of interest. \textbf{Lastly, the \texttt{order} variable was
-added to maintain the order of proceedings, after all individual
-statements were separated onto their own rows.}
+flag those rows where ``The House divided.'' was detected in the body
+variable. The \texttt{gender} and \texttt{uniqueID} variables were added
+based on the main dataset from the \texttt{AustralianPoliticians}
+package, and the \texttt{partyfacts\_id} variable was added using code
+and data provided by the Party Facts Project website
+(https://partyfacts.herokuapp.com). Note that in accordance with the
+code provided on the Party Facts downloads page
+(https://partyfacts.herokuapp.com/download/), we used only the core
+datasets maintained by the Party Facts project, which are the Manifesto
+Project and ParlGov. Details on these datasets can be found on the Party
+Facts datasets documentation page
+(https://partyfacts.herokuapp.com/documentation/datasets/). Details on
+the usage of \texttt{uniqueID} and \texttt{partyfacts\_id} will be
+provided in the \protect\hyperlink{sec-usage}{Usage Notes} to follow.
+Further, the \texttt{speech\_no} variable allows us to keep track of the
+speech number that each statement and interjection belongs to. Having
+the speech number variable offers an easy way to group statements by
+speech or isolate specific speeches of interest. Lastly, the
+\texttt{order} variable was added to maintain the order of proceedings,
+after all individual statements were separated onto their own rows.
 
-\textbf{As mentioned, in addition to the Hansard data described above,
-our database also contains a CSV and parquet file with the parsed debate
+As mentioned, in addition to the Hansard data described above, our
+database also contains a CSV and parquet file with the parsed debate
 topics. This file is called \texttt{all\_debate\_topics}, and contains a
 \texttt{date} variable specifying the sitting day, an
 \texttt{item\_index} variable to specify the order of proceedings
 (i.e.~the order in which these topics were discussed), a \texttt{title}
 variable containing the debate or sub-debate title contents, and a
 \texttt{page.no} variable specifying on which page that title was
-recorded to be found in the official Hansard PDF.}
+recorded to be found in the official Hansard PDF.
 
-\textbf{There is also a CSV file in our database called
+There is also a CSV file in our database called
 \texttt{PartyFacts\_map.csv}. This file was created using
 \texttt{AustralianPoliticians} data, data downloaded from the Party
 Facts project, and our own Hansard data \texttt{party} variable. As
@@ -1166,7 +1165,7 @@ correct merging of PartyFacts ID numbers with their associated party, in
 accordance with the party abbreviation spelling transcribed in our
 Hansard data. Further, we included the corresponding party abbreviation
 and full name spelling found in the \texttt{AustralianPoliticians}
-package for completeness.}
+package for completeness.
 
 \hypertarget{tbl-partyfacts-vars}{}
 \begin{table}[H]
@@ -1185,14 +1184,13 @@ party\_name\_auspol & Party full name as recorded in the AustralianPoliticians R
 \end{tabular}
 \end{table}
 
-\textbf{Finally, our database contains a file with all parsed divisions
-data in our timeframe. This is called \texttt{division\_data}, and is
-available in RDA form and in parquet form. The reason it is not
-available in CSV form is because three of the variables
-(\texttt{names\_AYES}, \texttt{names\_NOES}, and \texttt{names\_PAIRS})
-are lists, which are not supported by the CSV rectangular data
-structure. The variables found in these data are summarized below, in
-Table~\ref{tbl-divisions}.}
+Finally, our database contains a file with all parsed divisions data in
+our timeframe. This is called \texttt{division\_data}, and is available
+in RDA form and in parquet form. The reason it is not available in CSV
+form is because three of the variables (\texttt{names\_AYES},
+\texttt{names\_NOES}, and \texttt{names\_PAIRS}) are lists, which are
+not supported by the CSV rectangular data structure. The variables found
+in these data are summarized below, in Table~\ref{tbl-divisions}.
 
 \hypertarget{tbl-divisions}{}
 \begin{table}[H]
@@ -1224,9 +1222,9 @@ result & Voting result\\
 We developed a script to perform automated tests on each file in our
 database, to enhance its quality and consistency. Our first test
 validates that the date specified in each file name matches the date
-specified in its corresponding XML session header.\footnote{As seen in
-  Figure~\ref{fig-xml1}, the first child node of the
-  \texttt{\textless{}session.header\textgreater{}} element is the date.}
+specified in its corresponding XML session header. This XML component
+can be seen in Figure~\ref{fig-xml1}, where the first child node of the
+\texttt{\textless{}session.header\textgreater{}} element is the date.
 Every file passed this test, and we detected one discrepancy in an XML
 file from 03 June 2009, where its session header contained the wrong
 date. We validated that our file name and date was correct by checking
@@ -1234,15 +1232,15 @@ the official PDF release from that sitting day.
 
 The second test is designed to test for duplication errors in the data,
 by checking whether two lines that immediately follow each other have
-the same body (i.e.~spoken content). This test detected \textbf{131}
-dates on which duplicate statements were made, and one immediately
-follows the other. Note that this test does not account for who is
-making each statement, meaning one MP repeating the words of another MP
-would be picked up in this test as well. We checked a sample of 40\% of
-these duplicates, and manually validated that they are all repeated
-statements that do exist and are transcribed closely together in that
-day's XML file, and by our method should be parsed such that one of
-these statements is immediately followed by the other.
+the same body (i.e.~spoken content). This test detected 131 dates on
+which duplicate statements were made, and one immediately follows the
+other. Note that this test does not account for who is making each
+statement, meaning one MP repeating the words of another MP would be
+picked up in this test as well. We checked a sample of 40\% of these
+duplicates, and manually validated that they are all repeated statements
+that do exist and are transcribed closely together in that day's XML
+file, and by our method should be parsed such that one of these
+statements is immediately followed by the other.
 
 When an MP runs out of allotted time for their speech, Hansard editors
 transcribe ``(Time expired)'' after their final word. As a means of
@@ -1252,21 +1250,21 @@ it exists at the very end. When this is not the case, we know that we
 have missed the separation of the next statement onto its own row, and
 could fix this accordingly.
 
-\textbf{The fourth test is designed to detect issues in timestamp
-formatting in the data, by detecting all timestamps in our database
-which do not match the correct ``HH:MM:SS'' format. We found a total of
-88 incorrectly formatted timestamps, with common issues such as the
-``HH'' or ``MM'' component recorded as ``NaN'' (e.g.~``NaN:28:00'' or
-``09:NaN:00''), as well as timestamps with a third digit in the minute
-component (e.g.~``09:497:00'' or ``13:445:00''). We took a random sample
-of 25\% of these incorrectly formatted timestamps, and manually checked
-whether or not they were transcribed as such in the original XML Hansard
+The fourth test is designed to detect issues in timestamp formatting in
+the data, by detecting all timestamps in our database which do not match
+the correct ``HH:MM:SS'' format. We found a total of 88 incorrectly
+formatted timestamps, with common issues such as the ``HH'' or ``MM''
+component recorded as ``NaN'' (e.g.~``NaN:28:00'' or ``09:NaN:00''), as
+well as timestamps with a third digit in the minute component
+(e.g.~``09:497:00'' or ``13:445:00''). We took a random sample of 25\%
+of these incorrectly formatted timestamps, and manually checked whether
+or not they were transcribed as such in the original XML Hansard
 transcript. We found that every improperly formatted timestamp in our
 random sample was in fact transcribed as such in its original XML file,
 meaning these bugs are the result of a transcription error, rather than
 an error resulting from our data parsing or cleaning code. As such, we
 have left these timestamps in their originally transcribed format in our
-database.}
+database.
 
 The remaining tests focus on the MPs present on each sitting day. Our
 fifth test checks that there is one unique party and electorate
@@ -1301,20 +1299,19 @@ on each sitting day is in fact an MP on that day.
 \hypertarget{summary-statistics}{%
 \subsection{Summary Statistics}\label{summary-statistics}}
 
-\textbf{To further explore the quality of our data and detect any
-unexpected or distinct trends, we generated a number of summary
-statistics using the complete Hansard corpus. First, we looked at the
-number of speeches made each day, disaggregated by Chamber and
-Federation Chamber debate venues. As shown in
-Figure~\ref{fig-dailyspeeches}, there are consistently more speeches
-made in the Chamber proceedings than in the Federation Chamber, which
-aligns with the wider scope of business covered in the Chamber. Further,
-in both debate venues, the number of speeches each day appears to have
-increased slightly over time.}
+To further explore the quality of our data and detect any unexpected or
+distinct trends, we generated a number of summary statistics using the
+complete Hansard corpus. First, we looked at the number of speeches made
+each day, disaggregated by Chamber and Federation Chamber debate venues.
+As shown in Figure~\ref{fig-dailyspeeches}, there are consistently more
+speeches made in the Chamber proceedings than in the Federation Chamber,
+which aligns with the wider scope of business covered in the Chamber.
+Further, in both debate venues, the number of speeches each day appears
+to have increased slightly over time.
 
 \begin{figure}
 
-{\centering \includegraphics[width=4.58333in,height=\textheight]{n_daily_speeches.png}
+{\centering \includegraphics[width=4.58333in,height=\textheight]{n_daily_speeches.jpg}
 
 }
 
@@ -1323,24 +1320,23 @@ sitting day in the House of Representatives}
 
 \end{figure}
 
-\textbf{Next, we explored the number of unique names detected on each
-sitting day disaggregated by debate venue, visualized in
-Figure~\ref{fig-names}. As expected, there are generally more individual
-MPs detected to be present in the Chamber proceedings in our data than
-in the Federation Chamber proceedings. Further, in both venues, the
-number of individuals detected per sitting day appears to have increased
-since around 2008-2009, with a maximum of 116 and 87 unique names
-detected for the Chamber and Federation Chamber, respectively. Across
-the time frame of our data, there was a daily average of 84 unique names
-detected in the Chamber, and 34 in the Federation Chamber. These
-observations are in accordance with the official number of Members
-belonging to the House of Representatives, which was 148 in 1998, 150 in
-2001, and then increased to 151 in the 2019 general
-election\textsuperscript{8}.}
+Next, we explored the number of unique names detected on each sitting
+day disaggregated by debate venue, visualized in Figure~\ref{fig-names}.
+As expected, there are generally more individual MPs detected to be
+present in the Chamber proceedings in our data than in the Federation
+Chamber proceedings. Further, in both venues, the number of individuals
+detected per sitting day appears to have increased since around
+2008-2009, with a maximum of 116 and 87 unique names detected for the
+Chamber and Federation Chamber, respectively. Across the time frame of
+our data, there was a daily average of 84 unique names detected in the
+Chamber, and 34 in the Federation Chamber. These observations are in
+accordance with the official number of Members belonging to the House of
+Representatives, which was 148 in 1998, 150 in 2001, and then increased
+to 151 in the 2019 general election\textsuperscript{8}.
 
 \begin{figure}
 
-{\centering \includegraphics[width=4.58333in,height=\textheight]{n_unique_names.png}
+{\centering \includegraphics[width=4.58333in,height=\textheight]{n_unique_names.jpg}
 
 }
 
@@ -1349,13 +1345,13 @@ Hansard data}
 
 \end{figure}
 
-\textbf{We then computed the total number of speeches made in our
-database by political party, summarized in
-Table~\ref{tbl-speeches_by_party}. We found that the Australian Labor
-Party made the most speeches overall, followed by the Liberal Party of
-Australia, and the National Party of Australia. These rankings are
-unsurprising, as those parties are the three main political parties in
-the Australian House of Representatives\textsuperscript{22}.}
+We then computed the total number of speeches made in our database by
+political party, summarized in Table~\ref{tbl-speeches_by_party}. We
+found that the Australian Labor Party made the most speeches overall,
+followed by the Liberal Party of Australia, and the National Party of
+Australia. These rankings are unsurprising, as those parties are the
+three main political parties in the Australian House of
+Representatives\textsuperscript{22}.
 
 \hypertarget{tbl-speeches_by_party}{}
 \begin{table}[H]
@@ -1366,11 +1362,11 @@ the Australian House of Representatives\textsuperscript{22}.}
 \toprule
 Party Name & Party Abbreviation & Total \# of Speeches\\
 \midrule
-Australian Labor Party & ALP & 112268\\
-Liberal Party of Australia & LIB & 106139\\
-National Party of Australia & NPA & 20244\\
-Independent & IND & 5357\\
-Australian Greens & GRN & 1446\\
+Australian Labor Party & ALP & 112,268\\
+Liberal Party of Australia & LIB & 106,139\\
+National Party of Australia & NPA & 20,244\\
+Independent & IND & 5,357\\
+Australian Greens & GRN & 1,446\\
 \addlinespace
 Country Liberal Party (Northern Territory) & CLP & 665\\
 Centre Alliance & CA & 638\\
@@ -1393,10 +1389,10 @@ speaking MP, and comes from the \texttt{uniqueID} variable present
 within data from both the \texttt{AustralianPoliticians} and
 \texttt{AustralianElections} R packages\textsuperscript{11,23}. By
 including this variable, one can readily integrate our data records with
-those available in these two packages. \textbf{Similarly, we added the
+those available in these two packages. Similarly, we added the
 \texttt{partyfacts\_id} variable to our data which allows users to link
 our data to external political party data sources with this unique
-identifier.}
+identifier.
 
 Further, the \texttt{name.id} variable found in each file is another
 unique identifier for each MP. This variable was parsed directly from
@@ -1407,24 +1403,24 @@ Australian Parliamentary Handbook\textsuperscript{10}. This will allow
 for convenient extraction of further details on each MP in a tidy, ready
 to analyze format.
 
-\textbf{Finally, the README file on our GitHub repository and on Zenodo
-contains example code on how to read in a file from our database, for
-both CSV and parquet formats. Should a user wish to use the single
-Hansard corpus rather than individual sitting day files, we provide
-example code on how to read it in, filter for those sitting days of
-interest, and split them into distinct data frames. We have also added
-example code for filtering out stage directions, and updating the
-\texttt{order} variable to reflect the ordering of remaining rows,
-should the user wish to remove stage directions from their analysis.
-Lastly, the README contains example code showing users how to merge the
-debate topics data with a Hansard data file for one sitting day.}
+Finally, the README file on our GitHub repository and on Zenodo contains
+example code on how to read in a file from our database, for both CSV
+and parquet formats. Should a user wish to use the single Hansard corpus
+rather than individual sitting day files, we provide example code on how
+to read it in, filter for those sitting days of interest, and split them
+into distinct data frames. We have also added example code for filtering
+out stage directions, and updating the \texttt{order} variable to
+reflect the ordering of remaining rows, should the user wish to remove
+stage directions from their analysis. Lastly, the README contains
+example code showing users how to merge the debate topics data with a
+Hansard data file for one sitting day.
 
 \hypertarget{code-availability}{%
 \section{Code Availability}\label{code-availability}}
 
 The code written to build this database is available on the GitHub
-repository associated with this paper:
-https://github.com/lindsaykatz/hansard-proj. All scripts were created
+repository associated with this paper
+(https://github.com/lindsaykatz/hansard-proj). All scripts were created
 using R software\textsuperscript{24}. The core packages used to develop
 these scripts are: the \texttt{XML} package\textsuperscript{17}, the
 \texttt{xml2} package\textsuperscript{18}, the \texttt{tidyverse} R
