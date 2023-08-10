@@ -184,7 +184,7 @@
 \author{Lindsay Katz\footnote{University of Toronto,
   lindsay.katz@mail.utoronto.ca} \and Rohan Alexander\footnote{University
   of Toronto, rohan.alexander@utoronto.ca}}
-\date{August 8, 2023}
+\date{August 10, 2023}
 
 \begin{document}
 \maketitle
@@ -204,7 +204,7 @@ such as election results. The creation and accessibility of this
 database enables the exploration of new questions and serves as a
 valuable resource for both researchers and policymakers.
 \end{abstract}
-\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[borderline west={3pt}{0pt}{shadecolor}, breakable, enhanced, frame hidden, sharp corners, boxrule=0pt, interior hidden]}{\end{tcolorbox}}\fi
+\ifdefined\Shaded\renewenvironment{Shaded}{\begin{tcolorbox}[enhanced, interior hidden, borderline west={3pt}{0pt}{shadecolor}, boxrule=0pt, breakable, sharp corners, frame hidden]}{\end{tcolorbox}}\fi
 
 \hypertarget{sec-intro}{%
 \section{Background \& Summary}\label{sec-intro}}
@@ -244,18 +244,19 @@ interested in how the policy focus of a parliament changes given various
 global events such as pandemics or wars. An international linkage
 provides a comparison case where domestic issues are different while
 international ones are common. As an example of enabling this linkage we
-have included PartyFacts IDs in our database. This should make it
-possible to link our database with other large parliamentary speech
-collection projects, such as ParlaMint\textsuperscript{4},
-ParlSpeech\textsuperscript{5}, ParlEE\textsuperscript{6}, and
-MAPLE\textsuperscript{7}.
+have included PartyFacts IDs (https://partyfacts.herokuapp.com) in our
+database. This should make it possible to link our database with other
+large parliamentary speech collection projects, such as
+ParlaMint\textsuperscript{4}, ParlSpeech\textsuperscript{5},
+ParlEE\textsuperscript{6}, and MAPLE\textsuperscript{7}.
 
-The Australian House of Representatives `the House' performs a number of
-crucial governmental functions, such as creating new laws and overseeing
-government expenditure\textsuperscript{8, ch.~1}. Politicians in the
-House are referred to as Members of Parliament (MPs). The House operates
-under a parallel chamber setup, meaning there are two debate venues
-where proceedings take place: the Chamber, and the Federation Chamber.
+The Australian House of Representatives, often referred to as `the
+House', performs a number of crucial governmental functions, such as
+creating new laws and overseeing government
+expenditure\textsuperscript{8, ch.~1}. Politicians in the House are
+referred to as Members of Parliament (MPs). The House operates under a
+parallel chamber setup, meaning there are two debate venues where
+proceedings take place: the Chamber, and the Federation Chamber.
 Sittings of the House follow a predefined order of business, regulated
 by procedural rules called standing orders\textsuperscript{8, ch.~8}. A
 typical sitting day in the Chamber has a number of scheduled proceedings
@@ -288,11 +289,11 @@ Australia website is not easily accessible for large scale analysis. To
 this point, various researchers have had to create their own databases
 of usable, complete data based on content from the Australian Parliament
 website. For instance, an online, easy to read database of Hansard from
-1901 to 1980 using the XML files has been created
+1901 to 1980 using the XML files has been created by Tim Sherratt
 (http://historichansard.net/). These data can be navigated by year,
 parliament, people, and bills. To make the Australian Parliamentary
 Handbook more accessible, an \texttt{R} package which includes data on
-all MPs from 1945 to 2019 has been created
+all MPs from 1945 to 2019 has been created by Patrick Leslie
 (https://github.com/palesl/AustralianHouseOfRepresentatives). Further,
 there is the \texttt{AustralianPoliticians} \texttt{R} package, which
 contains several datasets related to the political and biographical
@@ -884,17 +885,15 @@ As evident in Figure~\ref{fig-xml2},
 \texttt{\textless{}talk.start\textgreater{}} nodes are nested within
 \texttt{\textless{}interjection\textgreater{}} nodes, meaning that the
 patterns of data from interjection statements were separated out in the
-process. In other words, our approach to data cleaning in the third and
-fourth scripts separated out interjections in the process. This meant
-that we did not need to create lists of names and titles for which to
-search in the text as we did before. However, we used the same list of
-general interjection statements on which to separate as was used in the
-first two scripts. We then did an additional check for statements that
-may have not been separated due to how they were embedded in the XML,
-and separated those out where needed. In particular, while most
-statements were categorized in their own child node and hence captured
-through pattern-based separation, some were not individually
-categorized, and had to be split manually in this step.
+process. This meant that we did not need to create lists of names and
+titles for which to search in the text as we did before. However, we
+used the same list of general interjection statements on which to
+separate as was used in the first two scripts. We then did an additional
+check for statements that may have not been separated due to how they
+were embedded in the XML, and separated those out where needed. In
+particular, while most statements were categorized in their own child
+node and hence captured through pattern-based separation, some were not
+individually categorized, and had to be split manually in this step.
 
 We then proceeded to clean up speeches and fill in correct details on
 the MP speaking. While we used the same lookup table approach as before,
@@ -1130,9 +1129,8 @@ flag those rows where ``The House divided.'' was detected in the body
 variable. The \texttt{gender} and \texttt{uniqueID} variables were added
 based on the main dataset from the \texttt{AustralianPoliticians}
 package, and the \texttt{partyfacts\_id} variable was added using code
-and data provided by the Party Facts Project website
-(https://partyfacts.herokuapp.com). Note that in accordance with the
-code provided on the Party Facts downloads page
+and data provided by the Party Facts Project website. Note that in
+accordance with the code provided on the Party Facts downloads page
 (https://partyfacts.herokuapp.com/download/), we used only the core
 datasets maintained by the Party Facts project, which are the Manifesto
 Project and ParlGov. Details on these datasets can be found on the Party
@@ -1388,14 +1386,14 @@ United Australia Party & UAP & 43\\
 To enhance the usability of our database, we added a \texttt{uniqueID}
 variable to each file. This serves as a unique identifier for each
 speaking MP, and comes from the \texttt{uniqueID} variable present
-within data from both the
-\texttt{AustralianPoliticians}\textsuperscript{9} and
-\texttt{AustralianElections} R packages
-(https://github.com/RohanAlexander/AustralianElections). By including
-this variable, one can integrate our data records with those available
-in these two packages. Similarly, we added the \texttt{partyfacts\_id}
-variable to our data which allows users to link our data to external
-political party data sources with this unique identifier.
+within data from both the \texttt{AustralianPoliticians} R
+package,\textsuperscript{9} and the \texttt{AustralianElections}
+(https://github.com/RohanAlexander/AustralianElections) R package, which
+was created by Rohan Alexander. By including this variable, one can
+integrate our data records with those available in these two packages.
+Similarly, we added the \texttt{partyfacts\_id} variable to our data
+which allows users to link our data to external political party data
+sources with this unique identifier.
 
 Further, the \texttt{name.id} variable found in each file is another
 unique identifier for each MP. This variable was parsed directly from
