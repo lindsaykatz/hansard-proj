@@ -9,14 +9,14 @@ library(tidyverse)
 library(arrow)
 
 # import corpus
-corpus <- read_parquet("data/hansard_corpus_1998_to_2022.parquet")
+corpus <- read_parquet("hansard_corpus_1998_to_2022.parquet")
 
 ### prepare lookup table for data cleaning ------------------------------------
 # import Australian Politicians lookup tables
 auspol_all <- AustralianPoliticians::get_auspol('all')
 
 # import the ausPH/AusPol mapping table I made
-lookup <- readxl::read_xlsx("data/lookup_tables/ausPH_AusPol_mapping.xlsx")
+lookup <- readxl::read_xlsx("additional_data/lookup_tables/ausPH_AusPol_mapping.xlsx")
 
 # combine "auspol_all" and "lookup" into one
 lookup_full <- left_join(lookup, auspol_all, join_by(uniqueID, surname, 
@@ -259,10 +259,10 @@ corpus <- corpus %>%
 # download spreadsheet with corrected names (manually checked)
 googledrive::drive_download(googledrive::as_id(
   "https://docs.google.com/spreadsheets/d/1P9bDRQnfodoLYGWWrOuwnFSjorjh5l5_jAPF9H8gvrY/edit?gid=1085792224#gid=1085792224"
-  ), path = "data/names_to_fix_temp.xlsx", overwrite = TRUE)
+  ), path = "additional_data/names_to_fix_temp.xlsx", overwrite = TRUE)
 
 # import spreadsheet with manually corrected names
-names_to_fix <- readxl::read_xlsx("data/names_to_fix_temp.xlsx", 
+names_to_fix <- readxl::read_xlsx("additional_data/names_to_fix_temp.xlsx", 
                                   col_types = c("text","text","text","text",
                                                 "text","text","text","text")) %>% 
   # drop rows flagged as manual fixes, those have all already been dealt with
@@ -371,4 +371,4 @@ corpus_fixed <- corpus_fixed %>%
   select(-not_in_auspol, -displayName)
 
 # export to parquet
-write_parquet(corpus_fixed, "data/hansard_corpus_1998_to_2022-v25-06-25.parquet")
+write_parquet(corpus_fixed, "hansard_corpus_1998_to_2022-v25-06-25.parquet")
