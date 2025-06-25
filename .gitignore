@@ -5,6 +5,7 @@
 .httr-oauth
 .DS_Store
 old_scripts/
+paper/
 
 # History files
 .Rhistory
@@ -12,6 +13,7 @@ old_scripts/
 
 # Session Data files
 .RData
+.RDataTmp1
 
 # User-specific files
 .Ruserdata
