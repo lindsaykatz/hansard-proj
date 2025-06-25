@@ -32,7 +32,7 @@ all <- AustralianPoliticians::get_auspol('all')
 #all <- read.csv("/Volumes/Verbatim/all.csv")
 
 ################### temp filename
-filename <- "2000-03-16.xml"
+filename <- "2000-03-15.xml"
 
 parse_hansard <- function(filename){ 
   
@@ -1052,7 +1052,9 @@ parse_hansard <- function(filename){
                           page.no = ifelse(is.na(page.no) & is.na(page.no.y), 
                                            page.no.x, 
                                            page.no)) %>% 
-    select(itemindex, speech_no, page.no, time.stamp, name, name_short, name.id, electorate, party, role, in.gov, first.speech, body, fedchamb_flag, first_pattern) %>% 
+    select(itemindex, speech_no, page.no, time.stamp, name, name_short, name.id, electorate, 
+           party, role, in.gov, first.speech, body, fedchamb_flag, first_pattern,
+           question, answer) %>% ### june 14 2024 - add q and a flags to selection
     unique()
   
   # now check that row number was fixed with merge and page number fix up
@@ -2172,9 +2174,10 @@ parse_hansard <- function(filename){
   
   # add questions in writing to end of main
   main <- main %>% mutate(page.no = as.numeric(page.no)) %>% 
-    mutate(question = 0,
-           answer = 0,
-           q_in_writing = 0) %>% 
+    mutate(
+      #question = 0, #### JUNE 17 - comment out because we already have this flagged - still need to fix flagging but will do after interjections are flagged
+      #answer = 0, #### JUNE 17 - comment out because we already have this flagged
+      q_in_writing = 0) %>% 
     select(-order) %>% 
     bind_rows(., a_to_q_speech)
   
@@ -2660,6 +2663,20 @@ parse_hansard <- function(filename){
     fill(interject, .direction = "down") %>% 
     ungroup() %>% 
     mutate(interject = ifelse(is.na(interject), 1, interject))
+  
+  ##### JUNE 17 2024 EDIT
+  # fix interjection and comments within question and answers that are flagged as questions and answers - these shouldn't be flagged as such
+  # this is to ensure we have an equal number of questions and answers
+  main <- main %>% group_by(speech_no) %>% 
+    mutate(question = case_when(order == min(order) & question==1 ~ 1,
+                                order != min(order) & question==1 ~ 0,
+                                question==0 ~ 0),
+           answer = case_when(order == min(order) & answer==1 ~ 1,
+                              order != min(order) & answer==1 ~ 0,
+                              answer==0 ~ 0)) %>% 
+    ungroup()
+  
+  ########################
   
   # fix up full stop issue that came with parsing
   main <- main %>% mutate(body = ifelse(str_detect(body, "[[:lower:]][[:lower:]]\\.[[:upper:]]"),
