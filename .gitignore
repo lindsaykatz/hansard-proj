@@ -6,6 +6,7 @@
 .DS_Store
 old_scripts/
 paper/
+archive/
 
 # History files
 .Rhistory
