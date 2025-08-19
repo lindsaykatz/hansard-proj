@@ -368,7 +368,41 @@ corpus_fixed %>%
 ### export corpus with corrections --------------------------------------------
 # drop unwanted columns
 corpus_fixed <- corpus_fixed %>% 
-  select(-not_in_auspol, -displayName)
+  select(-not_in_auspol, -displayName) 
 
 # export to parquet
 write_parquet(corpus_fixed, "hansard_corpus_1998_to_2022-v25-06-25.parquet")
+
+### create dataset of MPs to be updated for AustralianPoliticians -------------
+new_mps_current_corpus <- names_to_fix %>% 
+  filter(not_in_auspol==1 & 
+           !str_detect(name_correct, 
+                       "Business|Stage|SPEAKER|(M|m)ember|CLEARK|and |CLERK|The |President|Prime |Excellency")) %>% 
+  distinct(name_correct) 
+
+new_AusPol_fill_in <- ausPH::getParlService("all") %>% 
+  filter(DateStart>"2021-11-29") %>% 
+  distinct(PHID, DisplayName, MemberOrSenator) %>% 
+  mutate(member = ifelse(MemberOrSenator=="Member", 1, 0),
+         senator = ifelse(MemberOrSenator=="Senator", 1, 0)) %>% 
+  select(-MemberOrSenator) %>% 
+  left_join(ausPH::getIndividuals() %>% 
+              select(PHID,Gender, DateOfBirth),
+            by="PHID") %>% 
+  rename(ausPH_displayName = DisplayName, phid = PHID, gender=Gender,
+         date_of_birth=DateOfBirth) %>% 
+  mutate(gender = str_to_lower(gender),
+         AusPol_displayName=NA,
+         uniqueID=NA,
+         birth_year = str_extract(date_of_birth, "^\\d{4}")) %>% 
+  distinct(phid, ausPH_displayName, AusPol_displayName, birth_year, uniqueID,  # leaving out member and senator flags for now, some ppl have been both, need to address this later on
+         gender)
+
+new_AusPol_fill_in <- new_AusPol_fill_in %>%
+  mutate(surname = str_extract(ausPH_displayName, "^.*[[:upper:]](?=, )")) %>%
+  relocate(surname, .before="AusPol_displayName")
+
+new_AusPol_fill_in <- new_AusPol_fill_in %>% filter(!phid %in% c(lookup %>% filter(!is.na(uniqueID)) %>% pull(phid)))
+
+# export
+writexl::write_xlsx(new_AusPol_fill_in, "new_AusPol_work.xlsx")
