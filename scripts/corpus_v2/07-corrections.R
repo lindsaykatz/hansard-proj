@@ -164,6 +164,13 @@ corpus_fixed <-  corpus_fixed %>%
                             .default = gender)) %>% 
   select(-gender_to_fill, -phid, -not_in_auspol, -displayName)
 
+### fix column classes --------------------------------------------------------
+corpus_fixed <- corpus_fixed %>% 
+  mutate(date = as.Date(date),
+         time.stamp = as_hms(time.stamp)) %>% 
+  mutate(across(c(in.gov, first.speech, gender, member, senator),
+                ~ as.factor(.)))
+
 ### export corpus with corrections --------------------------------------------
 # export to parquet on local folder
 write_parquet(corpus_fixed, "hansard-corpus/hansard_corpus_2022_to_2025.parquet")
