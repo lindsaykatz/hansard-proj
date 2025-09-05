@@ -9,7 +9,7 @@ library(tidyverse)
 library(arrow)
 
 # import corpus
-corpus <- read_parquet("/Volumes/Verbatim/hansard-corpus/hansard_corpus_2022_to_2025.parquet")
+corpus <- read_parquet("hansard-corpus/corpus_2022_to_2025.parquet")
 
 ### prepare lookup table for data cleaning ------------------------------------
 # import Australian Politicians lookup tables
@@ -164,17 +164,93 @@ corpus_fixed <-  corpus_fixed %>%
                             .default = gender)) %>% 
   select(-gender_to_fill, -phid, -not_in_auspol, -displayName)
 
+### sept 4 fixes -------------------------------------------------------------
+corpus_1998_2022 <- read_parquet("hansard-corpus/corpus_1998_to_2022.parquet")
+corpus_2022_2025 <- read_parquet("hansard-corpus/corpus_2022_to_2025.parquet")
+lookup <- readxl::read_xlsx("additional_data/lookup_tables/ausPH_AusPol_mapping.xlsx")
+
+corpus_2022_2025 <- corpus_2022_2025 %>% 
+  mutate(displayName = case_when(
+    !str_detect(name, "\\(The|\\(Leader") ~ name,
+    str_detect(name, "\\(The|\\(Leader") ~ str_remove(
+      name, 
+      " \\(The SPEAKER\\)| \\(The DEPUTY SPEAKER\\)| \\(The ACTING SPEAKER\\)| \\(Leader of the House\\)"))) 
+
+names_missing_nameid <- corpus_2022_2025 %>% filter(is.na(name.id)) %>% 
+  distinct(displayName) %>% pull()
+
+corpus_2022_2025 <- left_join(corpus_2022_2025, lookup %>% 
+                            select(phid, displayName, gender_use = gender) %>% 
+            filter(displayName %in% names_missing_nameid), by="displayName") %>% 
+  mutate(name.id = case_when(is.na(name.id) & !is.na(phid) ~ phid,
+                             .default = name.id),
+         gender = case_when(is.na(gender) & !is.na(gender_use) ~ gender_use,
+                            .default = gender)) %>% 
+  select(-phid, -displayName, -gender_use)
+
+# same fixes for 1998-2022
+corpus_1998_2022 <- corpus_1998_2022 %>% mutate(displayName = case_when(
+  !str_detect(name, "\\(The|\\(Leader") ~ name,
+  str_detect(name, "\\(The|\\(Leader") ~ str_remove(
+    name, 
+    " \\(The SPEAKER\\)| \\(The DEPUTY SPEAKER\\)| \\(The ACTING SPEAKER\\)| \\(Leader of the House\\)"))) 
+
+names_missing_nameid <- corpus_1998_2022 %>% filter(is.na(name.id)) %>% 
+  distinct(displayName) %>% pull()
+
+corpus_1998_2022 <- left_join(corpus_1998_2022, lookup %>% 
+                                select(phid, displayName, gender_use = gender) %>% 
+                                filter(displayName %in% names_missing_nameid), by="displayName") %>%
+  mutate(name.id = case_when(is.na(name.id) & !is.na(phid) ~ phid,
+                             .default = name.id),
+         gender = case_when(is.na(gender) & !is.na(gender_use) ~ gender_use,
+                            .default = gender)) %>%  
+  select(-phid, -displayName, -gender_use)
+
 ### fix column classes --------------------------------------------------------
-corpus_fixed <- corpus_fixed %>% 
+corpus_2022_2025 <- corpus_2022_2025 %>% 
   mutate(date = as.Date(date),
-         time.stamp = as_hms(time.stamp)) %>% 
+         time.stamp = hms::as_hms(time.stamp)) %>% 
   mutate(across(c(in.gov, first.speech, gender, member, senator),
                 ~ as.factor(.)))
 
+corpus_1998_2022 <- corpus_1998_2022 %>% 
+  mutate(date = as.Date(date),
+         time.stamp = case_when(str_detect(time.stamp, "NaN|NA") ~ NA,
+                                # recode problem time stamps as NA
+                                time.stamp %in% c("29:37:00", "09:532:00", 
+                                                  "09:497:00", "13:445:00",
+                                                  "24:20:00", "60:20:00", 
+                                                  "27:21:00","32:44:00") ~ NA,
+                                .default = time.stamp),
+         time.stamp = hms::as_hms(time.stamp)) %>% 
+  mutate(across(c(in.gov, first.speech, gender, member, senator),
+                ~ as.factor(.)))
+  
+
+### combine 2022-2025 stuff with 1998-2022 ------------------------------------
+# look at rows missing name.ids for 2022-2025
+corpus_2022_2025 %>% filter(is.na(name.id)) %>% distinct(name) %>% 
+  filter(!str_detect(name, "Business|Member|member|CLERK$|SPEAKER$|Stage|ASSISTANT$|PRESIDENT|President|Prime Minister|GENERAL$|CHAIR$|Excellency"))
+# acceptable - Michael Pezzullo is not / was not an MP
+
+# look at rows missing name.ids for 1998-2022
+corpus_1998_2022 %>% filter(is.na(name.id)) %>% distinct(name) %>% 
+  filter(!str_detect(name, "Business|Member|member|CLERK$|SPEAKER$|Stage|ASSISTANT$|PRESIDENT|President|Prime Minister|GENERAL$|CHAIR$|Excellency"))
+# acceptable - the Crosio, Janice and O'Connor, Gavan case is unique because they were recorded as interjecting together
+
+corpus_full_for_export <- bind_rows(corpus_1998_2022, corpus_2022_2025)
+
+stopifnot(nrow(corpus_full_for_export)==
+            nrow(corpus_1998_2022)+nrow(corpus_2022_2025))
+
 ### export corpus with corrections --------------------------------------------
 # export to parquet on local folder
-write_parquet(corpus_fixed, "hansard-corpus/hansard_corpus_2022_to_2025.parquet")
+write_parquet(corpus_1998_2022, "hansard-corpus/corpus_1998_to_2022.parquet")
+write_parquet(corpus_2022_2025, "hansard-corpus/corpus_2022_to_2025.parquet")
+write_parquet(corpus_full_for_export, "hansard-corpus/corpus_1998_to_2025.parquet")
 
 # export to parquet on external drive
-write_parquet(corpus_fixed, "/Volumes/Verbatim/hansard-corpus/hansard_corpus_2022_to_2025.parquet")
-write_csv(corpus_fixed, "/Volumes/Verbatim/hansard-corpus/hansard_corpus_2022_to_2025.csv")
+write_parquet(corpus_1998_2022, "/Volumes/Verbatim/hansard-corpus/corpus_1998_to_2022.parquet")
+write_parquet(corpus_2022_2025, "/Volumes/Verbatim/hansard-corpus/corpus_2022_to_2025.parquet")
+write_parquet(corpus_full_for_export, "/Volumes/Verbatim/hansard-corpus/corpus_1998_to_2025.parquet")
