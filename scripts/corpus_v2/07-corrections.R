@@ -227,6 +227,30 @@ corpus_1998_2022 <- corpus_1998_2022 %>%
   mutate(across(c(in.gov, first.speech, gender, member, senator),
                 ~ as.factor(.)))
   
+### reflag interjections with standardized names -----------------------------
+corpus_1998_2022 <- corpus_1998_2022 %>% 
+  select(-interject) %>% 
+  group_by(date, speech_no) %>% 
+  mutate(interject = case_when(order == min(order) ~ 0,
+                               str_detect(name, "SPEAKER|Stage direction|Business start|The CLERK") ~ 0,
+                               is.na(speech_no) ~ 0)) %>% 
+  ungroup() %>% 
+  group_by(date, name, speech_no) %>%
+  fill(interject, .direction = "down") %>% 
+  ungroup() %>% 
+  mutate(interject = ifelse(is.na(interject), 1, interject)) 
+
+corpus_2022_2025 <- corpus_2022_2025 %>% 
+  select(-interject) %>% 
+  group_by(date, speech_no) %>% 
+  mutate(interject = case_when(order == min(order) ~ 0,
+                               str_detect(name, "SPEAKER|Stage direction|Business start|The CLERK") ~ 0,
+                               is.na(speech_no) ~ 0)) %>% 
+  ungroup() %>% 
+  group_by(date, name, speech_no) %>%
+  fill(interject, .direction = "down") %>% 
+  ungroup() %>% 
+  mutate(interject = ifelse(is.na(interject), 1, interject)) 
 
 ### combine 2022-2025 stuff with 1998-2022 ------------------------------------
 # look at rows missing name.ids for 2022-2025
@@ -240,9 +264,6 @@ corpus_1998_2022 %>% filter(is.na(name.id)) %>% distinct(name) %>%
 # acceptable - the Crosio, Janice and O'Connor, Gavan case is unique because they were recorded as interjecting together
 
 corpus_full_for_export <- bind_rows(corpus_1998_2022, corpus_2022_2025)
-
-stopifnot(nrow(corpus_full_for_export)==
-            nrow(corpus_1998_2022)+nrow(corpus_2022_2025))
 
 ### export corpus with corrections --------------------------------------------
 # export to parquet on local folder
