@@ -995,6 +995,7 @@ split_interjections_fedchamb <- function(main, interject, filename){
     fill(names(name_lookup), .direction = "downup") %>% 
     distinct() %>% 
     ungroup()
+  ### this is causing problems!!! fix!!!!
   
   # for those where we don't have their electorate/name id/party info and their name has "interjecting-", lets clean that up
   # note that sometimes we don't have their first name, so need a case where first name is NA
@@ -1122,15 +1123,15 @@ split_interjections_fedchamb <- function(main, interject, filename){
   return(main_final)
 }
 
-# filename <- "2023-10-19.xml"
+filename <- "2023-02-14.xml"
 
 parse_hansard_new <- function(filename) {
   
   # parse file
-  hansard_xml <- xmlParse(here("/Volumes/Verbatim/input-2022_2025", filename))
+  hansard_xml <- xmlParse(here("/Volumes/Verbatim/input/input-2022_2025", filename))
   
   # need to read the XML in in a different way for this so we can use the item_df function defined in global environment
-  xml_df <- read_xml(here("/Volumes/Verbatim/input-2022_2025", filename))
+  xml_df <- read_xml(here("/Volumes/Verbatim/input/input-2022_2025", filename))
   
   #################### CHAMBER ####################
   ######### BUSINESS START #########
