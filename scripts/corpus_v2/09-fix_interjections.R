@@ -5,16 +5,7 @@ library(arrow)
 
 ### manual interject fixes ----------------------------------------------------
 # import corpus exported in script 08
-corpus <- read_parquet("hansard-corpus/corpus_1998_to_2025-v071025.parquet")
-
-# # nrows new expected
-# new_rows_expected <- corpus %>% 
-#   mutate(interjection_content = str_extract_all(
-#     body, "(?<=—)\\s{0,2}[[:upper:]][[:lower:]].{1,50} interjecting—")) %>% 
-#   select(interjection_content, date) %>% 
-#   filter(!is.na(interjection_content)) %>% 
-#   separate_rows(interjection_content, sep="(?<=interjecting—)") %>% 
-#   filter(interjection_content!="") 
+corpus <- read_parquet("hansard-corpus/corpus_1998_to_2025-v081025.parquet")
 
 # get patterns for rows that still have someone interjecting
 unsplit_interjections <- corpus %>% 
@@ -22,18 +13,14 @@ unsplit_interjections <- corpus %>%
     body, "(?<=—)\\s{0,2}[[:upper:]][[:lower:]].{1,50} interjecting—"))
 
 unsplit_interjections <- unsplit_interjections %>% 
-  select(date, interjection_content) %>% 
-  unnest(interjection_content) %>% 
-  distinct()
-
-
-#  distinct(interjection_content, date) %>% 
+  unnest(interjection_content)
 
 # separate rows with multiple interjections
 unsplit_interjections <- unsplit_interjections %>% 
+  distinct(date, interjection_content) %>% 
+  unnest(interjection_content) %>% 
   separate_rows(interjection_content, sep="(?<=interjecting—)") %>% 
-  filter(interjection_content!="") %>% 
-  mutate(interjection_content = str_escape(str_squish(interjection_content)))
+  filter(interjection_content!="")
 
 # export so I can produce a lookup table with MPs info
 #writexl::write_xlsx(unsplit_interjections, "unsplit_interjections_lookup.xlsx")
@@ -67,8 +54,7 @@ corpus_by_date <- map(corpus_by_date, ~ .x %>%
 
 # tibble to store new rows
 new_rows <- tibble()
-
-corpus_by_date <- corpus_by_date[which(names(corpus_by_date) %in% dates_unsplit)]
+separated <- tibble()
 
 # separate the rows
 for (i in 1:length(dates_unsplit)) {
@@ -80,11 +66,16 @@ for (i in 1:length(dates_unsplit)) {
   interject_pattern <- unsplit_interjections %>% 
     filter(date==dates_unsplit[[i]]) %>% pull(full_interject_pattern)
   
+  separated <- corpus_by_date[[index]] %>% 
+    filter(str_detect(body, interject_pattern)) %>% 
+    separate_rows(body, sep=interject_pattern) %>% 
+    bind_rows(., separated)
+  
   # store new rows
   new_rows <- corpus_by_date[[index]] %>% 
     separate_rows(body, sep=interject_pattern) %>% 
     mutate(body = str_squish(body)) %>% 
-    filter(body!="") %>% 
+    filter(!str_detect(body, "^\\s{1,2}$|^$")) %>% 
     left_join(unsplit_interjections_lookup %>% filter(date==dates_unsplit[[i]]),
               by=c("date","body")) %>% 
     mutate(name = case_when(!is.na(name_use) ~ name_use, .default = name),
@@ -122,7 +113,7 @@ for (i in 1:length(dates_unsplit)) {
   corpus_by_date[[index]] <- corpus_by_date[[index]] %>% 
     separate_rows(body, sep=interject_pattern) %>% 
     mutate(body = str_squish(body)) %>% 
-    filter(body!="") %>% 
+    filter(!str_detect(body, "^\\s{1,2}$|^$")) %>% 
     left_join(unsplit_interjections_lookup %>% filter(date==dates_unsplit[[i]]),
               by=c("date","body")) %>% 
     mutate(name = case_when(!is.na(name_use) ~ name_use, .default = name),
@@ -165,75 +156,29 @@ corpus_final <- bind_rows(corpus_by_date) %>%
                   member, senator, fedchamb_flag, interject),
                 ~ as.factor(.)))
 
-# check that dates which were not included in the split remained the same
+# left_join(corpus_final %>% group_by(date) %>%
+#             count(name="new_row_count") %>% ungroup(),
+#           corpus %>% group_by(date) %>% 
+#             count(name="old_row_count") %>% ungroup(),
+#             by="date") %>% 
+#   mutate(diff = new_row_count-old_row_count) %>% 
+#   filter(diff!=0) %>% 
+#   left_join(., unsplit_interjections_lookup %>% group_by(date) %>% 
+#               count(name="n_interjections")) %>% filter(diff!=n_interjections) %>% View
+# 
+
+# ensure nothing changed among the dates not involved in the splitting process
 stopifnot(
   setdiff(corpus %>% filter(!(date %in% dates_unsplit)),
           corpus_final %>% filter(!(date %in% dates_unsplit))) %>% nrow()==0,
   setdiff(corpus_final %>% filter(!(date %in% dates_unsplit)),
-          corpus %>% filter(!(date %in% dates_unsplit))) %>% nrow()==0
+          corpus %>% filter(!(date %in% dates_unsplit))) %>% nrow()==0 
 )
 
-
-
-
-
-
-
-left_join(corpus_final %>% group_by(date) %>% count(name="new_row_count"),
-          corpus  %>% group_by(date) %>% count(name="old_row_count"),
-          by="date") %>% filter(old_row_count!=new_row_count) %>% 
-  mutate(diff = new_row_count-old_row_count) %>% 
-  ungroup() %>% 
-  left_join(unsplit_interjections_lookup %>% 
-              group_by(date) %>% 
-              count(name="n_interject") %>% ungroup(), by="date") %>% 
-  filter(diff!=n_interject) %>% View
-
-
-corpus_final %>% 
-  group_by(date) %>% 
-  count(name="new_row_count") %>% 
-  ungroup() %>% 
-  left_join(corpus_here %>% 
-              group_by(date) %>% 
-              count(name="old_row_count") %>% ungroup(),
-            by="date") %>% 
-  mutate(diff = new_row_count-old_row_count) %>% 
-  filter(diff!=0) %>% View
-
-
-corpus_final %>% 
-  left_join(unsplit_interjections_lookup %>% mutate(new=1) %>% select(body, date, name=name_use, new), 
-            by=c("body","date","name")) %>% 
-  filter(new==1) %>% 
-  group_by(date) %>% 
-  count()
-
-
-nrow(corpus_final)-nrow(corpus_here)==nrow(new_rows)
-
-
-
-
-
-
-
-
-
-setdiff(corpus_here %>% filter((date %in% dates_unsplit)),
-        corpus_final %>% filter((date %in% dates_unsplit)))
-setdiff(corpus_final %>% filter(!(date %in% dates_unsplit)),
-        corpus_here %>% filter(!(date %in% dates_unsplit)))
-
-corpus_correct_electorates %>% filter(date %in% dates_unsplit) %>% nrow()
-
-corpus_by_date[split_dates] %>% bind_rows() %>% nrow()
-
-
-
 ### fix column classes --------------------------------------------------------
-corpus_correct_electorates <- corpus_correct_electorates %>% 
-  select(-c(in.gov, first.speech)) %>% 
+corpus_final <- corpus_final %>% 
+  select(-drop) %>% 
+  ungroup() %>% 
   mutate(date = as.Date(date),
          time.stamp = hms::as_hms(time.stamp)) %>% 
   mutate(across(c(partyAbbrev, question, answer, q_in_writing, div_flag, gender, 
@@ -241,5 +186,5 @@ corpus_correct_electorates <- corpus_correct_electorates %>%
                 ~ as.factor(.)))
 
 ### data export ---------------------------------------------------------------
-write_parquet(corpus_correct_electorates, 
-              "hansard-corpus/corpus_1998_to_2025-v061025.parquet")
+write_parquet(corpus_final, 
+              "hansard-corpus/corpus_1998_to_2025-v081025.parquet")

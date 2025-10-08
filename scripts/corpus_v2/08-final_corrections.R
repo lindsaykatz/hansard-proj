@@ -118,14 +118,25 @@ corpus <- corpus %>%
 
 # 2023-02-14 someone was quoting Michael Pezzullo and it was incorrectly split
 # as if part of the speech, need to fix that manually
-corpus <- corpus %>%
-  # combine all components of Anthony Albanese's speech into one body
-  mutate(body = case_when(
-    date=="2023-02-14" & speech_no==69 & order %in% c(218, 219, 220) ~ 
-      paste0(body, collapse = " "),
-    .default = body)) %>% 
-  # drop two rows attributed to Michael Pezzullo
+
+# these are the rows involved
+corpus %>% 
+  filter(date=="2023-02-14" & speech_no==69 & order %in% c(218, 219, 220, 221))
+
+# combine body into one row (all part of Anthony Albanese's speech)
+pezzullo_row <- corpus %>% 
+  filter(date=="2023-02-14" & speech_no==69 & order %in% c(218, 219, 220)) %>% 
+  mutate(body = paste0(body, collapse = " ")) %>% 
   filter(!(date=="2023-02-14" & order %in% c(219,220)))
+
+# add corrected row, update order variable
+corpus <- corpus %>%
+  filter(!(date=="2023-02-14" & order %in% c(218,219,220))) %>%
+  # add row back in correct spot
+  add_row(pezzullo_row, .before = which(.$date=="2023-02-14" & .$order==221)) %>% 
+  # update ordering to reflect two less rows
+  mutate(order = case_when(date=="2023-02-14" & order>218 ~ order-2, 
+                           .default = order))
 
 # ensure we fixed the issues above
 stopifnot(corpus %>% filter(str_detect(name, "Pezzullo")) %>% nrow()==0,
@@ -542,6 +553,31 @@ corpus_fixed <- corpus_fixed %>%
   fill(partyName, .direction = "downup") %>% 
   ungroup()
 
+### anna burke issue found ----------------------------------------------------
+# identified cases after her retirement where her name is used incorrectly in 
+# the place of Tony Burke
+corpus_fixed <- corpus_fixed %>% 
+  mutate(name = case_when(name=="Burke, Anna" & date>"2016-05-09" ~ "Burke, Tony",
+                          .default = name)) %>% 
+  mutate(name.id = case_when(name=="Burke, Tony" ~ "DYW",
+                             .default = name.id),
+         electorate = case_when(name=="Burke, Tony" ~ "Watson",
+                                .default = electorate),
+         uniqueID = case_when(name=="Burke, Tony" ~ "Burke1969",
+                              .default = uniqueID),
+         gender = case_when(name=="Burke, Tony" ~ "male",
+                            .default = gender),
+         member = case_when(name=="Burke, Tony" ~ factor(1),
+                            .default = member),
+         senator = case_when(name=="Burke, Tony" ~ factor(0),
+                             .default = senator),
+         displayName = case_when(name=="Burke, Tony" ~ "Burke, Tony",
+                                 .default = displayName),
+         partyAbbrev = case_when(name=="Burke, Tony" ~ "ALP",
+                                 .default = partyAbbrev),
+         partyName = case_when(name=="Burke, Tony" ~ "Australian Labor Party",
+                               .default = partyName))
+
 ### fix electorate column -----------------------------------------------------
 # recode UNKNOWN electorates to NA
 corpus_fixed <- corpus_fixed %>% 
@@ -755,9 +791,145 @@ corpus_correct_electorates <- corpus_correct_electorates %>%
                   member, senator, fedchamb_flag, interject),
                 ~ as.factor(.)))
 
+### validation that all MPs present are actually members at that time ---------
+# import auspol MPS
+mps <-AustralianPoliticians::get_auspol("mps") %>% 
+  distinct(uniqueID, mpFrom, mpTo) %>% 
+  filter(uniqueID %in% unique(corpus_correct_electorates$uniqueID))
+
+# fix error with John Alexander's second term dates
+mps <- mps %>% 
+  mutate(mpFrom = case_when(uniqueID=="Alexander1951" & 
+                              mpFrom=="2018-12-16" ~ as.Date("2017-12-15"),
+                            .default = mpFrom),
+         mpTo = case_when(uniqueID=="Alexander1951" & 
+                            is.na(mpTo) ~ as.Date("2022-04-10"),
+                          .default = mpTo))
+
+# look at cases where date detected is not in the mpFrom - mpTo date range
+corpus_correct_electorates %>% 
+  distinct(uniqueID, name, displayName, date, name.id) %>% 
+  filter(!is.na(uniqueID)) %>% 
+  left_join(., mps, by="uniqueID", relationship = "many-to-many") %>% 
+  arrange(uniqueID) %>% 
+  mutate(correct = (date >= mpFrom & date <= mpTo)) %>% 
+  group_by(uniqueID, name, displayName, name.id, date) %>% 
+  filter(!any(correct)) %>% ungroup()
+
+### manually checked all of these
+# John Moore is there as the Minister for Defence - correct
+# Fiona Scott is wrong - should be Emma Husar
+# Bob Brown is wrong - should be the other Bob Brown with uniqueID Brown1944
+# David Feeney is wrong - should be Ged Kearney
+
+### implement fixes identified above ------------------------------------------
+corpus_correct_electorates<- corpus_correct_electorates %>% 
+  mutate(name = case_when(
+    date=="2016-09-15" & name=="Scott, Fiona" ~ "Husar, Emma",
+    date=="2003-10-23" & name=="Brown, Bob, MP" ~ "Brown, Bob, Senator",
+    date %in% c("2018-06-20", "2018-09-11") & name=="Feeney, David" ~ "Kearney, Ged",
+    .default = name)) %>% 
+  mutate(electorate = case_when(
+    name=="Husar, Emma" ~ "Lindsay",
+    name=="Brown, Bob, Senator" ~ "Tasmania",
+    name=="Kearney, Ged" ~ "Batman",
+    .default = electorate),
+    uniqueID = case_when(
+      name=="Husar, Emma" ~ "Husar1980",
+      name=="Brown, Bob, Senator" ~ "Brown1944",
+      name=="Kearney, Ged" ~ "Kearney1963",
+      .default = uniqueID),
+    gender = case_when(
+      name=="Husar, Emma" ~ "female",
+      name=="Brown, Bob, Senator" ~ "male",
+      name=="Kearney, Ged" ~ "female",
+      .default = gender), 
+    member = case_when(
+      name=="Husar, Emma" ~ factor(1),
+      name=="Brown, Bob, Senator" ~ factor(0),
+      name=="Kearney, Ged" ~ factor(1),
+      .default = member), 
+    senator = case_when(
+      name=="Husar, Emma" ~ factor(0),
+      name=="Brown, Bob, Senator" ~ factor(1),
+      name=="Kearney, Ged" ~ factor(0),
+      .default = senator), 
+    displayName = case_when(
+      name=="Husar, Emma" ~ "Husar, Emma",
+      name=="Brown, Bob, Senator" ~ "Brown, Bob, Senator",
+      name=="Kearney, Ged" ~ "Kearney, Ged",
+      .default = displayName), 
+    partyAbbrev = case_when(
+      name=="Husar, Emma" ~ "ALP",
+      name=="Brown, Bob, Senator" ~ "GRN",
+      name=="Kearney, Ged" ~ "ALP",
+      .default = partyAbbrev), 
+    partyName = case_when(
+      name=="Husar, Emma" ~ "Australian Labor Party",
+      name=="Brown, Bob, Senator" ~ "Australian Greens",
+      name=="Kearney, Ged" ~ "Australian Labor Party",
+      .default = partyName))
+
+### clean up environment -----------------------------------------------------
+rm(aus_ph, aus_pol, auspol_party, corpus, corpus_fixed, electorates_corrected, 
+   mps, mps_multi_party, mps_one_party, multiple_electorates_with_dates, 
+   pezzullo_row, body_20200612_burns, names_missing_flags, names_no_uniqueID)
+gc()
+
+### found 23 rows with NA body value - resolve those --------------------------
+corpus_correct_electorates %>% 
+  group_by(date, speech_no) %>% 
+  filter(any(is.na(body))) %>% 
+  ungroup() %>% 
+  select(date:speech_no, body)
+
+# for 2007-02-26, 2007-02-28, 2008-05-29, 2011-03-05 and 2017-12-04, these can
+# be safely filtered out. The other ones require manual fixes.
+corpus_final_export <- corpus_correct_electorates %>% 
+  filter(!(is.na(body) & date %in% c("2007-02-26", "2007-02-28", "2008-05-29", 
+                                     "2011-03-03", "2017-12-04")))
+  
+# now deal with the other ones identified that need to be manually fixed
+corrected_rows_missing_body <- corpus_final_export %>% 
+  filter(is.na(body) | lag(is.na(body))) %>% 
+  select(date, name, order, speech_no, body) %>% 
+  rowwise() %>% 
+  mutate(body = case_when(
+    name %in% c("An honourable member",
+                "Honourable members") ~ paste(name, na.omit(body)),
+    .default = body)) %>% 
+  mutate(body = case_when(str_detect(body, "^Honourable members !$") ~ "Honourable members!",
+                          str_detect(body,"^Honourable members $") ~ "Honourable members.",
+                          .default = body)) %>% 
+  group_by(date, speech_no) %>% 
+  fill(body, .direction = "up") %>% 
+  mutate(drop = ifelse(name %in% c("An honourable member",
+                                    "Honourable members"), TRUE, FALSE)) %>% 
+  rename(body_use=body) %>% 
+  ungroup()
+
+corpus_final_export <- left_join(corpus_final_export, 
+                                 corrected_rows_missing_body,
+          by=c("order","speech_no","date","name")) %>% 
+  filter(!drop | is.na(drop)) %>% 
+  mutate(body = case_when(is.na(body) & !is.na(body_use) ~ body_use,
+                          .default = body)) %>% 
+  select(-body_use)
+
+# ensure the difference in number of rows is correct
+nrow(corpus_correct_electorates)-nrow(corpus_final_export) == 
+  nrow(corrected_rows_missing_body %>% filter(drop))
+
+# reassign order variable
+corpus_final_export <- corpus_final_export %>% 
+  select(-order) %>% 
+  group_by(date) %>% 
+  mutate(order = row_number()) %>% 
+  relocate(order, .after = "name")
+
 ### data export ---------------------------------------------------------------
-write_parquet(corpus_correct_electorates, 
-              "hansard-corpus/corpus_1998_to_2025-v071025.parquet")
+write_parquet(corpus_final_export, 
+              "hansard-corpus/corpus_1998_to_2025-v081025.parquet")
 
 ############## FUTURE FIXES ##############
 ### bigger interject fixes ----------------------------------------------------
