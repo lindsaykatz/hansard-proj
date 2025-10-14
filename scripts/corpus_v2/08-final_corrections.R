@@ -916,6 +916,14 @@ corpus_final_export <- left_join(corpus_final_export,
                           .default = body)) %>% 
   select(-body_use)
 
+# correct issue I just found
+corpus_final_export <- corpus_final_export %>% 
+  mutate(displayName = case_when(
+    name=="Ripoll, Bernie and Husic, Ed" ~ NA,
+    name=="Opposition members" ~ NA,
+    .default = displayName
+  ))
+
 # ensure the difference in number of rows is correct
 nrow(corpus_correct_electorates)-nrow(corpus_final_export) == 
   nrow(corrected_rows_missing_body %>% filter(drop))
