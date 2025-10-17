@@ -916,7 +916,7 @@ corpus_final_export <- left_join(corpus_final_export,
                           .default = body)) %>% 
   select(-body_use)
 
-# correct issue I just found
+# correct issue with incorrect displayName
 corpus_final_export <- corpus_final_export %>% 
   mutate(displayName = case_when(
     name=="Ripoll, Bernie and Husic, Ed" ~ NA,
@@ -924,9 +924,24 @@ corpus_final_export <- corpus_final_export %>%
     .default = displayName
   ))
 
+# correct interjections incorrectly flagged associated w/ people in the list below
+corpus_final_export <- corpus_final_export %>% 
+  mutate(interject=case_when(
+    interject==1 & name %in% 
+      c("The PRESIDENT","The DEPUTY CHAIR","The DEPUTY PRESIDENT",
+        "His Excellency Mr SHINZO ABE (Prime Minister of Japan)",
+        "Rt Hon. JOHN KEY (Prime Minister of New Zealand)") ~ factor(0),
+    .default=interject))
+
 # ensure the difference in number of rows is correct
 nrow(corpus_correct_electorates)-nrow(corpus_final_export) == 
   nrow(corrected_rows_missing_body %>% filter(drop))
+
+# fix interjection flag
+corpus_final_export <- corpus_final_export %>% 
+  mutate(interject = case_when(
+    str_detect(body, "to move\\: That the House") & interject==1 ~ factor(0),
+    .default = interject))
 
 # reassign order variable
 corpus_final_export <- corpus_final_export %>% 
@@ -937,7 +952,7 @@ corpus_final_export <- corpus_final_export %>%
 
 ### data export ---------------------------------------------------------------
 write_parquet(corpus_final_export, 
-              "hansard-corpus/corpus_1998_to_2025-v081025.parquet")
+              "hansard-corpus/corpus_1998_to_2025.parquet")
 
 ############## FUTURE FIXES ##############
 ### bigger interject fixes ----------------------------------------------------
